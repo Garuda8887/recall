@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recall — Sign In</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/icon-192.svg">
+  <meta name="theme-color" content="#6366f1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Recall">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f1f5f9;
+      color: #1e293b;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 20px;
+      padding: 40px 40px 36px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+      border: 1px solid #e2e8f0;
+    }
+
+    .logo {
+      font-size: 26px;
+      font-weight: 800;
+      color: #6366f1;
+      letter-spacing: -0.5px;
+      margin-bottom: 28px;
+      display: block;
+      text-decoration: none;
+    }
+    .logo span { color: #1e293b; }
+
+    h2 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: #64748b;
+      margin-bottom: 28px;
+    }
+
+    .form-group { margin-bottom: 16px; }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 6px;
+    }
+
+    input {
+      width: 100%;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 11px 14px;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      color: #1e293b;
+      background: white;
+    }
+
+    input:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+    }
+
+    .btn-submit {
+      width: 100%;
+      background: #6366f1;
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s;
+      margin-top: 4px;
+    }
+
+    .btn-submit:hover { background: #4f46e5; }
+    .btn-submit:disabled { background: #a5b4fc; cursor: not-allowed; }
+
+    .error-msg {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 9px;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: #dc2626;
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    .error-msg.show { display: block; }
+
+    .toggle-row {
+      text-align: center;
+      margin-top: 22px;
+      font-size: 13px;
+      color: #64748b;
+    }
+
+    .toggle-row a {
+      color: #6366f1;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .toggle-row a:hover { text-decoration: underline; }
+
+    .divider {
+      border: none;
+      border-top: 1px solid #f1f5f9;
+      margin: 24px 0 20px;
+    }
+
+    .hint {
+      font-size: 11px;
+      color: #cbd5e1;
+      text-align: center;
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <a class="logo" href="/">recall<span>.</span></a>
+
+  <h2 id="formTitle">Welcome back</h2>
+  <p class="subtitle" id="formSubtitle">Sign in to your Recall account</p>
+
+  <div class="error-msg" id="errorMsg"></div>
+
+  <form id="authForm">
+    <div class="form-group">
+      <label for="emailInput">Email</label>
+      <input type="email" id="emailInput" placeholder="you@example.com" autocomplete="email" required>
+    </div>
+    <div class="form-group">
+      <label for="passwordInput">Password</label>
+      <input type="password" id="passwordInput" placeholder="••••••••" autocomplete="current-password" required>
+    </div>
+    <button type="submit" class="btn-submit" id="submitBtn">Sign in</button>
+  </form>
+
+  <hr class="divider">
+
+  <div class="toggle-row" id="toggleRow">
+    Don't have an account? <a id="toggleLink">Create one</a>
+  </div>
+
+  <p class="hint">Your data is private and stored locally on this server.</p>
+</div>
+
+<script>
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+
+  // If already logged in, go straight to app
+  if (localStorage.getItem('recall_token')) {
+    window.location.href = '/';
+  }
+
+  let isRegister = false;
+
+  const form       = document.getElementById('authForm');
+  const title      = document.getElementById('formTitle');
+  const subtitle   = document.getElementById('formSubtitle');
+  const submitBtn  = document.getElementById('submitBtn');
+  const toggleLink = document.getElementById('toggleLink');
+  const errorMsg   = document.getElementById('errorMsg');
+  const emailInput    = document.getElementById('emailInput');
+  const passwordInput = document.getElementById('passwordInput');
+
+  function setMode(reg) {
+    isRegister = reg;
+    title.textContent    = reg ? 'Create your account' : 'Welcome back';
+    subtitle.textContent = reg ? 'Start remembering more, forever.' : 'Sign in to your Recall account';
+    submitBtn.textContent = reg ? 'Create account' : 'Sign in';
+    toggleLink.textContent = reg ? 'Sign in instead' : 'Create one';
+    passwordInput.setAttribute('autocomplete', reg ? 'new-password' : 'current-password');
+    passwordInput.setAttribute('placeholder', reg ? '8+ characters' : '••••••••');
+    hideError();
+  }
+
+  toggleLink.addEventListener('click', () => setMode(!isRegister));
+
+  function showError(msg) {
+    errorMsg.textContent = msg;
+    errorMsg.classList.add('show');
+  }
+
+  function hideError() {
+    errorMsg.classList.remove('show');
+  }
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    hideError();
+
+    const email    = emailInput.value.trim();
+    const password = passwordInput.value;
+
+    if (!email || !password) return;
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = isRegister ? 'Creating account…' : 'Signing in…';
+
+    try {
+      const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
+      const res  = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showError(data.error || 'Something went wrong.');
+        submitBtn.disabled = false;
+        submitBtn.textContent = isRegister ? 'Create account' : 'Sign in';
+        return;
+      }
+
+      localStorage.setItem('recall_token', data.token);
+      localStorage.setItem('recall_user',  JSON.stringify(data.user));
+      window.location.href = '/';
+
+    } catch {
+      showError('Could not reach the server. Is it running?');
+      submitBtn.disabled = false;
+      submitBtn.textContent = isRegister ? 'Create account' : 'Sign in';
+    }
+  });
+</script>
+</body>
+</html>

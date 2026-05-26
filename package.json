@@ -1,0 +1,16 @@
+{
+  "name": "recall-calendar",
+  "version": "1.0.0",
+  "description": "Spaced repetition calendar based on the Ebbinghaus forgetting curve",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "better-sqlite3": "^9.4.3",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.3"
+  }
+}

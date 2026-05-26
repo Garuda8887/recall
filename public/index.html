@@ -1,0 +1,3826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recall — Spaced Repetition Calendar</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/icon-192.svg">
+  <meta name="theme-color" content="#6366f1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Recall">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f1f5f9;
+      color: #1e293b;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: white;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .logo { font-size: 22px; font-weight: 800; color: #6366f1; letter-spacing: -0.5px; }
+    .logo span { color: #1e293b; }
+
+    .header-right { display: flex; align-items: center; gap: 10px; position: relative; }
+
+    /* ── Search ── */
+    .search-wrap {
+      display: flex;
+      align-items: center;
+      position: relative;
+    }
+
+    .search-input {
+      width: 0;
+      opacity: 0;
+      border: 1.5px solid transparent;
+      border-radius: 8px;
+      padding: 0;
+      font-size: 13px;
+      font-family: inherit;
+      background: #f8fafc;
+      color: #1e293b;
+      outline: none;
+      transition: width 0.2s ease, opacity 0.15s, padding 0.2s, border-color 0.15s;
+      overflow: hidden;
+    }
+
+    .search-input.open {
+      width: 200px;
+      opacity: 1;
+      padding: 7px 26px 7px 10px;
+      border-color: #e2e8f0;
+      margin-left: 4px;
+    }
+
+    .search-input.open:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+    }
+
+    .search-clear {
+      position: absolute;
+      right: 5px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      font-size: 16px;
+      line-height: 1;
+      color: #94a3b8;
+      cursor: pointer;
+      display: none;
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+
+    .search-clear:hover { color: #475569; }
+    .search-clear.show { display: block; }
+
+    .search-count {
+      font-size: 11px;
+      font-weight: 700;
+      color: #6366f1;
+      background: #eef2ff;
+      border-radius: 10px;
+      padding: 3px 8px;
+      display: none;
+      white-space: nowrap;
+    }
+
+    .search-count.show { display: inline-block; }
+
+    .streak {
+      font-size: 13px;
+      color: #64748b;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 6px 12px;
+      border-radius: 20px;
+    }
+
+    .icon-btn {
+      background: white;
+      border: 1.5px solid #e2e8f0;
+      width: 36px;
+      height: 36px;
+      border-radius: 9px;
+      cursor: pointer;
+      font-size: 17px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      color: #64748b;
+    }
+
+    .icon-btn:hover { background: #f8fafc; color: #1e293b; border-color: #cbd5e1; }
+
+    .add-btn {
+      background: #6366f1;
+      color: white;
+      border: none;
+      padding: 9px 18px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s;
+    }
+
+    .add-btn:hover { background: #4f46e5; }
+
+    .user-avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: #6366f1;
+      color: white;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      user-select: none;
+      transition: opacity 0.15s;
+      position: relative;
+    }
+
+    .user-avatar:hover { opacity: 0.85; }
+
+    .user-menu {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 11px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+      min-width: 200px;
+      padding: 6px;
+      z-index: 50;
+      display: none;
+    }
+
+    .user-menu.open { display: block; }
+
+    .user-menu-email {
+      font-size: 12px;
+      color: #94a3b8;
+      padding: 6px 10px 8px;
+      border-bottom: 1px solid #f1f5f9;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .user-menu-item {
+      display: block;
+      width: 100%;
+      text-align: left;
+      background: none;
+      border: none;
+      padding: 8px 10px;
+      border-radius: 7px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      color: #374151;
+      transition: background 0.1s;
+    }
+
+    .user-menu-item:hover { background: #f8fafc; }
+    .logout-item { color: #dc2626; }
+    .logout-item:hover { background: #fef2f2; }
+
+    /* ── Layout ── */
+    .calendar-container { max-width: 1140px; margin: 24px auto; padding: 0 24px; }
+
+    /* ── Due Today ── */
+    .due-today {
+      background: white;
+      border: 1px solid #fde68a;
+      border-radius: 12px;
+      margin-bottom: 16px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    }
+
+    .due-today-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      background: #fffbeb;
+      border-bottom: 1px solid #fde68a;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .due-today-title {
+      flex: 1;
+      font-size: 14px;
+      font-weight: 700;
+      color: #92400e;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .due-count {
+      background: #f59e0b;
+      color: white;
+      padding: 1px 8px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .due-toggle { font-size: 12px; color: #b45309; }
+
+    .due-today-body { padding: 10px 14px 12px; }
+
+    .due-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 11px;
+      border-radius: 8px;
+      background: #fafafa;
+      border: 1px solid #f1f5f9;
+      margin-bottom: 6px;
+    }
+
+    .due-item:last-child { margin-bottom: 0; }
+
+    .due-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+    .due-info { flex: 1; min-width: 0; }
+
+    .due-topic { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .due-meta { font-size: 11px; color: #94a3b8; margin-top: 1px; }
+
+    .due-done-btn {
+      background: white;
+      border: 1.5px solid #e2e8f0;
+      padding: 4px 11px;
+      border-radius: 7px;
+      font-size: 12px;
+      cursor: pointer;
+      color: #64748b;
+      font-family: inherit;
+      white-space: nowrap;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+
+    .due-done-btn:hover { background: #f0fdf4; border-color: #22c55e; color: #16a34a; }
+
+    .mark-all-btn {
+      background: #f0fdf4;
+      border: 1.5px solid #86efac;
+      color: #16a34a;
+      padding: 4px 12px;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      white-space: nowrap;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+    .mark-all-btn:hover { background: #dcfce7; border-color: #22c55e; }
+
+    /* ── Filter bar ── */
+    .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; min-height: 34px; }
+
+    .filter-pill {
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1.5px solid #e2e8f0;
+      background: white;
+      color: #64748b;
+      font-family: inherit;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .filter-pill:hover { background: #f8fafc; }
+    .filter-pill.active-all { background: #0f172a; color: white; border-color: #0f172a; }
+
+    /* ── Calendar nav ── */
+    .calendar-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .calendar-nav h2 { font-size: 24px; font-weight: 700; color: #0f172a; }
+
+    .nav-controls { display: flex; gap: 8px; align-items: center; }
+
+    .today-btn {
+      background: white;
+      border: 1px solid #e2e8f0;
+      padding: 7px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      color: #64748b;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+
+    .today-btn:hover { background: #f8fafc; color: #1e293b; }
+
+    .nav-btn {
+      background: white;
+      border: 1px solid #e2e8f0;
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 18px;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .nav-btn:hover { background: #f8fafc; color: #1e293b; }
+
+    /* ── Calendar grid ── */
+    .calendar-grid {
+      background: white;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+      position: relative;
+    }
+
+    .empty-month {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .empty-month span {
+      font-size: 14px;
+      font-weight: 500;
+      color: #cbd5e1;
+      letter-spacing: 0.01em;
+    }
+
+    .day-headers {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .day-header {
+      padding: 11px 8px;
+      text-align: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+    }
+
+    .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
+
+    .day-cell {
+      min-height: 90px;
+      border-right: 1px solid #f1f5f9;
+      border-bottom: 1px solid #f1f5f9;
+      padding: 8px 6px 6px;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+
+    .day-cell:nth-child(7n) { border-right: none; }
+    .day-cell:hover { background: #fafbff; }
+    .day-cell.other-month { background: #fcfcfd; }
+    .day-cell.other-month .day-number { color: #d1d5db; }
+    .day-cell.today { background: #fefcff; }
+    .day-cell.today-col:not(.today) { background: #f5f3ff; }
+    .day-cell.other-month.today-col { background: #f3f0fe; }
+
+    .day-number {
+      font-size: 13px;
+      font-weight: 600;
+      color: #475569;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      margin-bottom: 4px;
+    }
+
+    .day-cell.today .day-number { background: #6366f1; color: white; }
+
+    @keyframes eventFadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .events { display: flex; flex-direction: column; gap: 2px; }
+
+    .event {
+      animation: eventFadeIn 0.18s ease both;
+      font-size: 11px;
+      padding: 3px 6px;
+      border-radius: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-weight: 500;
+      line-height: 1.3;
+    }
+
+    .event.review-0 { background: #fff1f2; color: #be123c; border-left: 3px solid #ef4444; }
+    .event.review-1 { background: #fff7ed; color: #c2410c; border-left: 3px solid #f97316; }
+    .event.review-2 { background: #f0fdfa; color: #0f766e; border-left: 3px solid #14b8a6; }
+    .event.review-3 { background: #eff6ff; color: #1d4ed8; border-left: 3px solid #3b82f6; }
+    .event.review-4 { background: #f5f3ff; color: #6d28d9; border-left: 3px solid #8b5cf6; }
+    .event.done     { opacity: 0.4; text-decoration: line-through; }
+    .event.overdue  { background: #fef2f2; color: #dc2626; border-left: 3px solid #ef4444; font-weight: 600; }
+
+    /* Drag-and-drop */
+    .event.draggable-review { cursor: grab; transition: transform 0.1s, box-shadow 0.1s; }
+    .event.draggable-review:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0,0,0,0.10); }
+    .event.dragging { opacity: 0.3; pointer-events: none; }
+    .day-cell.drag-over { background: rgba(99,102,241,0.07) !important; outline: 2px dashed #a5b4fc; outline-offset: -3px; }
+
+    /* Tags */
+    .tag-input-wrap { display:flex; flex-wrap:wrap; gap:5px; align-items:center; border:1.5px solid #e2e8f0; border-radius:10px; padding:6px 10px; min-height:38px; cursor:text; transition:border-color 0.15s, box-shadow 0.15s; }
+    .tag-input-wrap:focus-within { border-color:#6366f1; box-shadow:0 0 0 3px rgba(99,102,241,0.12); }
+    .tag-chip-input { border:none; outline:none; background:transparent; font-size:13px; flex:1; min-width:80px; color:#1e293b; }
+    .tag-chip-input::placeholder { color:#94a3b8; }
+    .tag-chip { display:inline-flex; align-items:center; gap:3px; background:#ede9fe; color:#5b21b6; border-radius:20px; padding:2px 6px 2px 9px; font-size:12px; font-weight:500; white-space:nowrap; }
+    .tag-chip-remove { background:none; border:none; cursor:pointer; color:#7c3aed; padding:0 1px; font-size:15px; line-height:1; opacity:0.6; display:flex; align-items:center; }
+    .tag-chip-remove:hover { opacity:1; }
+
+    /* Tag filter row */
+    .tag-filter-row { display:flex; gap:6px; flex-wrap:wrap; padding:0 0 10px; }
+    .tag-pill { display:inline-flex; align-items:center; gap:4px; padding:4px 11px; border-radius:20px; font-size:12px; font-weight:500; cursor:pointer; border:1.5px solid #e2e8f0; background:#fff; color:#64748b; transition:all 0.15s; white-space:nowrap; }
+    .tag-pill:hover { border-color:#a5b4fc; color:#4f46e5; background:#f5f3ff; }
+    .tag-pill.active { background:#ede9fe; border-color:#8b5cf6; color:#5b21b6; }
+    .tag-pill .tag-pill-hash { opacity:0.5; font-size:11px; }
+
+    /* Session tags in day modal */
+    .session-tags { display:flex; flex-wrap:wrap; gap:4px; margin-top:5px; }
+    .session-tag { background:#ede9fe; color:#5b21b6; border-radius:12px; padding:2px 9px; font-size:11px; font-weight:500; cursor:pointer; transition:background 0.12s; }
+    .session-tag:hover { background:#ddd6fe; }
+
+    /* Second brain links */
+    .session-links { display:flex; flex-direction:column; gap:3px; margin-top:7px; }
+    .link-item { display:flex; align-items:center; gap:7px; padding:4px 8px; border-radius:8px; background:#f8fafc; border:1px solid #f1f5f9; }
+    .link-rel-badge { font-size:10px; font-weight:600; color:#4f46e5; background:#ede9fe; padding:2px 7px; border-radius:10px; flex-shrink:0; white-space:nowrap; }
+    .link-target-topic { flex:1; font-size:12px; font-weight:500; color:#374151; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer; }
+    .link-target-topic:hover { color:#6366f1; text-decoration:underline; }
+    .link-target-subject { font-size:11px; color:#94a3b8; margin-left:2px; }
+    .link-remove-btn { color:#cbd5e1; background:none; border:none; cursor:pointer; font-size:16px; line-height:1; padding:0 2px; flex-shrink:0; }
+    .link-remove-btn:hover { color:#ef4444; }
+    .add-link-btn { display:inline-flex; align-items:center; gap:5px; font-size:12px; color:#6366f1; background:none; border:1.5px dashed #c7d2fe; border-radius:8px; padding:4px 10px; cursor:pointer; margin-top:4px; transition:all 0.15s; }
+    .add-link-btn:hover { background:#f5f3ff; border-color:#6366f1; }
+
+    /* Link picker modal */
+    .link-relation-picker { display:flex; gap:7px; flex-wrap:wrap; }
+    .link-rel-option { padding:5px 13px; border-radius:20px; font-size:12px; font-weight:500; cursor:pointer; border:1.5px solid #e2e8f0; background:#fff; color:#64748b; transition:all 0.15s; }
+    .link-rel-option:hover { border-color:#a5b4fc; color:#4f46e5; }
+    .link-rel-option.selected { background:#ede9fe; border-color:#8b5cf6; color:#5b21b6; }
+    .link-session-list { max-height:210px; overflow-y:auto; border:1.5px solid #e2e8f0; border-radius:10px; margin-top:6px; }
+    .link-session-option { padding:9px 14px; cursor:pointer; border-bottom:1px solid #f1f5f9; transition:background 0.1s; }
+    .link-session-option:last-child { border-bottom:none; }
+    .link-session-option:hover { background:#f8fafc; }
+    .link-session-option.selected { background:#ede9fe; }
+    .link-session-option-topic { font-size:13px; font-weight:500; color:#1e293b; }
+    .link-session-option-sub { font-size:11px; color:#94a3b8; margin-top:1px; }
+    .link-empty { padding:16px; text-align:center; font-size:13px; color:#94a3b8; }
+
+    .more-events { font-size: 11px; color: #94a3b8; padding: 1px 6px; }
+
+    /* ── Legend ── */
+    .legend { display: flex; gap: 18px; margin-top: 14px; flex-wrap: wrap; padding: 0 2px; }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #64748b; }
+    .legend-swatch { width: 12px; height: 12px; border-radius: 3px; }
+
+    /* ── Modals (shared) ── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.2s;
+      padding: 16px;
+    }
+
+    .modal-overlay.active { opacity: 1; visibility: visible; }
+
+    .modal {
+      background: white;
+      border-radius: 18px;
+      padding: 28px;
+      width: 480px;
+      max-width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.18);
+      transform: translateY(12px) scale(0.98);
+      transition: transform 0.2s;
+    }
+
+    .modal-overlay.active .modal { transform: translateY(0) scale(1); }
+
+    .modal.wide { width: 640px; }
+
+    .modal-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .modal h3 { font-size: 19px; font-weight: 700; }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 22px;
+      cursor: pointer;
+      color: #94a3b8;
+      line-height: 1;
+      padding: 0;
+      flex-shrink: 0;
+    }
+
+    .modal-close:hover { color: #64748b; }
+    .modal .subtitle { font-size: 13px; color: #64748b; margin-bottom: 22px; }
+
+    .form-group { margin-bottom: 16px; }
+
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 6px;
+    }
+
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 9px;
+      padding: 10px 13px;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      color: #1e293b;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+    }
+
+    .form-group textarea { height: 76px; resize: none; }
+
+    .review-preview {
+      background: #f8fafc;
+      border-radius: 10px;
+      padding: 13px 14px;
+      margin-bottom: 22px;
+      border: 1px solid #f1f5f9;
+    }
+
+    .review-preview p {
+      font-size: 11px;
+      font-weight: 700;
+      color: #94a3b8;
+      margin-bottom: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+    }
+
+    .review-chips { display: flex; flex-direction: column; gap: 5px; }
+
+    .review-chip {
+      font-size: 12px;
+      padding: 5px 10px;
+      border-radius: 6px;
+      background: white;
+      border: 1px solid #e2e8f0;
+      color: #475569;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .review-chip .chip-interval { font-weight: 600; }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 4px;
+    }
+
+    .btn-cancel {
+      background: none;
+      border: 1.5px solid #e2e8f0;
+      padding: 9px 18px;
+      border-radius: 9px;
+      font-size: 14px;
+      cursor: pointer;
+      color: #64748b;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+
+    .btn-cancel:hover { background: #f8fafc; }
+
+    .btn-save {
+      background: #6366f1;
+      color: white;
+      border: none;
+      padding: 9px 22px;
+      border-radius: 9px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s;
+    }
+
+    .btn-save:hover { background: #4f46e5; }
+    .btn-save:disabled { background: #a5b4fc; cursor: not-allowed; }
+
+    /* ── Day detail modal ── */
+    .event-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 12px;
+      border-radius: 10px;
+      margin-bottom: 7px;
+      background: #f8fafc;
+      border: 1px solid #f1f5f9;
+    }
+
+    .event-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
+    .event-info { flex: 1; min-width: 0; }
+    .event-title { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .event-meta { font-size: 12px; color: #94a3b8; margin-top: 1px; }
+
+    .check-btn {
+      background: white;
+      border: 1.5px solid #e2e8f0;
+      padding: 5px 11px;
+      border-radius: 7px;
+      font-size: 12px;
+      cursor: pointer;
+      color: #64748b;
+      font-family: inherit;
+      white-space: nowrap;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+
+    .check-btn:hover { background: #f0fdf4; border-color: #22c55e; color: #16a34a; }
+
+    .undo-btn {
+      background: white;
+      border: 1.5px solid #e2e8f0;
+      padding: 5px 11px;
+      border-radius: 7px;
+      font-size: 12px;
+      cursor: pointer;
+      color: #94a3b8;
+      font-family: inherit;
+      white-space: nowrap;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+
+    .undo-btn:hover { background: #fff1f2; border-color: #fca5a5; color: #dc2626; }
+
+    .scheduled-badge {
+      font-size: 11px;
+      color: #94a3b8;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 4px 9px;
+      border-radius: 6px;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    .edit-btn {
+      background: none;
+      border: none;
+      padding: 4px 7px;
+      cursor: pointer;
+      color: #cbd5e1;
+      font-size: 14px;
+      line-height: 1;
+      flex-shrink: 0;
+      transition: color 0.15s;
+    }
+
+    .edit-btn:hover { color: #6366f1; }
+
+    .delete-btn {
+      background: none;
+      border: none;
+      padding: 4px 7px;
+      cursor: pointer;
+      color: #cbd5e1;
+      font-size: 18px;
+      line-height: 1;
+      flex-shrink: 0;
+      transition: color 0.15s;
+    }
+
+    .delete-btn:hover { color: #ef4444; }
+    .empty-day { text-align: center; color: #94a3b8; font-size: 14px; padding: 24px 0 16px; }
+
+    /* ── Stats modal ── */
+    .stat-cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: #f8fafc;
+      border: 1px solid #f1f5f9;
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .stat-value { font-size: 28px; font-weight: 800; color: #0f172a; line-height: 1; }
+    .stat-label { font-size: 12px; color: #94a3b8; margin-top: 4px; font-weight: 500; }
+
+    .stats-section-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 10px;
+    }
+
+    /* Heatmap */
+    .heatmap-wrap { margin-bottom: 24px; }
+
+    .heatmap-grid {
+      display: grid;
+      grid-template-columns: repeat(13, 1fr);
+      gap: 3px;
+    }
+
+    .heatmap-cell {
+      aspect-ratio: 1;
+      border-radius: 2px;
+      cursor: default;
+    }
+
+    /* Subject breakdown */
+    .subject-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .subject-name { font-size: 13px; font-weight: 600; width: 90px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .subject-bar-wrap { flex: 1; background: #f1f5f9; border-radius: 4px; height: 8px; overflow: hidden; min-width: 40px; }
+    .subject-bar { height: 100%; border-radius: 4px; transition: width 0.3s; }
+    .subject-stats { font-size: 11px; color: #94a3b8; display: flex; gap: 6px; flex-shrink: 0; align-items: center; flex-wrap: wrap; justify-content: flex-end; max-width: 150px; }
+    .subject-stats .s-ret { font-weight: 700; }
+    .subject-stats .s-overdue { color: #ef4444; font-weight: 600; }
+
+    /* ── Subject activity heatmap ── */
+    .subject-heatmap { margin-top: 14px; }
+    .sh-header, .sh-row { display: flex; align-items: center; gap: 2px; margin-bottom: 3px; }
+    .sh-subject-label { width: 82px; font-size: 11px; color: #64748b; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 4px; text-align: right; }
+    .sh-week-label { flex: 1; font-size: 9px; color: #94a3b8; text-align: center; line-height: 1.2; }
+    .sh-cell { flex: 1; height: 14px; border-radius: 2px; background: #f1f5f9; cursor: default; min-width: 0; transition: opacity 0.2s; }
+    .sh-cell:hover { outline: 1.5px solid rgba(0,0,0,0.15); }
+
+    body.dark .sh-subject-label { color: #475569; }
+    body.dark .sh-cell { background: #1e293b; }
+
+    /* ── Forgetting curve chart ── */
+    .curve-wrap { width: 100%; margin: 4px 0 8px; }
+    .curve-wrap svg { display: block; width: 100%; height: auto; }
+    .curve-grid-line { stroke: #f1f5f9; stroke-width: 1; }
+    .curve-axis     { stroke: #e2e8f0; stroke-width: 1; }
+    .curve-label    { font-size: 10px; fill: #94a3b8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    .curve-path     { fill: none; stroke: #6366f1; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .curve-area     { fill: #6366f1; opacity: 0.07; }
+    .curve-today    { stroke: #f97316; stroke-width: 1.5; stroke-dasharray: 4 3; }
+    .curve-today-lbl{ font-size: 9px; fill: #f97316; font-family: inherit; }
+    .curve-legend   { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 10px; font-size: 12px; color: #64748b; align-items: center; }
+    .curve-legend-item { display: flex; align-items: center; gap: 5px; }
+    .curve-legend-dot  { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+    .curve-legend-ring { width: 9px; height: 9px; border-radius: 50%; border: 2px solid #94a3b8; flex-shrink: 0; }
+
+    body.dark .curve-grid-line { stroke: #1e293b; }
+    body.dark .curve-axis      { stroke: #334155; }
+    body.dark .curve-label     { fill: #475569; }
+    body.dark .curve-today-lbl { fill: #fb923c; }
+
+    /* ── Retention list ── */
+    .retention-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .retention-topic {
+      font-size: 13px;
+      font-weight: 500;
+      color: #374151;
+      width: 130px;
+      flex-shrink: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .retention-bar-wrap { flex: 1; background: #f1f5f9; border-radius: 4px; height: 8px; overflow: hidden; }
+    .retention-bar      { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
+    .retention-pct      { font-size: 12px; font-weight: 700; width: 36px; text-align: right; flex-shrink: 0; }
+
+    /* ── Recurring session UI ── */
+    .recur-group { margin-bottom: 16px; }
+
+    .recur-toggle-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .recur-toggle-label input[type="checkbox"] {
+      accent-color: #6366f1;
+      width: 15px;
+      height: 15px;
+      cursor: pointer;
+    }
+
+    .recur-options {
+      margin-top: 10px;
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .recur-option-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #374151;
+    }
+
+    .recur-option-row input[type="radio"] { accent-color: #6366f1; cursor: pointer; }
+
+    .recur-option-row select,
+    .recur-option-row input[type="number"] {
+      border: 1.5px solid #e2e8f0;
+      border-radius: 7px;
+      padding: 4px 8px;
+      font-size: 13px;
+      font-family: inherit;
+      background: white;
+      color: #1e293b;
+      outline: none;
+    }
+
+    .recur-option-row select:focus,
+    .recur-option-row input[type="number"]:focus { border-color: #6366f1; }
+
+    .recur-option-row input[type="number"] { width: 58px; }
+
+    .event.recurring::before { content: '🔁 '; font-size: 9px; }
+
+    body.dark .recur-toggle-label { color: #cbd5e1; }
+    body.dark .recur-options { background: #1e293b; border-color: #334155; }
+    body.dark .recur-option-row { color: #cbd5e1; }
+    body.dark .recur-option-row select,
+    body.dark .recur-option-row input[type="number"] { background: #0f172a; border-color: #334155; color: #e2e8f0; }
+
+    /* ── Settings modal ── */
+    .intervals-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+
+    .interval-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #f8fafc;
+      border: 1px solid #f1f5f9;
+      border-radius: 9px;
+      padding: 10px 14px;
+    }
+
+    .interval-label { font-size: 13px; font-weight: 600; color: #475569; width: 70px; }
+
+    .interval-input {
+      width: 80px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 7px;
+      padding: 6px 10px;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      color: #1e293b;
+      transition: border-color 0.15s;
+    }
+
+    .interval-input:focus { border-color: #6366f1; }
+
+    .interval-unit { font-size: 13px; color: #94a3b8; }
+
+    .interval-date { font-size: 12px; color: #94a3b8; margin-left: auto; }
+
+    .settings-note {
+      font-size: 12px;
+      color: #94a3b8;
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 20px;
+    }
+
+    .btn-ghost {
+      background: none;
+      border: 1.5px solid #e2e8f0;
+      padding: 9px 18px;
+      border-radius: 9px;
+      font-size: 14px;
+      cursor: pointer;
+      color: #64748b;
+      font-family: inherit;
+      transition: all 0.15s;
+      margin-right: auto;
+    }
+
+    .btn-ghost:hover { background: #f8fafc; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      background: #0f172a;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      z-index: 200;
+      transform: translateY(70px);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      pointer-events: none;
+    }
+
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+    /* ── Confidence rating modal ── */
+    .rating-modal { width: 420px; }
+
+    .late-recovery-row {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 9px;
+      padding: 10px 14px;
+      margin-top: 16px;
+    }
+
+    .late-recovery-label {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-size: 13px;
+      color: #92400e;
+      cursor: pointer;
+    }
+
+    .late-recovery-label input[type="checkbox"] { cursor: pointer; accent-color: #f59e0b; }
+
+    .rating-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .rating-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 14px 6px 12px;
+      border-radius: 12px;
+      border: 2px solid transparent;
+      cursor: pointer;
+      background: #f8fafc;
+      font-family: inherit;
+      transition: all 0.12s;
+    }
+
+    .rating-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+
+    .rating-emoji { font-size: 26px; line-height: 1; }
+    .rating-label { font-size: 11px; font-weight: 600; }
+
+    .rating-skip {
+      text-align: center;
+      margin-top: 14px;
+      font-size: 13px;
+    }
+    .rating-skip a { color: #94a3b8; cursor: pointer; text-decoration: underline; }
+    .rating-skip a:hover { color: #64748b; }
+
+    /* ── Streak badge ── */
+    .streak-badge {
+      font-size: 11px;
+      font-weight: 700;
+      color: #f97316;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 640px) {
+      /* Header */
+      header { padding: 10px 14px; gap: 6px; }
+      .logo { font-size: 20px; }
+      .streak { display: none; }
+      .add-btn { padding: 8px 12px; font-size: 13px; }
+      .icon-btn { width: 32px; height: 32px; border-radius: 7px; font-size: 15px; }
+      .user-avatar { width: 30px; height: 30px; font-size: 11px; }
+      .search-input.open { width: 140px; }
+      .search-count { display: none !important; }
+
+      /* Container */
+      .calendar-container { padding: 0 10px; margin: 10px auto; }
+
+      /* Due Today panel */
+      .due-today-header { padding: 10px 12px; }
+      .due-today-title { font-size: 13px; }
+      .due-item { padding: 7px 9px; }
+      .due-topic { font-size: 12px; }
+      .due-done-btn, .mark-all-btn { padding: 4px 9px; font-size: 11px; }
+
+      /* Filter bar — horizontal scroll */
+      .filter-bar { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 6px; -webkit-overflow-scrolling: touch; }
+      .filter-bar::-webkit-scrollbar { display: none; }
+      .filter-pill { flex-shrink: 0; padding: 4px 12px; font-size: 12px; }
+
+      /* Calendar nav */
+      .calendar-nav h2 { font-size: 18px; }
+      .today-btn { padding: 6px 10px; font-size: 12px; }
+      .nav-btn { width: 30px; height: 30px; font-size: 16px; }
+
+      /* Calendar grid */
+      .day-headers { }
+      .day-header { font-size: 9px; padding: 7px 2px; letter-spacing: 0; }
+      .day-cell { min-height: 58px; padding: 5px 3px 3px; }
+      .day-number { font-size: 11px; width: 22px; height: 22px; margin-bottom: 2px; }
+      .event { font-size: 9.5px; padding: 2px 4px; }
+      .more-events { font-size: 9.5px; }
+
+      /* Modals — slide up from bottom */
+      .modal-overlay { align-items: flex-end; padding: 0; }
+      .modal { border-radius: 20px 20px 0 0; max-height: 90vh; width: 100% !important; }
+      .modal.wide { width: 100% !important; }
+
+      /* Stats */
+      .stat-cards { grid-template-columns: 1fr 1fr; gap: 8px; }
+      .stat-value { font-size: 22px; }
+
+      /* Heatmap: make cells a bit smaller */
+      .heatmap-grid { gap: 2px; }
+
+      /* Settings intervals */
+      .interval-row { padding: 8px 10px; }
+      .interval-date { display: none; }
+
+      /* Rating modal */
+      .rating-grid { gap: 5px; }
+      .rating-btn { padding: 10px 3px 8px; border-radius: 10px; }
+      .rating-emoji { font-size: 22px; }
+      .rating-label { font-size: 10px; }
+
+      /* Legend */
+      .legend { gap: 10px; }
+      .legend-item { font-size: 11px; }
+    }
+
+    @media (max-width: 380px) {
+      .add-btn span { display: none; }
+      .header-right { gap: 4px; }
+      .day-cell { min-height: 48px; }
+      .day-header { font-size: 8px; }
+    }
+
+    /* ── Empty state ── */
+    .empty-state-card {
+      text-align: center;
+      padding: 64px 24px 72px;
+      background: white;
+      border-radius: 18px;
+      border: 1px solid #e2e8f0;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    }
+
+    .empty-state-icon { font-size: 52px; margin-bottom: 18px; line-height: 1; }
+
+    .empty-state-title {
+      font-size: 26px;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 12px;
+    }
+
+    .empty-state-body {
+      font-size: 15px;
+      color: #64748b;
+      max-width: 440px;
+      margin: 0 auto 28px;
+      line-height: 1.6;
+    }
+
+    .empty-state-btn { font-size: 15px; padding: 12px 28px; }
+
+    .empty-state-hint {
+      font-size: 12px;
+      color: #cbd5e1;
+      margin-top: 18px;
+    }
+
+    /* ── Dark mode ── */
+    body.dark { background: #0f172a; color: #e2e8f0; }
+    body.dark header { background: #1e293b; border-color: #334155; }
+    body.dark .logo span { color: #e2e8f0; }
+    body.dark .streak { background: #0f172a; border-color: #334155; color: #94a3b8; }
+    body.dark .icon-btn { background: #1e293b; border-color: #334155; color: #94a3b8; }
+    body.dark .icon-btn:hover { background: #334155; color: #e2e8f0; border-color: #475569; }
+    body.dark .search-input { background: #1e293b; color: #e2e8f0; }
+    body.dark .search-input.open { border-color: #475569; }
+    body.dark .search-input.open:focus { border-color: #6366f1; }
+    body.dark .search-count { background: #1e1b4b; color: #a5b4fc; }
+
+    body.dark .due-today { background: #1e293b; border-color: #78350f; }
+    body.dark .due-today-header { background: #1c1410; border-color: #78350f; }
+    body.dark .due-today-title { color: #fbbf24; }
+    body.dark .due-toggle { color: #d97706; }
+    body.dark .due-item { background: #0f172a; border-color: #1e293b; }
+    body.dark .due-topic { color: #e2e8f0; }
+    body.dark .due-done-btn { background: #1e293b; border-color: #334155; color: #94a3b8; }
+    body.dark .due-done-btn:hover { background: #14532d; border-color: #22c55e; color: #4ade80; }
+    body.dark .mark-all-btn { background: #14532d; border-color: #166534; color: #4ade80; }
+    body.dark .mark-all-btn:hover { background: #166534; border-color: #22c55e; }
+
+    body.dark .filter-pill { background: #1e293b; border-color: #334155; color: #94a3b8; }
+    body.dark .filter-pill:hover { background: #334155; }
+    body.dark .filter-pill.active-all { background: #e2e8f0; color: #0f172a; border-color: #e2e8f0; }
+
+    body.dark .calendar-nav h2 { color: #e2e8f0; }
+    body.dark .today-btn { background: #1e293b; border-color: #334155; color: #94a3b8; }
+    body.dark .today-btn:hover { background: #334155; color: #e2e8f0; }
+    body.dark .nav-btn { background: #1e293b; border-color: #334155; color: #94a3b8; }
+    body.dark .nav-btn:hover { background: #334155; color: #e2e8f0; }
+
+    body.dark .calendar-grid { background: #1e293b; border-color: #334155; }
+    body.dark .day-headers { background: #0f172a; border-color: #334155; }
+    body.dark .day-header { color: #475569; }
+    body.dark .day-cell { border-color: #1e293b; }
+    body.dark .day-cell:hover { background: #1e293b; }
+    body.dark .day-cell.other-month { background: #0a0f1a; }
+    body.dark .day-cell.other-month .day-number { color: #334155; }
+    body.dark .day-cell.today { background: #1a1730; }
+    body.dark .day-cell.today-col:not(.today) { background: #151525; }
+    body.dark .day-cell.other-month.today-col { background: #0e0e1e; }
+    body.dark .day-number { color: #94a3b8; }
+    body.dark .more-events { color: #475569; }
+    body.dark .empty-month span { color: #334155; }
+
+    body.dark .event.review-0 { background: #2d0a14; color: #fb7185; }
+    body.dark .event.review-1 { background: #2d1a0f; color: #fb923c; }
+    body.dark .event.review-2 { background: #042f2e; color: #2dd4bf; }
+    body.dark .event.review-3 { background: #0c1a3d; color: #60a5fa; }
+    body.dark .event.review-4 { background: #1e1235; color: #a78bfa; }
+    body.dark .event.overdue  { background: #2d0a0a; color: #f87171; }
+    body.dark .day-cell.drag-over { background: rgba(99,102,241,0.11) !important; outline-color: #6366f1; }
+
+    body.dark .tag-input-wrap { border-color:#334155; background:#0f172a; }
+    body.dark .tag-chip-input { color:#e2e8f0; }
+    body.dark .tag-chip { background:#2e1065; color:#c4b5fd; }
+    body.dark .tag-chip-remove { color:#a78bfa; }
+    body.dark .tag-pill { background:#1e293b; border-color:#334155; color:#64748b; }
+    body.dark .tag-pill:hover { border-color:#6366f1; color:#a5b4fc; background:#1e1a3a; }
+    body.dark .tag-pill.active { background:#2e1065; border-color:#7c3aed; color:#c4b5fd; }
+    body.dark .session-tag { background:#2e1065; color:#c4b5fd; }
+    body.dark .session-tag:hover { background:#3b1d7a; }
+
+    body.dark .link-item { background:#1e293b; border-color:#334155; }
+    body.dark .link-rel-badge { background:#2e1065; color:#a5b4fc; }
+    body.dark .link-target-topic { color:#cbd5e1; }
+    body.dark .link-target-subject { color:#475569; }
+    body.dark .link-remove-btn { color:#334155; }
+    body.dark .add-link-btn { color:#818cf8; border-color:#334155; }
+    body.dark .add-link-btn:hover { background:#1e1a3a; border-color:#6366f1; }
+    body.dark .link-rel-option { background:#1e293b; border-color:#334155; color:#64748b; }
+    body.dark .link-rel-option:hover { border-color:#6366f1; color:#a5b4fc; }
+    body.dark .link-rel-option.selected { background:#2e1065; border-color:#7c3aed; color:#c4b5fd; }
+    body.dark .link-session-list { border-color:#334155; }
+    body.dark .link-session-option { border-bottom-color:#1e293b; }
+    body.dark .link-session-option:hover { background:#1e293b; }
+    body.dark .link-session-option.selected { background:#2e1065; }
+    body.dark .link-session-option-topic { color:#e2e8f0; }
+
+    body.dark .legend-item { color: #64748b; }
+
+    /* ── Knowledge Graph Modal ───────────────────────────── */
+    .graph-overlay { position:fixed; inset:0; background:rgba(15,23,42,0.6); z-index:200; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity 0.2s; backdrop-filter:blur(3px); }
+    .graph-overlay.active { opacity:1; pointer-events:all; }
+    .graph-modal-content { display:flex; flex-direction:column; background:#f8fafc; width:calc(100vw - 40px); max-width:980px; height:calc(100vh - 56px); max-height:760px; border-radius:18px; overflow:hidden; box-shadow:0 24px 80px rgba(0,0,0,0.22); }
+    .graph-header { display:flex; align-items:center; justify-content:space-between; padding:15px 22px 12px; border-bottom:1px solid #e2e8f0; flex-shrink:0; background:#fff; }
+    .graph-header h3 { font-size:16px; font-weight:700; color:#1e293b; margin:0; }
+    .graph-toolbar { display:flex; align-items:center; gap:8px; padding:8px 22px; flex-shrink:0; background:#fff; border-bottom:1px solid #f1f5f9; flex-wrap:wrap; }
+    .graph-pill { padding:4px 12px; border-radius:20px; font-size:12px; font-weight:500; cursor:pointer; border:1.5px solid #e2e8f0; background:#fff; color:#64748b; transition:all 0.15s; white-space:nowrap; }
+    .graph-pill:hover { border-color:#a5b4fc; color:#4f46e5; background:#f5f3ff; }
+    .graph-pill.active { background:#0f172a; color:#fff; border-color:#0f172a; }
+    .graph-toolbar-sep { width:1px; height:20px; background:#e2e8f0; flex-shrink:0; }
+    .graph-edge-legend { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+    .graph-leg-item { display:flex; align-items:center; gap:5px; font-size:11px; color:#64748b; white-space:nowrap; }
+    .graph-leg-line { width:18px; height:2.5px; border-radius:2px; }
+    .graph-container { flex:1; position:relative; overflow:hidden; background:#f0f4ff; }
+    .graph-hint { padding:6px 22px 10px; font-size:11px; color:#94a3b8; text-align:center; flex-shrink:0; background:#fff; border-top:1px solid #f1f5f9; }
+
+    body.dark .graph-modal-content { background:#0f172a; }
+    body.dark .graph-header { background:#0f172a; border-color:#1e293b; }
+    body.dark .graph-header h3 { color:#e2e8f0; }
+    body.dark .graph-toolbar { background:#0f172a; border-color:#1e293b; }
+    body.dark .graph-pill { background:#1e293b; border-color:#334155; color:#64748b; }
+    body.dark .graph-pill:hover { border-color:#6366f1; color:#a5b4fc; background:#1e1a3a; }
+    body.dark .graph-pill.active { background:#e2e8f0; color:#0f172a; border-color:#e2e8f0; }
+    body.dark .graph-toolbar-sep { background:#1e293b; }
+    body.dark .graph-leg-item { color:#475569; }
+    body.dark .graph-container { background:#0a0f1a; }
+    body.dark .graph-hint { background:#0f172a; border-color:#1e293b; color:#334155; }
+
+    body.dark .modal { background: #1e293b; box-shadow: 0 24px 64px rgba(0,0,0,0.5); }
+    body.dark .modal h3 { color: #e2e8f0; }
+    body.dark .modal .subtitle { color: #64748b; }
+    body.dark .modal-close { color: #475569; }
+    body.dark .modal-close:hover { color: #94a3b8; }
+    body.dark .form-group label { color: #94a3b8; }
+    body.dark .form-group input,
+    body.dark .form-group textarea { background: #0f172a; border-color: #334155; color: #e2e8f0; }
+    body.dark .form-group input:focus,
+    body.dark .form-group textarea:focus { border-color: #6366f1; }
+    body.dark .review-preview { background: #0f172a; border-color: #1e293b; }
+    body.dark .review-preview p { color: #475569; }
+    body.dark .review-chip { background: #1e293b; border-color: #334155; color: #94a3b8; }
+    body.dark .btn-cancel { border-color: #334155; color: #64748b; }
+    body.dark .btn-cancel:hover { background: #334155; }
+    body.dark .btn-ghost { border-color: #334155; color: #64748b; }
+    body.dark .btn-ghost:hover { background: #334155; }
+
+    body.dark .event-item { background: #0f172a; border-color: #1e293b; }
+    body.dark .event-title { color: #e2e8f0; }
+    body.dark .check-btn { background: #1e293b; border-color: #334155; color: #94a3b8; }
+    body.dark .check-btn:hover { background: #14532d; border-color: #22c55e; color: #4ade80; }
+    body.dark .undo-btn { background: #1e293b; border-color: #334155; color: #475569; }
+    body.dark .undo-btn:hover { background: #2d0a0a; border-color: #fca5a5; color: #f87171; }
+    body.dark .scheduled-badge { background: #0f172a; border-color: #334155; color: #475569; }
+
+    body.dark .stat-card { background: #0f172a; border-color: #1e293b; }
+    body.dark .stat-value { color: #e2e8f0; }
+    body.dark .subject-bar-wrap { background: #334155; }
+    body.dark .subject-stats { color: #475569; }
+    body.dark .stats-section-title { color: #475569; }
+    body.dark .retention-topic { color: #cbd5e1; }
+    body.dark .retention-bar-wrap { background: #1e293b; }
+
+    body.dark .interval-row { background: #0f172a; border-color: #1e293b; }
+    body.dark .interval-label { color: #94a3b8; }
+    body.dark .interval-input { background: #1e293b; border-color: #334155; color: #e2e8f0; }
+    body.dark .interval-unit { color: #475569; }
+    body.dark .interval-date { color: #475569; }
+    body.dark .settings-note { background: #1c1410; border-color: #78350f; color: #d97706; }
+
+    body.dark .toast { background: #e2e8f0; color: #0f172a; }
+    body.dark .user-menu { background: #1e293b; border-color: #334155; }
+    body.dark .user-menu-email { color: #475569; border-color: #334155; }
+    body.dark .user-menu-item { color: #94a3b8; }
+    body.dark .user-menu-item:hover { background: #334155; }
+    body.dark .logout-item { color: #f87171; }
+    body.dark .logout-item:hover { background: #2d0a0a; }
+    body.dark .rating-btn { background: #0f172a; }
+    body.dark .late-recovery-row { background: #1c1410; border-color: #78350f; }
+    body.dark .late-recovery-label { color: #fbbf24; }
+    body.dark #statsModal .modal-actions { border-color: #334155 !important; }
+    body.dark .empty-state-card { background: #1e293b; border-color: #334155; }
+    body.dark .empty-state-title { color: #e2e8f0; }
+    body.dark .empty-state-body { color: #64748b; }
+    body.dark .empty-state-hint { color: #334155; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">recall<span>.</span></div>
+  <div class="header-right">
+    <div class="search-wrap">
+      <button class="icon-btn" id="searchBtn" title="Search topics and notes (/ or ⌘K)" onclick="focusSearch()">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="6.5" cy="6.5" r="4.5"/>
+          <line x1="10" y1="10" x2="13.5" y2="13.5"/>
+        </svg>
+      </button>
+      <input class="search-input" id="searchInput" placeholder="Search topics, notes…" autocomplete="off" spellcheck="false">
+      <button class="search-clear" id="searchClear" title="Clear search" onclick="clearSearch()">×</button>
+    </div>
+    <span class="search-count" id="searchCount"></span>
+    <div class="streak" id="streakBadge"></div>
+    <button class="icon-btn" title="Stats" onclick="openStats()">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="8" width="3" height="6" rx="1"/>
+        <rect x="6" y="4.5" width="3" height="9.5" rx="1"/>
+        <rect x="11" y="1" width="3" height="13" rx="1"/>
+      </svg>
+    </button>
+    <button class="icon-btn" title="Knowledge graph" onclick="openGraphModal()">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="7.5" cy="2.5" r="1.5" fill="currentColor" stroke="none"/>
+        <circle cx="2" cy="11.5" r="1.5" fill="currentColor" stroke="none"/>
+        <circle cx="13" cy="11.5" r="1.5" fill="currentColor" stroke="none"/>
+        <line x1="7.5" y1="4" x2="3.2" y2="10.2"/>
+        <line x1="7.5" y1="4" x2="11.8" y2="10.2"/>
+        <line x1="3.7" y1="11.5" x2="11.3" y2="11.5"/>
+      </svg>
+    </button>
+    <button class="icon-btn" id="darkToggle" title="Toggle dark mode" onclick="toggleDark()"></button>
+    <button class="icon-btn" title="Settings" onclick="openSettings()">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="7.5" cy="7.5" r="2"/>
+        <path d="M7.5 1.5v1M7.5 12.5v1M1.5 7.5h1M12.5 7.5h1M3.4 3.4l.7.7M10.9 10.9l.7.7M3.4 11.6l.7-.7M10.9 4.1l.7-.7"/>
+      </svg>
+    </button>
+    <button class="add-btn" onclick="openAddModal()" title="Log a study session (N)">&#43; Log Study Session</button>
+    <div class="user-avatar" id="userAvatar" title="" onclick="toggleUserMenu()"></div>
+    <div class="user-menu" id="userMenu">
+      <div class="user-menu-email" id="userMenuEmail"></div>
+      <button class="user-menu-item logout-item" onclick="logout()">Sign out</button>
+    </div>
+  </div>
+</header>
+
+<div class="calendar-container">
+  <div id="emptyState" style="display:none">
+    <div class="empty-state-card">
+      <div class="empty-state-icon">🧠</div>
+      <h2 class="empty-state-title">Welcome to Recall</h2>
+      <p class="empty-state-body">Log what you study today and Recall will automatically schedule review sessions across your calendar — so you never forget.</p>
+      <button class="add-btn empty-state-btn" onclick="openAddModal()">+ Log Your First Session</button>
+      <p class="empty-state-hint">Based on the Ebbinghaus forgetting curve · Reviews at +1, +3, +7, +14, +30 days</p>
+    </div>
+  </div>
+  <div id="dueToday"></div>
+  <div class="filter-bar" id="filterBar"></div>
+  <div class="tag-filter-row" id="tagFilterBar"></div>
+
+  <div class="calendar-nav">
+    <h2 id="monthYear"></h2>
+    <div class="nav-controls">
+      <button class="today-btn" onclick="goToToday()">Today</button>
+      <button class="nav-btn" onclick="prevMonth()">&#8249;</button>
+      <button class="nav-btn" onclick="nextMonth()">&#8250;</button>
+    </div>
+  </div>
+
+  <div class="calendar-grid">
+    <div class="day-headers">
+      <div class="day-header">Sun</div>
+      <div class="day-header">Mon</div>
+      <div class="day-header">Tue</div>
+      <div class="day-header">Wed</div>
+      <div class="day-header">Thu</div>
+      <div class="day-header">Fri</div>
+      <div class="day-header">Sat</div>
+    </div>
+    <div class="days-grid" id="daysGrid"></div>
+  </div>
+
+  <div class="legend" id="legend"></div>
+</div>
+
+<!-- ── Add Study Modal ── -->
+<div class="modal-overlay" id="addModal" onclick="handleOverlayClick(event,'addModal')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Log Study Session</h3>
+      <button class="modal-close" onclick="closeAddModal()">&#215;</button>
+    </div>
+    <p class="subtitle">Reviews will be auto-scheduled based on the forgetting curve.</p>
+    <div class="form-group">
+      <label>What did you study?</label>
+      <input type="text" id="topicInput" placeholder="e.g. Calculus Ch.3, Spanish vocab, React hooks…" />
+    </div>
+    <div class="form-group">
+      <label>Subject <span style="font-weight:400;color:#94a3b8">(optional)</span></label>
+      <input type="text" id="subjectInput" placeholder="e.g. Math, Spanish, Biology…" list="subjectList" autocomplete="off" />
+      <datalist id="subjectList"></datalist>
+    </div>
+    <div class="form-group">
+      <label>Date studied</label>
+      <input type="date" id="dateInput" />
+    </div>
+    <div class="form-group recur-group" id="recurGroup">
+      <label class="recur-toggle-label">
+        <input type="checkbox" id="recurCheck" onchange="toggleRecurOptions()">
+        Repeat this session
+      </label>
+      <div class="recur-options" id="recurOptions" style="display:none">
+        <div class="recur-option-row">
+          <input type="radio" name="recurType" id="recurTypeWeekly" value="weekly" checked onchange="syncRecurPreview()">
+          <label for="recurTypeWeekly">Every</label>
+          <select id="recurWeekday" onchange="syncRecurPreview()">
+            <option value="0">Sunday</option>
+            <option value="1">Monday</option>
+            <option value="2">Tuesday</option>
+            <option value="3">Wednesday</option>
+            <option value="4">Thursday</option>
+            <option value="5">Friday</option>
+            <option value="6">Saturday</option>
+          </select>
+        </div>
+        <div class="recur-option-row">
+          <input type="radio" name="recurType" id="recurTypeInterval" value="interval" onchange="syncRecurPreview()">
+          <label for="recurTypeInterval">Every</label>
+          <input type="number" id="recurDays" value="7" min="1" max="365" onchange="syncRecurPreview()">
+          <span>days</span>
+        </div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Notes <span style="font-weight:400;color:#94a3b8">(optional)</span></label>
+      <textarea id="notesInput" placeholder="Anything worth remembering about this session…"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Tags <span style="font-weight:400;color:#94a3b8">(optional)</span></label>
+      <div class="tag-input-wrap" id="tagInputWrap" onclick="document.getElementById('tagChipInput').focus()">
+        <input class="tag-chip-input" id="tagChipInput" placeholder="Type a tag and press Enter…" autocomplete="off" spellcheck="false">
+      </div>
+    </div>
+    <div class="review-preview">
+      <p>Scheduled reviews</p>
+      <div class="review-chips" id="reviewChips"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeAddModal()">Cancel</button>
+      <button class="btn-save" id="saveBtn" onclick="saveStudySession()">Save &amp; Schedule</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Day Detail Modal ── -->
+<div class="modal-overlay" id="dayModal" onclick="handleOverlayClick(event,'dayModal')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="dayModalTitle"></h3>
+      <button class="modal-close" onclick="closeDayModal()">&#215;</button>
+    </div>
+    <p class="subtitle">Click a review to mark it complete.</p>
+    <div id="dayModalEvents"></div>
+    <div class="modal-actions" style="margin-top:18px">
+      <button class="btn-cancel" onclick="closeDayModal()">Close</button>
+      <button class="btn-save" onclick="openAddModalForDate(currentDayDate)">&#43; Add Study</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Stats Modal ── -->
+<div class="modal-overlay" id="statsModal" onclick="handleOverlayClick(event,'statsModal')">
+  <div class="modal wide">
+    <div class="modal-header">
+      <h3>Progress</h3>
+      <button class="modal-close" onclick="closeStats()">&#215;</button>
+    </div>
+    <p class="subtitle">Your study activity and retention at a glance.</p>
+    <div class="stat-cards" id="statCards"></div>
+    <div class="heatmap-wrap">
+      <div class="stats-section-title">Activity — last 13 weeks</div>
+      <div class="heatmap-grid" id="heatmapGrid"></div>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:8px">
+        <span style="font-size:11px;color:#94a3b8">Less</span>
+        <div style="width:12px;height:12px;border-radius:2px;background:#f1f5f9"></div>
+        <div style="width:12px;height:12px;border-radius:2px;background:#c7d2fe"></div>
+        <div style="width:12px;height:12px;border-radius:2px;background:#818cf8"></div>
+        <div style="width:12px;height:12px;border-radius:2px;background:#4f46e5"></div>
+        <span style="font-size:11px;color:#94a3b8">More</span>
+      </div>
+    </div>
+    <div id="subjectBreakdown"></div>
+    <div id="retentionList"></div>
+    <div class="modal-actions" style="margin-top:24px; border-top:1px solid #f1f5f9; padding-top:16px">
+      <button class="btn-ghost" onclick="exportCSV()" title="Download all sessions and review history as CSV">
+        ↓ Export CSV
+      </button>
+      <button class="btn-cancel" onclick="closeStats()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Settings Modal ── -->
+<div class="modal-overlay" id="settingsModal" onclick="handleOverlayClick(event,'settingsModal')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Review Intervals</h3>
+      <button class="modal-close" onclick="closeSettings()">&#215;</button>
+    </div>
+    <p class="subtitle">Customize when reviews are scheduled after a study session.</p>
+    <div class="settings-note">
+      ⚠️ Changes only apply to new sessions logged after saving.
+    </div>
+    <div class="intervals-list" id="intervalsList"></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="resetIntervals()">Reset to defaults</button>
+      <button class="btn-cancel" onclick="closeSettings()">Cancel</button>
+      <button class="btn-save" onclick="saveSettings()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Confidence Rating Modal ── -->
+<div class="modal-overlay" id="ratingModal" onclick="handleOverlayClick(event,'ratingModal')">
+  <div class="modal rating-modal">
+    <div class="modal-header">
+      <div>
+        <h3>How well did you recall this?</h3>
+        <p class="subtitle" id="ratingSubtitle" style="margin-bottom:0"></p>
+      </div>
+      <button class="modal-close" onclick="skipRating()">×</button>
+    </div>
+    <div class="late-recovery-row" id="lateRecoveryRow" style="display:none">
+      <label class="late-recovery-label">
+        <input type="checkbox" id="rescheduleCheck" checked>
+        <span id="lateRecoveryText">Reschedule next review from today</span>
+      </label>
+    </div>
+    <div class="rating-grid" id="ratingGrid"></div>
+    <div class="rating-skip"><a onclick="skipRating()">Skip — just mark done</a></div>
+  </div>
+</div>
+
+<!-- ── Knowledge Graph Modal ── -->
+<div class="graph-overlay" id="graphModal" onclick="handleGraphOverlayClick(event)">
+  <div class="graph-modal-content" onclick="event.stopPropagation()">
+    <div class="graph-header">
+      <h3>Knowledge Graph</h3>
+      <button class="modal-close" onclick="closeGraphModal()">×</button>
+    </div>
+    <div class="graph-toolbar" id="graphToolbar">
+      <div class="graph-edge-legend">
+        <span class="graph-leg-item"><span class="graph-leg-line" style="background:#94a3b8"></span>Related to</span>
+        <span class="graph-leg-item"><span class="graph-leg-line" style="background:#818cf8"></span>Builds on</span>
+        <span class="graph-leg-item"><span class="graph-leg-line" style="background:#fb923c"></span>Prerequisite of</span>
+        <span class="graph-leg-item"><span class="graph-leg-line" style="background:#2dd4bf"></span>See also</span>
+      </div>
+      <div class="graph-toolbar-sep"></div>
+      <div id="graphSubjBar" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"></div>
+    </div>
+    <div class="graph-container" id="graphContainer"></div>
+    <div class="graph-hint">Drag nodes · Scroll to zoom · Click a node to open session · Filter by subject →</div>
+  </div>
+</div>
+
+<!-- ── Link Picker Modal ── -->
+<div class="modal-overlay" id="linkModal" onclick="handleOverlayClick(event,'linkModal')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Link to a session</h3>
+      <button class="modal-close" onclick="closeLinkModal()">×</button>
+    </div>
+    <p class="subtitle">Connect related topics to build your second brain.</p>
+    <div class="form-group">
+      <label>Relationship</label>
+      <div class="link-relation-picker" id="linkRelationPicker"></div>
+    </div>
+    <div class="form-group">
+      <label>Session</label>
+      <input type="text" id="linkSearchInput" placeholder="Search by topic, subject…" autocomplete="off" oninput="renderLinkSearch(this.value)">
+      <div class="link-session-list" id="linkSessionList"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeLinkModal()">Cancel</button>
+      <button class="btn-save" id="linkSaveBtn" onclick="saveLink()" disabled>Save Link</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Forgetting Curve Modal ── -->
+<div class="modal-overlay" id="curveModal" onclick="handleOverlayClick(event,'curveModal')">
+  <div class="modal wide">
+    <div class="modal-header">
+      <div>
+        <h3 id="curveTitle">Forgetting Curve</h3>
+        <p class="subtitle" id="curveSubtitle" style="margin-bottom:0"></p>
+      </div>
+      <button class="modal-close" onclick="closeCurveModal()">×</button>
+    </div>
+    <div class="curve-wrap" id="curveChart"></div>
+    <div class="curve-legend" id="curveLegend"></div>
+    <div class="modal-actions" style="margin-top:16px">
+      <button class="btn-cancel" onclick="closeCurveModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── Constants ────────────────────────────────────────────
+  const MONTH_NAMES  = ['January','February','March','April','May','June',
+                        'July','August','September','October','November','December'];
+  const SHORT_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun',
+                        'Jul','Aug','Sep','Oct','Nov','Dec'];
+  const REVIEW_COLORS = ['#ef4444','#f97316','#14b8a6','#3b82f6','#8b5cf6'];
+  const DEFAULT_INTERVALS = [1, 3, 7, 14, 30];
+
+  const SUBJECT_PALETTE = [
+    { bg: '#eef2ff', text: '#4338ca', border: '#6366f1' },
+    { bg: '#fdf2f8', text: '#9d174d', border: '#ec4899' },
+    { bg: '#f0fdfa', text: '#065f46', border: '#14b8a6' },
+    { bg: '#fff7ed', text: '#9a3412', border: '#f97316' },
+    { bg: '#fdf4ff', text: '#7e22ce', border: '#a855f7' },
+    { bg: '#f0f9ff', text: '#075985', border: '#0ea5e9' },
+    { bg: '#fefce8', text: '#854d0e', border: '#eab308' },
+    { bg: '#f0fdf4', text: '#166534', border: '#22c55e' },
+  ];
+
+  function getSubjectColor(subject) {
+    if (!subject) return SUBJECT_PALETTE[0];
+    let h = 0;
+    for (const c of subject) h = (h * 31 + c.charCodeAt(0)) & 0xffff;
+    return SUBJECT_PALETTE[h % SUBJECT_PALETTE.length];
+  }
+
+  // ── State ────────────────────────────────────────────────
+  let currentYear, currentMonth;
+  let currentDayDate     = null;
+  let addModalTargetDate    = null;
+  let activeSubject         = null;
+  let activeTagFilter       = null; // active tag filter string, or null
+  let editTags              = [];   // tags being edited in the add/edit modal
+  let searchQuery           = '';
+  let editingSessionId      = null; // null = create, string = edit
+  let sessions              = [];
+  let links                 = [];   // all link objects for the user
+  let intervals             = [...DEFAULT_INTERVALS];
+  let dragReview            = null; // { sessionId, reviewIndex, fromDate } while dragging
+  let linkingSessionId      = null; // session being linked in the link modal
+  let selectedLinkTargetId  = null; // target session selected in link modal
+  let selectedLinkRelation  = 'related';
+
+  // Graph state
+  let graphNodes     = [];
+  let graphEdges     = [];
+  let graphAnimId    = null;
+  let graphDragNode  = null;   // { node, x0, y0, ox, oy }
+  let graphPanState  = null;   // { sx, sy, tx, ty }
+  let graphTransform = { x: 0, y: 0, k: 1 };
+  let graphSubjFocus = null;   // subject being highlighted (null = all)
+  let graphSvgEl     = null;
+  let graphRootEl    = null;
+  let _graphMoveFn   = null;
+  let _graphUpFn     = null;
+  let pendingRating      = null; // { sessionId, reviewIdx, dateStr }
+
+  const RATINGS = [
+    { score: 1, emoji: '😶', label: 'Blank',   color: '#ef4444', bg: '#fef2f2' },
+    { score: 2, emoji: '😕', label: 'Hard',    color: '#f97316', bg: '#fff7ed' },
+    { score: 3, emoji: '😐', label: 'Okay',    color: '#eab308', bg: '#fefce8' },
+    { score: 4, emoji: '😊', label: 'Good',    color: '#22c55e', bg: '#f0fdf4' },
+    { score: 5, emoji: '🎯', label: 'Perfect', color: '#6366f1', bg: '#eef2ff' },
+  ];
+
+  // ── Date helpers ─────────────────────────────────────────
+  function todayStr() {
+    const d = new Date();
+    return ymd(d.getFullYear(), d.getMonth() + 1, d.getDate());
+  }
+
+  function ymd(y, m, d) {
+    return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  }
+
+  function addDays(dateStr, days) {
+    const d = new Date(dateStr + 'T00:00:00');
+    d.setDate(d.getDate() + days);
+    return ymd(d.getFullYear(), d.getMonth() + 1, d.getDate());
+  }
+
+  function displayDate(dateStr) {
+    const [y, m, d] = dateStr.split('-');
+    return `${SHORT_MONTHS[parseInt(m)-1]} ${parseInt(d)}, ${y}`;
+  }
+
+  function intervalLabel(days) {
+    return days === 1 ? '+1 day' : `+${days} days`;
+  }
+
+  // ── Auth ─────────────────────────────────────────────────
+  (function checkAuth() {
+    if (!localStorage.getItem('recall_token')) {
+      window.location.href = '/auth.html';
+    }
+    const user = JSON.parse(localStorage.getItem('recall_user') || '{}');
+    const initials = (user.email || '?').slice(0, 2).toUpperCase();
+    const avatar = document.getElementById('userAvatar');
+    if (avatar) {
+      avatar.textContent = initials;
+      avatar.title = user.email || '';
+    }
+    const menuEmail = document.getElementById('userMenuEmail');
+    if (menuEmail) menuEmail.textContent = user.email || '';
+  })();
+
+  function toggleUserMenu() {
+    document.getElementById('userMenu').classList.toggle('open');
+  }
+
+  // Close user menu when clicking outside
+  document.addEventListener('click', e => {
+    const menu   = document.getElementById('userMenu');
+    const avatar = document.getElementById('userAvatar');
+    if (menu && !menu.contains(e.target) && e.target !== avatar) {
+      menu.classList.remove('open');
+    }
+  });
+
+  function authFetch(url, options = {}) {
+    const token = localStorage.getItem('recall_token');
+    return fetch(url, {
+      ...options,
+      headers: { ...options.headers, 'Authorization': `Bearer ${token}` }
+    }).then(res => {
+      if (res.status === 401) {
+        localStorage.removeItem('recall_token');
+        localStorage.removeItem('recall_user');
+        window.location.href = '/auth.html';
+      }
+      return res;
+    });
+  }
+
+  function logout() {
+    localStorage.removeItem('recall_token');
+    localStorage.removeItem('recall_user');
+    window.location.href = '/auth.html';
+  }
+
+  // ── Dark mode ────────────────────────────────────────────
+  function applyDark(on) {
+    document.body.classList.toggle('dark', on);
+    const btn = document.getElementById('darkToggle');
+    if (btn) btn.textContent = on ? '☀️' : '🌙';
+  }
+
+  function toggleDark() {
+    const on = !document.body.classList.contains('dark');
+    localStorage.setItem('darkMode', on ? '1' : '0');
+    applyDark(on);
+  }
+
+  function initDark() {
+    applyDark(localStorage.getItem('darkMode') === '1');
+  }
+
+  // ── API ──────────────────────────────────────────────────
+  async function loadSessions() {
+    const [sessRes, linksRes] = await Promise.all([
+      authFetch('/api/sessions'),
+      authFetch('/api/links')
+    ]);
+    const data      = await sessRes.json();
+    const linksData = await linksRes.json();
+    sessions = data.sessions;
+    links    = linksData.links || [];
+    if (data.newRecurrences > 0) {
+      const n = data.newRecurrences;
+      showToast(`🔁 ${n} recurring session${n > 1 ? 's' : ''} auto-logged`);
+    }
+  }
+
+  async function loadSettings() {
+    const res = await authFetch('/api/settings');
+    const data = await res.json();
+    intervals = data.intervals;
+  }
+
+  // ── Search ───────────────────────────────────────────────
+  function focusSearch() {
+    const input = document.getElementById('searchInput');
+    input.classList.add('open');
+    input.focus();
+    input.select();
+  }
+
+  function clearSearch() {
+    const input = document.getElementById('searchInput');
+    searchQuery = '';
+    input.value = '';
+    input.classList.remove('open');
+    document.getElementById('searchClear').classList.remove('show');
+    document.getElementById('searchCount').classList.remove('show');
+    renderCalendar();
+  }
+
+  function sessionMatchesSearch(s) {
+    if (!searchQuery) return true;
+    const q = searchQuery;
+    return s.topic.toLowerCase().includes(q) ||
+           (s.subject || '').toLowerCase().includes(q) ||
+           (s.notes   || '').toLowerCase().includes(q) ||
+           (s.tags    || []).some(t => t.toLowerCase().includes(q));
+  }
+
+  (() => {
+    const input = document.getElementById('searchInput');
+    input.addEventListener('input', e => {
+      searchQuery = e.target.value.trim().toLowerCase();
+      const hasQ  = searchQuery.length > 0;
+      document.getElementById('searchClear').classList.toggle('show', hasQ);
+
+      if (hasQ) {
+        const count = sessions.filter(sessionMatchesSearch).length;
+        const el    = document.getElementById('searchCount');
+        el.textContent = count === 0 ? 'No matches' : count === 1 ? '1 match' : `${count} matches`;
+        el.classList.add('show');
+      } else {
+        document.getElementById('searchCount').classList.remove('show');
+      }
+      renderCalendar();
+    });
+
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Escape') { e.stopPropagation(); clearSearch(); }
+    });
+  })();
+
+  // ── Tag helpers ──────────────────────────────────────────
+
+  function renderModalTagChips() {
+    const wrap  = document.getElementById('tagInputWrap');
+    const input = document.getElementById('tagChipInput');
+    // Remove existing chips (all children except the input)
+    Array.from(wrap.children).forEach(c => { if (c !== input) c.remove(); });
+    editTags.forEach((tag, i) => {
+      const chip = document.createElement('span');
+      chip.className = 'tag-chip';
+      chip.innerHTML = `${tag}<button type="button" class="tag-chip-remove" title="Remove tag" onclick="removeEditTag(${i})">×</button>`;
+      wrap.insertBefore(chip, input);
+    });
+  }
+
+  function addEditTag(raw) {
+    const tag = raw.trim().toLowerCase().replace(/[,#]/g, '').slice(0, 32);
+    if (!tag || editTags.includes(tag)) return false;
+    editTags.push(tag);
+    renderModalTagChips();
+    return true;
+  }
+
+  function removeEditTag(i) {
+    editTags.splice(i, 1);
+    renderModalTagChips();
+    document.getElementById('tagChipInput').focus();
+  }
+
+  function resetEditTags(initial = []) {
+    editTags = [...initial];
+    renderModalTagChips();
+    document.getElementById('tagChipInput').value = '';
+  }
+
+  function filterByTag(tag) {
+    activeTagFilter = activeTagFilter === tag ? null : tag;
+    renderTagFilterBar();
+    renderCalendar();
+  }
+
+  function renderTagFilterBar() {
+    const bar  = document.getElementById('tagFilterBar');
+    bar.innerHTML = '';
+    const allTags = [...new Set(sessions.flatMap(s => s.tags || []))].sort();
+    if (!allTags.length) return;
+    allTags.forEach(tag => {
+      const pill = document.createElement('button');
+      pill.className = 'tag-pill' + (activeTagFilter === tag ? ' active' : '');
+      pill.innerHTML = `<span class="tag-pill-hash">#</span>${tag}`;
+      pill.onclick = () => filterByTag(tag);
+      bar.appendChild(pill);
+    });
+  }
+
+  // Tag input IIFE
+  (() => {
+    const input = document.getElementById('tagChipInput');
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ',') {
+        e.preventDefault();
+        if (addEditTag(input.value)) input.value = '';
+      } else if (e.key === 'Backspace' && !input.value && editTags.length) {
+        removeEditTag(editTags.length - 1);
+      }
+    });
+    input.addEventListener('blur', () => {
+      if (input.value.trim()) { addEditTag(input.value); input.value = ''; }
+    });
+    // prevent Enter from submitting the form when in the tag input
+    input.addEventListener('keypress', e => { if (e.key === 'Enter') e.preventDefault(); });
+  })();
+
+  // ── Knowledge Graph ──────────────────────────────────────
+
+  const GRAPH_EDGE_COLORS = {
+    'related':     '#94a3b8',
+    'builds-on':   '#818cf8',
+    'prerequisite':'#fb923c',
+    'see-also':    '#2dd4bf',
+  };
+  const GRAPH = { repel:5500, spring:0.05, springLen:170, gravity:0.018, damping:0.78 };
+
+  function openGraphModal() {
+    document.getElementById('graphModal').classList.add('active');
+    _graphMoveFn = e => onGraphMouseMove(e);
+    _graphUpFn   = e => onGraphMouseUp(e);
+    window.addEventListener('mousemove', _graphMoveFn);
+    window.addEventListener('mouseup',   _graphUpFn);
+    setTimeout(() => initGraph(null), 60);
+  }
+
+  function closeGraphModal() {
+    document.getElementById('graphModal').classList.remove('active');
+    if (graphAnimId) { cancelAnimationFrame(graphAnimId); graphAnimId = null; }
+    if (_graphMoveFn) { window.removeEventListener('mousemove', _graphMoveFn); _graphMoveFn = null; }
+    if (_graphUpFn)   { window.removeEventListener('mouseup',   _graphUpFn);   _graphUpFn   = null; }
+  }
+
+  function handleGraphOverlayClick(e) {
+    if (e.target === document.getElementById('graphModal')) closeGraphModal();
+  }
+
+  function initGraph(subjFocus) {
+    if (graphAnimId) { cancelAnimationFrame(graphAnimId); graphAnimId = null; }
+    graphSubjFocus = subjFocus;
+    graphDragNode  = null;
+    graphPanState  = null;
+    graphTransform = { x: 0, y: 0, k: 1 };
+
+    const container = document.getElementById('graphContainer');
+    const W = container.clientWidth  || 800;
+    const H = container.clientHeight || 500;
+
+    // All sessions as nodes (subject focus = dim others, not hide)
+    graphNodes = sessions.map((s, i) => {
+      const angle = (i / sessions.length) * Math.PI * 2 - Math.PI / 2;
+      const r     = Math.min(W, H) * 0.27 + (Math.random() - 0.5) * 50;
+      return {
+        id: s.id, session: s,
+        x: W/2 + r * Math.cos(angle),
+        y: H/2 + r * Math.sin(angle),
+        vx: 0, vy: 0, degree: 0, pinned: false,
+        el: null, circleEl: null, r: 14,
+      };
+    });
+
+    const nodeMap = new Map(graphNodes.map(n => [n.id, n]));
+    graphEdges = links
+      .filter(l => nodeMap.has(l.from_id) && nodeMap.has(l.to_id))
+      .map(l => ({
+        source: nodeMap.get(l.from_id),
+        target: nodeMap.get(l.to_id),
+        relation: l.relation, id: l.id, el: null,
+      }));
+    graphEdges.forEach(e => { e.source.degree++; e.target.degree++; });
+
+    buildGraphSVG(W, H);
+    renderGraphSubjBar();
+    if (subjFocus) applySubjFocus(subjFocus);
+    runGraphSim();
+  }
+
+  function buildGraphSVG(W, H) {
+    const container = document.getElementById('graphContainer');
+    container.innerHTML = '';
+
+    // Floating tooltip
+    const tip = document.createElement('div');
+    tip.id = 'graphTip';
+    tip.style.cssText = 'position:absolute;background:#1e293b;color:#f1f5f9;padding:7px 11px;border-radius:9px;font-size:12px;pointer-events:none;opacity:0;transition:opacity 0.12s;max-width:190px;z-index:10;line-height:1.6;box-shadow:0 4px 16px rgba(0,0,0,0.3)';
+    container.appendChild(tip);
+
+    graphSvgEl = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    graphSvgEl.style.cssText = 'width:100%;height:100%;display:block;';
+    container.appendChild(graphSvgEl);
+
+    graphRootEl = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    graphSvgEl.appendChild(graphRootEl);
+
+    const edgeG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    const nodeG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    graphRootEl.appendChild(edgeG);
+    graphRootEl.appendChild(nodeG);
+
+    // Draw edges
+    graphEdges.forEach(e => {
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('stroke', GRAPH_EDGE_COLORS[e.relation] || GRAPH_EDGE_COLORS.related);
+      line.setAttribute('stroke-width', '2');
+      line.setAttribute('stroke-linecap', 'round');
+      line.setAttribute('opacity', '0.75');
+      edgeG.appendChild(line);
+      e.el = line;
+    });
+
+    // Draw nodes
+    graphNodes.forEach(n => {
+      n.r = 14 + Math.min(n.degree * 3, 10);
+      const col = getSubjectColor(n.session.subject);
+
+      const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      g.style.cursor = 'grab';
+
+      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      circle.setAttribute('r', n.r);
+      circle.setAttribute('fill', col.bg);
+      circle.setAttribute('stroke', col.border);
+      circle.setAttribute('stroke-width', '2.5');
+
+      const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      label.setAttribute('text-anchor', 'middle');
+      label.setAttribute('dy', n.r + 13);
+      label.setAttribute('font-size', '11');
+      label.setAttribute('font-family', 'system-ui,sans-serif');
+      label.setAttribute('fill', '#475569');
+      label.setAttribute('pointer-events', 'none');
+      label.setAttribute('font-weight', '500');
+      label.textContent = n.session.topic.length > 18 ? n.session.topic.slice(0, 16) + '…' : n.session.topic;
+
+      g.appendChild(circle);
+      g.appendChild(label);
+      nodeG.appendChild(g);
+      n.el = g; n.circleEl = circle;
+
+      // Drag
+      g.addEventListener('mousedown', evt => {
+        evt.stopPropagation();
+        n.pinned = true;
+        g.style.cursor = 'grabbing';
+        graphDragNode = { node: n, x0: evt.clientX, y0: evt.clientY, ox: n.x, oy: n.y };
+      });
+
+      // Hover
+      g.addEventListener('mouseenter', evt => {
+        const tip = document.getElementById('graphTip');
+        const tags = (n.session.tags || []).map(t => `<span style="color:#a78bfa">#${t}</span>`).join(' ');
+        tip.innerHTML = `<strong style="font-size:13px">${n.session.topic}</strong>` +
+          (n.session.subject ? `<br><span style="color:#94a3b8">${n.session.subject}</span>` : '') +
+          (tags ? `<br>${tags}` : '') +
+          `<br><span style="color:#475569;font-size:10px">${n.session.studiedDate}</span>`;
+        tip.style.opacity = '1';
+        // Highlight ring
+        circle.setAttribute('stroke-width', '4');
+        // Dim unconnected
+        const connIds = new Set(graphEdges.filter(e => e.source===n||e.target===n).map(e=>e.id));
+        const connNodes = new Set(graphEdges.flatMap(e => e.source===n||e.target===n ? [e.source.id,e.target.id] : []));
+        graphEdges.forEach(e => { e.el.setAttribute('opacity', connIds.has(e.id) ? '1' : '0.08'); });
+        graphNodes.forEach(nd => { nd.el.style.opacity = nd===n||connNodes.has(nd.id) ? '1' : '0.15'; });
+      });
+      g.addEventListener('mousemove', evt => {
+        const tip = document.getElementById('graphTip');
+        const rect = container.getBoundingClientRect();
+        tip.style.left = (evt.clientX - rect.left + 14) + 'px';
+        tip.style.top  = (evt.clientY - rect.top  + 14) + 'px';
+      });
+      g.addEventListener('mouseleave', () => {
+        document.getElementById('graphTip').style.opacity = '0';
+        circle.setAttribute('stroke-width', '2.5');
+        graphEdges.forEach(e => { e.el.setAttribute('opacity', '0.75'); });
+        graphNodes.forEach(nd => { nd.el.style.opacity = ''; });
+        if (graphSubjFocus) applySubjFocus(graphSubjFocus);
+      });
+
+      // Click to navigate
+      let didDrag = false;
+      g.addEventListener('mousedown', () => { didDrag = false; });
+      g.addEventListener('mousemove', () => { didDrag = true; });
+      g.addEventListener('click', () => {
+        if (didDrag) return;
+        closeGraphModal();
+        setTimeout(() => openDayModal(n.session.studiedDate), 50);
+      });
+    });
+
+    // Pan (drag on background)
+    graphSvgEl.addEventListener('mousedown', evt => {
+      if (evt.target !== graphSvgEl && evt.target !== graphRootEl) return;
+      graphPanState = { sx: evt.clientX, sy: evt.clientY, tx: graphTransform.x, ty: graphTransform.y };
+      graphSvgEl.style.cursor = 'grabbing';
+    });
+
+    // Wheel zoom toward cursor
+    graphSvgEl.addEventListener('wheel', evt => {
+      evt.preventDefault();
+      const factor = evt.deltaY < 0 ? 1.12 : 0.89;
+      const newK   = Math.min(4, Math.max(0.2, graphTransform.k * factor));
+      const rect   = graphSvgEl.getBoundingClientRect();
+      const mx = evt.clientX - rect.left;
+      const my = evt.clientY - rect.top;
+      graphTransform.x = mx - (mx - graphTransform.x) * (newK / graphTransform.k);
+      graphTransform.y = my - (my - graphTransform.y) * (newK / graphTransform.k);
+      graphTransform.k = newK;
+      applyGraphTransform();
+    }, { passive: false });
+  }
+
+  function onGraphMouseMove(evt) {
+    if (graphDragNode) {
+      const n  = graphDragNode.node;
+      const dx = (evt.clientX - graphDragNode.x0) / graphTransform.k;
+      const dy = (evt.clientY - graphDragNode.y0) / graphTransform.k;
+      n.x = graphDragNode.ox + dx;
+      n.y = graphDragNode.oy + dy;
+      n.vx = 0; n.vy = 0;
+      updateGraphPositions();
+      if (!graphAnimId) runGraphSim(); // re-kick physics
+    } else if (graphPanState) {
+      graphTransform.x = graphPanState.tx + (evt.clientX - graphPanState.sx);
+      graphTransform.y = graphPanState.ty + (evt.clientY - graphPanState.sy);
+      applyGraphTransform();
+    }
+  }
+
+  function onGraphMouseUp() {
+    if (graphDragNode) {
+      graphDragNode.node.pinned = false;
+      if (graphDragNode.node.el) graphDragNode.node.el.style.cursor = 'grab';
+      graphDragNode = null;
+      if (!graphAnimId) runGraphSim();
+    }
+    if (graphPanState) {
+      graphPanState = null;
+      if (graphSvgEl) graphSvgEl.style.cursor = 'default';
+    }
+  }
+
+  function applyGraphTransform() {
+    if (graphRootEl) graphRootEl.setAttribute('transform',
+      `translate(${graphTransform.x},${graphTransform.y}) scale(${graphTransform.k})`);
+  }
+
+  function updateGraphPositions() {
+    graphEdges.forEach(e => {
+      e.el.setAttribute('x1', e.source.x); e.el.setAttribute('y1', e.source.y);
+      e.el.setAttribute('x2', e.target.x); e.el.setAttribute('y2', e.target.y);
+    });
+    graphNodes.forEach(n => {
+      if (n.el) n.el.setAttribute('transform', `translate(${n.x},${n.y})`);
+    });
+  }
+
+  function runGraphSim() {
+    let frame = 0;
+    const step = () => {
+      if (!document.getElementById('graphModal').classList.contains('active')) return;
+      const W = (graphSvgEl?.clientWidth  || 800);
+      const H = (graphSvgEl?.clientHeight || 500);
+      const cx = W / 2, cy = H / 2;
+
+      graphNodes.forEach(n => { n.fx = 0; n.fy = 0; });
+
+      // Repulsion between all pairs
+      for (let i = 0; i < graphNodes.length; i++) {
+        for (let j = i + 1; j < graphNodes.length; j++) {
+          const a = graphNodes[i], b = graphNodes[j];
+          const dx = b.x - a.x, dy = b.y - a.y;
+          const d2 = Math.max(64, dx*dx + dy*dy);
+          const d  = Math.sqrt(d2);
+          const f  = GRAPH.repel / d2;
+          const fx = f*dx/d, fy = f*dy/d;
+          a.fx -= fx; a.fy -= fy;
+          b.fx += fx; b.fy += fy;
+        }
+      }
+
+      // Spring attraction along edges
+      graphEdges.forEach(e => {
+        const dx = e.target.x - e.source.x, dy = e.target.y - e.source.y;
+        const d  = Math.max(1, Math.sqrt(dx*dx + dy*dy));
+        const f  = GRAPH.spring * (d - GRAPH.springLen);
+        const fx = f*dx/d, fy = f*dy/d;
+        if (!e.source.pinned) { e.source.fx += fx; e.source.fy += fy; }
+        if (!e.target.pinned) { e.target.fx -= fx; e.target.fy -= fy; }
+      });
+
+      // Gravity toward viewport center
+      graphNodes.forEach(n => {
+        if (!n.pinned) { n.fx += GRAPH.gravity*(cx-n.x); n.fy += GRAPH.gravity*(cy-n.y); }
+      });
+
+      // Integrate
+      let energy = 0;
+      graphNodes.forEach(n => {
+        if (n.pinned) return;
+        n.vx = (n.vx + n.fx) * GRAPH.damping;
+        n.vy = (n.vy + n.fy) * GRAPH.damping;
+        n.x += n.vx; n.y += n.vy;
+        energy += n.vx*n.vx + n.vy*n.vy;
+      });
+
+      updateGraphPositions();
+      frame++;
+
+      if (energy > 0.04 || frame < 180) {
+        graphAnimId = requestAnimationFrame(step);
+      } else {
+        graphAnimId = null; // settled
+      }
+    };
+    graphAnimId = requestAnimationFrame(step);
+  }
+
+  function applySubjFocus(subj) {
+    graphNodes.forEach(n => {
+      n.el.style.opacity = (!subj || n.session.subject === subj) ? '1' : '0.12';
+    });
+    graphEdges.forEach(e => {
+      const active = !subj || e.source.session.subject === subj || e.target.session.subject === subj;
+      e.el.setAttribute('opacity', active ? '0.75' : '0.06');
+    });
+  }
+
+  function renderGraphSubjBar() {
+    const bar = document.getElementById('graphSubjBar');
+    if (!bar) return;
+    bar.innerHTML = '';
+    const subjects = [...new Set(sessions.map(s => s.subject).filter(Boolean))].sort();
+    if (!subjects.length) return;
+
+    const allBtn = document.createElement('button');
+    allBtn.className = 'graph-pill' + (graphSubjFocus === null ? ' active' : '');
+    allBtn.textContent = 'All';
+    allBtn.onclick = () => { graphSubjFocus = null; applySubjFocus(null); renderGraphSubjBar(); };
+    bar.appendChild(allBtn);
+
+    subjects.forEach(subj => {
+      const col = getSubjectColor(subj);
+      const btn = document.createElement('button');
+      btn.className = 'graph-pill' + (graphSubjFocus === subj ? ' active' : '');
+      btn.textContent = subj;
+      if (graphSubjFocus === subj) {
+        btn.style.background  = col.bg;
+        btn.style.color       = col.text;
+        btn.style.borderColor = col.border;
+      }
+      btn.onclick = () => {
+        graphSubjFocus = graphSubjFocus === subj ? null : subj;
+        applySubjFocus(graphSubjFocus);
+        renderGraphSubjBar();
+      };
+      bar.appendChild(btn);
+    });
+  }
+
+  // ── Second brain links ───────────────────────────────────
+
+  const LINK_RELATIONS = {
+    'related':     { label: 'Related to',      inverse: 'Related to' },
+    'builds-on':   { label: 'Builds on',        inverse: 'Built on by' },
+    'prerequisite':{ label: 'Prerequisite of',  inverse: 'Required by' },
+    'see-also':    { label: 'See also',         inverse: 'See also' },
+  };
+
+  function getLinksForSession(sessionId) {
+    return links
+      .filter(l => l.from_id === sessionId || l.to_id === sessionId)
+      .map(l => {
+        const isFrom   = l.from_id === sessionId;
+        const otherId  = isFrom ? l.to_id : l.from_id;
+        const relDef   = LINK_RELATIONS[l.relation] || LINK_RELATIONS['related'];
+        const relLabel = isFrom ? relDef.label : relDef.inverse;
+        const other    = sessions.find(s => s.id === otherId);
+        return { linkId: l.id, relLabel, other };
+      })
+      .filter(x => x.other); // discard orphans (deleted sessions)
+  }
+
+  function renderSessionLinks(container, sessionId) {
+    const sessionLinks = getLinksForSession(sessionId);
+    const wrap = document.createElement('div');
+    wrap.className = 'session-links';
+
+    sessionLinks.forEach(({ linkId, relLabel, other }) => {
+      const item = document.createElement('div');
+      item.className = 'link-item';
+      item.innerHTML =
+        `<span class="link-rel-badge">${relLabel}</span>` +
+        `<span class="link-target-topic" title="${other.topic}${other.subject ? ' · ' + other.subject : ''}"
+               onclick="closeDayModal();openDayModal('${other.studiedDate}')">${other.topic}</span>` +
+        (other.subject ? `<span class="link-target-subject">${other.subject}</span>` : '') +
+        `<button class="link-remove-btn" title="Remove link" onclick="deleteLink('${linkId}','${sessionId}')">×</button>`;
+      wrap.appendChild(item);
+    });
+
+    const addBtn = document.createElement('button');
+    addBtn.className = 'add-link-btn';
+    addBtn.innerHTML = '<svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 5.5h3M5.5 4v3"/><path d="M7.5 3.5l1.5-1.5a1.414 1.414 0 012 2L9.5 5.5"/><path d="M3.5 7.5L2 9a1.414 1.414 0 01-2-2L1.5 5.5"/></svg> Link topic';
+    addBtn.onclick = () => openLinkModal(sessionId);
+    wrap.appendChild(addBtn);
+
+    container.appendChild(wrap);
+  }
+
+  function openLinkModal(sessionId) {
+    linkingSessionId     = sessionId;
+    selectedLinkTargetId = null;
+    selectedLinkRelation = 'related';
+
+    // Build relation picker
+    const picker = document.getElementById('linkRelationPicker');
+    picker.innerHTML = '';
+    Object.entries(LINK_RELATIONS).forEach(([key, def]) => {
+      const btn = document.createElement('button');
+      btn.className = 'link-rel-option' + (key === 'related' ? ' selected' : '');
+      btn.textContent = def.label;
+      btn.dataset.rel = key;
+      btn.onclick = () => {
+        selectedLinkRelation = key;
+        picker.querySelectorAll('.link-rel-option').forEach(b => b.classList.toggle('selected', b.dataset.rel === key));
+      };
+      picker.appendChild(btn);
+    });
+
+    document.getElementById('linkSearchInput').value = '';
+    renderLinkSearch('');
+    document.getElementById('linkModal').classList.add('active');
+    setTimeout(() => document.getElementById('linkSearchInput').focus(), 220);
+  }
+
+  function closeLinkModal() {
+    document.getElementById('linkModal').classList.remove('active');
+    linkingSessionId = selectedLinkTargetId = null;
+  }
+
+  function renderLinkSearch(query) {
+    const q    = query.trim().toLowerCase();
+    const list = document.getElementById('linkSessionList');
+    list.innerHTML = '';
+
+    // Already-linked session IDs (exclude from picker)
+    const alreadyLinked = new Set(
+      links.filter(l => l.from_id === linkingSessionId || l.to_id === linkingSessionId)
+           .map(l => l.from_id === linkingSessionId ? l.to_id : l.from_id)
+    );
+
+    const candidates = sessions.filter(s =>
+      s.id !== linkingSessionId &&
+      !alreadyLinked.has(s.id) &&
+      (!q || s.topic.toLowerCase().includes(q) || (s.subject || '').toLowerCase().includes(q))
+    );
+
+    if (!candidates.length) {
+      list.innerHTML = `<div class="link-empty">${q ? 'No matches' : 'No other sessions to link'}</div>`;
+      return;
+    }
+
+    candidates.slice(0, 30).forEach(s => {
+      const opt = document.createElement('div');
+      opt.className = 'link-session-option' + (s.id === selectedLinkTargetId ? ' selected' : '');
+      opt.innerHTML =
+        `<div class="link-session-option-topic">${s.topic}</div>` +
+        `<div class="link-session-option-sub">${[s.subject, s.studiedDate].filter(Boolean).join(' · ')}</div>`;
+      opt.onclick = () => {
+        selectedLinkTargetId = s.id;
+        list.querySelectorAll('.link-session-option').forEach(o => o.classList.toggle('selected', o === opt));
+        document.getElementById('linkSaveBtn').disabled = false;
+      };
+      list.appendChild(opt);
+    });
+  }
+
+  async function saveLink() {
+    if (!linkingSessionId || !selectedLinkTargetId) return;
+    const btn = document.getElementById('linkSaveBtn');
+    btn.disabled = true;
+    const res = await authFetch('/api/links', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fromId: linkingSessionId, toId: selectedLinkTargetId, relation: selectedLinkRelation })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      links.push({ id: data.id, user_id: '', from_id: linkingSessionId, to_id: selectedLinkTargetId, relation: selectedLinkRelation });
+      closeLinkModal();
+      // Refresh the day modal to show the new link
+      if (currentDayDate) openDayModal(currentDayDate);
+      showToast('Link saved');
+    } else {
+      const err = await res.json();
+      showToast(err.error || 'Could not save link');
+      btn.disabled = false;
+    }
+  }
+
+  async function deleteLink(linkId, sessionId) {
+    await authFetch(`/api/links/${linkId}`, { method: 'DELETE' });
+    links = links.filter(l => l.id !== linkId);
+    if (currentDayDate) openDayModal(currentDayDate);
+    showToast('Link removed');
+  }
+
+  // ── Events for a date ────────────────────────────────────
+  function getEventsForDate(dateStr) {
+    const today  = todayStr();
+    const events = [];
+    sessions
+      .filter(s => activeSubject === null || s.subject === activeSubject)
+      .filter(s => activeTagFilter === null || (s.tags || []).includes(activeTagFilter))
+      .filter(sessionMatchesSearch)
+      .forEach(session => {
+        if (session.studiedDate === dateStr)
+          events.push({ type: 'study', session });
+        session.reviews.forEach((rev, i) => {
+          if (rev.date === dateStr)
+            events.push({
+              type: 'review', reviewIndex: i, session, done: rev.done,
+              overdue: !rev.done && rev.date < today
+            });
+        });
+      });
+    return events;
+  }
+
+  // ── Streak ───────────────────────────────────────────────
+  function calcStreak() {
+    // count any day with a study session OR a completed review
+    const activeDays = new Set();
+    sessions.forEach(s => {
+      activeDays.add(s.studiedDate);
+      s.reviews.forEach(r => { if (r.done) activeDays.add(r.date); });
+    });
+    if (!activeDays.size) return 0;
+    let streak = 0;
+    const check = new Date(todayStr() + 'T00:00:00');
+    while (true) {
+      const s = ymd(check.getFullYear(), check.getMonth() + 1, check.getDate());
+      if (activeDays.has(s)) { streak++; check.setDate(check.getDate() - 1); }
+      else break;
+    }
+    return streak;
+  }
+
+  // ── Due Today panel ──────────────────────────────────────
+  function renderDueToday() {
+    const today    = todayStr();
+    const overdue  = [];
+    const dueToday = [];
+
+    sessions.forEach(session => {
+      session.reviews.forEach((rev, i) => {
+        if (rev.done) return;
+        if (rev.date < today)       overdue.push({ session, reviewIndex: i, date: rev.date });
+        else if (rev.date === today) dueToday.push({ session, reviewIndex: i, date: rev.date });
+      });
+    });
+
+    const container = document.getElementById('dueToday');
+    if (!overdue.length && !dueToday.length) { container.innerHTML = ''; return; }
+
+    container.innerHTML = '';
+    const panel = document.createElement('div');
+    panel.className = 'due-today';
+
+    // header label
+    const parts = [];
+    if (overdue.length)  parts.push(`<span style="color:#dc2626;font-weight:700">${overdue.length} overdue</span>`);
+    if (dueToday.length) parts.push(`${dueToday.length} due today`);
+    const totalCount = overdue.length + dueToday.length;
+
+    const allPending = [
+      ...overdue.map(x => ({ sessionId: x.session.id, reviewIdx: x.reviewIndex })),
+      ...dueToday.map(x => ({ sessionId: x.session.id, reviewIdx: x.reviewIndex }))
+    ];
+
+    const header = document.createElement('div');
+    header.className = 'due-today-header';
+    header.innerHTML =
+      `<div class="due-today-title">
+        📋 ${parts.join(' · ')}
+        <span class="due-count" style="${overdue.length ? 'background:#ef4444' : ''}">${totalCount}</span>
+      </div>
+      ${totalCount >= 2 ? `<button class="mark-all-btn" id="markAllBtn">✓ Mark all done</button>` : ''}
+      <span class="due-toggle" id="dueTodayToggle">▲ hide</span>`;
+    panel.appendChild(header);
+
+    if (totalCount >= 2) {
+      header.querySelector('#markAllBtn').addEventListener('click', e => {
+        e.stopPropagation();
+        markAllDone(allPending);
+      });
+    }
+
+    const body = document.createElement('div');
+    body.className = 'due-today-body';
+    body.id = 'dueTodayBody';
+
+    const makeItem = ({ session, reviewIndex, date }, isOverdue) => {
+      const col  = getSubjectColor(session.subject);
+      const item = document.createElement('div');
+      item.className = 'due-item';
+      if (isOverdue) item.style.borderColor = '#fecaca';
+
+      const daysDiff = Math.round((new Date(today + 'T00:00:00') - new Date(date + 'T00:00:00')) / 86400000);
+      const overdueLabel = isOverdue ? ` · ${daysDiff}d overdue` : '';
+
+      item.innerHTML =
+        `<div class="due-dot" style="background:${isOverdue ? '#ef4444' : col.border}"></div>
+         <div class="due-info">
+           <div class="due-topic">${session.topic}</div>
+           <div class="due-meta">${session.subject ? session.subject + ' · ' : ''}${intervalLabel(intervals[reviewIndex] ?? reviewIndex)} review${overdueLabel}${session.reviewStreak >= 2 ? ` · <span class="streak-badge">🔥 ${session.reviewStreak}</span>` : ''}</div>
+         </div>`;
+      const btn = document.createElement('button');
+      btn.className = 'due-done-btn';
+      btn.textContent = 'Mark done';
+      if (isOverdue) btn.style.borderColor = '#fca5a5';
+      btn.onclick = () => openRatingModal(session.id, reviewIndex, null);
+      item.appendChild(btn);
+      return item;
+    };
+
+    // overdue first, then due today
+    overdue.sort((a, b) => a.date.localeCompare(b.date))
+      .forEach(item => body.appendChild(makeItem(item, true)));
+    dueToday.forEach(item => body.appendChild(makeItem(item, false)));
+
+    panel.appendChild(body);
+    container.appendChild(panel);
+
+    let collapsed = false;
+    header.onclick = () => {
+      collapsed = !collapsed;
+      body.style.display = collapsed ? 'none' : '';
+      document.getElementById('dueTodayToggle').textContent = collapsed ? '▼ show' : '▲ hide';
+    };
+  }
+
+  // ── Filter bar ───────────────────────────────────────────
+  function renderFilters() {
+    renderTagFilterBar();
+    const bar = document.getElementById('filterBar');
+    bar.innerHTML = '';
+    const subjects = [...new Set(sessions.map(s => s.subject).filter(Boolean))].sort();
+    if (!subjects.length) return;
+
+    const allPill = document.createElement('button');
+    allPill.className = 'filter-pill' + (activeSubject === null ? ' active-all' : '');
+    allPill.textContent = 'All';
+    allPill.onclick = () => { activeSubject = null; renderCalendar(); };
+    bar.appendChild(allPill);
+
+    subjects.forEach(subj => {
+      const col  = getSubjectColor(subj);
+      const pill = document.createElement('button');
+      pill.className = 'filter-pill';
+      pill.textContent = subj;
+      if (activeSubject === subj) {
+        pill.style.background  = col.bg;
+        pill.style.color       = col.text;
+        pill.style.borderColor = col.border;
+      }
+      pill.onclick = () => { activeSubject = subj; renderCalendar(); };
+      bar.appendChild(pill);
+    });
+  }
+
+  // ── Legend ───────────────────────────────────────────────
+  function renderLegend() {
+    const leg = document.getElementById('legend');
+    leg.innerHTML = '<div class="legend-item"><div class="legend-swatch" style="background:#6366f1"></div> Studied</div>';
+    intervals.forEach((days, i) => {
+      const col      = REVIEW_COLORS[i] || REVIEW_COLORS[REVIEW_COLORS.length - 1];
+      const shortLbl = `+${days}d`;
+      leg.innerHTML += `<div class="legend-item"><div class="legend-swatch" style="background:${col}"></div> Review ${i + 1} <span style="color:#94a3b8">(${shortLbl})</span></div>`;
+    });
+  }
+
+  // ── Calendar render ──────────────────────────────────────
+  function renderCalendar() {
+    const isEmpty = sessions.length === 0;
+    document.getElementById('emptyState').style.display = isEmpty ? '' : 'none';
+
+    const grid = document.getElementById('daysGrid');
+    grid.innerHTML = '';
+    document.getElementById('monthYear').textContent = `${MONTH_NAMES[currentMonth]} ${currentYear}`;
+
+    const today    = todayStr();
+    const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+    const dimMax   = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const prevDays = new Date(currentYear, currentMonth, 0).getDate();
+
+    const prevM = currentMonth === 0 ? 11 : currentMonth - 1;
+    const prevY = currentMonth === 0 ? currentYear - 1 : currentYear;
+    const nextM = currentMonth === 11 ? 0 : currentMonth + 1;
+    const nextY = currentMonth === 11 ? currentYear + 1 : currentYear;
+
+    for (let i = firstDay - 1; i >= 0; i--)
+      grid.appendChild(makeCell(prevDays - i, ymd(prevY, prevM + 1, prevDays - i), true, today));
+    for (let d = 1; d <= dimMax; d++)
+      grid.appendChild(makeCell(d, ymd(currentYear, currentMonth + 1, d), false, today));
+    const tail = grid.children.length % 7 === 0 ? 0 : 7 - (grid.children.length % 7);
+    for (let d = 1; d <= tail; d++)
+      grid.appendChild(makeCell(d, ymd(nextY, nextM + 1, d), true, today));
+
+    // today-column tint
+    const todayCol = new Date().getDay();
+    Array.from(grid.children).forEach((cell, i) => {
+      if (i % 7 === todayCol) cell.classList.add('today-col');
+    });
+
+    // empty-month watermark
+    const calGrid = document.querySelector('.calendar-grid');
+    const existing = document.getElementById('emptyMonthMsg');
+    if (existing) existing.remove();
+    const monthHasEvents = sessions
+      .filter(s => activeSubject === null || s.subject === activeSubject)
+      .some(s => {
+        const inMonth = (d) => { const [y,m] = d.split('-'); return +y === currentYear && +m - 1 === currentMonth; };
+        return inMonth(s.studiedDate) || s.reviews.some(r => inMonth(r.date));
+      });
+    if (!monthHasEvents) {
+      const msg = document.createElement('div');
+      msg.id = 'emptyMonthMsg';
+      msg.className = 'empty-month';
+      msg.innerHTML = '<span>Nothing studied this month</span>';
+      calGrid.appendChild(msg);
+    }
+
+    renderFilters();
+    renderDueToday();
+    renderLegend();
+    document.getElementById('streakBadge').textContent =
+      calcStreak() > 0 ? `🔥 ${calcStreak()}-day streak` : 'No streak yet';
+  }
+
+  function makeCell(day, dateStr, other, today) {
+    const cell = document.createElement('div');
+    cell.className = 'day-cell' + (other ? ' other-month' : '') + (dateStr === today ? ' today' : '');
+    cell.dataset.date = dateStr;
+    cell.onclick = () => openDayModal(dateStr);
+
+    // ── Drop target ──────────────────────────────────────────
+    cell.addEventListener('dragover', evt => {
+      if (!dragReview) return;
+      evt.preventDefault();
+      evt.dataTransfer.dropEffect = 'move';
+      cell.classList.add('drag-over');
+    });
+    cell.addEventListener('dragleave', evt => {
+      // only remove if leaving to outside the cell (not to a child)
+      if (!cell.contains(evt.relatedTarget)) cell.classList.remove('drag-over');
+    });
+    cell.addEventListener('drop', async evt => {
+      evt.preventDefault();
+      cell.classList.remove('drag-over');
+      if (!dragReview) return;
+      const newDate = cell.dataset.date;
+      if (newDate === dragReview.fromDate) return;
+      const { sessionId, reviewIndex } = dragReview;
+      dragReview = null;
+      const res = await authFetch(`/api/sessions/${sessionId}/reviews/${reviewIndex}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newDate })
+      });
+      if (res.ok) {
+        await loadSessions();
+        renderCalendar();
+        showToast(`Review rescheduled to ${displayDate(newDate)}`);
+      }
+    });
+
+    const num = document.createElement('div');
+    num.className = 'day-number';
+    num.textContent = day;
+    cell.appendChild(num);
+
+    const evWrap = document.createElement('div');
+    evWrap.className = 'events';
+    const evs = getEventsForDate(dateStr);
+
+    evs.slice(0, 3).forEach((ev, i) => {
+      const e = document.createElement('div');
+      if (ev.type === 'study') {
+        const col = getSubjectColor(ev.session.subject);
+        e.className = 'event';
+        e.style.background = col.bg;
+        e.style.color = col.text;
+        e.style.borderLeft = `3px solid ${col.border}`;
+      } else if (ev.overdue) {
+        e.className = 'event overdue';
+      } else {
+        const idx = Math.min(ev.reviewIndex, REVIEW_COLORS.length - 1);
+        e.className = `event review-${idx}${ev.done ? ' done' : ''}`;
+      }
+      e.style.animationDelay = `${i * 30}ms`;
+      const isRecurring = !!ev.session.recurrenceRule;
+      if (isRecurring) e.classList.add('recurring');
+      e.textContent = ev.type === 'study' ? ev.session.topic : `↻ ${ev.session.topic}`;
+
+      // ── Draggable review chips (undone only) ─────────────
+      if (ev.type === 'review' && !ev.done) {
+        e.draggable = true;
+        e.classList.add('draggable-review');
+        e.addEventListener('dragstart', evt => {
+          dragReview = { sessionId: ev.session.id, reviewIndex: ev.reviewIndex, fromDate: dateStr };
+          evt.dataTransfer.effectAllowed = 'move';
+          evt.dataTransfer.setData('text/plain', dateStr);
+          evt.stopPropagation();
+          // use setTimeout so the "dragging" class is applied after the drag image is captured
+          setTimeout(() => e.classList.add('dragging'), 0);
+        });
+        e.addEventListener('dragend', () => {
+          e.classList.remove('dragging');
+          // clean up any lingering drag-over highlights
+          document.querySelectorAll('.day-cell.drag-over').forEach(c => c.classList.remove('drag-over'));
+          dragReview = null;
+        });
+      }
+
+      evWrap.appendChild(e);
+    });
+
+    if (evs.length > 3) {
+      const more = document.createElement('div');
+      more.className = 'more-events';
+      more.textContent = `+${evs.length - 3} more`;
+      evWrap.appendChild(more);
+    }
+
+    cell.appendChild(evWrap);
+    return cell;
+  }
+
+  // ── Add Modal ────────────────────────────────────────────
+  function openAddModal() { openAddModalForDate(todayStr()); }
+
+  function openEditModal(session) {
+    closeDayModal();
+    editingSessionId = session.id;
+    document.querySelector('#addModal h3').textContent = 'Edit Session';
+    document.getElementById('dateInput').value    = session.studiedDate;
+    document.getElementById('dateInput').disabled = true;
+    document.getElementById('topicInput').value   = session.topic;
+    document.getElementById('subjectInput').value = session.subject || '';
+    document.getElementById('notesInput').value   = session.notes || '';
+    resetEditTags(session.tags || []);
+    document.getElementById('saveBtn').textContent = 'Save Changes';
+    buildReviewChips(session.studiedDate);
+    // hide review preview and recurrence on edit
+    document.querySelector('.review-preview').style.display = 'none';
+    document.getElementById('recurGroup').style.display = 'none';
+    document.getElementById('addModal').classList.add('active');
+    setTimeout(() => document.getElementById('topicInput').focus(), 220);
+  }
+
+  function openAddModalForDate(dateStr) {
+    closeDayModal();
+    editingSessionId  = null;
+    addModalTargetDate = dateStr;
+    document.querySelector('#addModal h3').textContent = 'Log Study Session';
+    document.getElementById('dateInput').disabled  = false;
+    document.getElementById('saveBtn').textContent = 'Save & Schedule';
+    document.querySelector('.review-preview').style.display = '';
+    document.getElementById('recurGroup').style.display = '';
+    document.getElementById('dateInput').value    = dateStr;
+    document.getElementById('topicInput').value   = '';
+    document.getElementById('subjectInput').value = activeSubject || '';
+    document.getElementById('notesInput').value   = '';
+    resetEditTags([]);
+    resetRecurUI(dateStr);
+
+    const list = document.getElementById('subjectList');
+    list.innerHTML = '';
+    [...new Set(sessions.map(s => s.subject).filter(Boolean))].sort().forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s;
+      list.appendChild(opt);
+    });
+
+    buildReviewChips(dateStr);
+    document.getElementById('addModal').classList.add('active');
+    setTimeout(() => document.getElementById('topicInput').focus(), 220);
+  }
+
+  function closeAddModal() {
+    document.getElementById('addModal').classList.remove('active');
+  }
+
+  // ── Recurrence UI helpers ────────────────────────────────
+  function toggleRecurOptions() {
+    const checked = document.getElementById('recurCheck').checked;
+    document.getElementById('recurOptions').style.display = checked ? '' : 'none';
+  }
+
+  function syncRecurPreview() {
+    // No-op preview for now; rule is read at save time
+  }
+
+  function resetRecurUI(dateStr) {
+    document.getElementById('recurCheck').checked = false;
+    document.getElementById('recurOptions').style.display = 'none';
+    // Pre-select the weekday matching the chosen study date
+    const wd = new Date(dateStr + 'T00:00:00').getDay();
+    document.getElementById('recurWeekday').value = wd;
+    document.getElementById('recurTypeWeekly').checked = true;
+    document.getElementById('recurDays').value = 7;
+  }
+
+  function getRecurrenceRule() {
+    if (!document.getElementById('recurCheck').checked) return null;
+    const isWeekly = document.getElementById('recurTypeWeekly').checked;
+    if (isWeekly) {
+      return { type: 'weekly', weekday: parseInt(document.getElementById('recurWeekday').value) };
+    }
+    const days = Math.max(1, parseInt(document.getElementById('recurDays').value) || 7);
+    return { type: 'interval', days };
+  }
+
+  function recurRuleLabel(rule) {
+    if (!rule) return '';
+    if (rule.type === 'weekly') {
+      const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+      return `every ${days[rule.weekday]}`;
+    }
+    return `every ${rule.days}d`;
+  }
+
+  function buildReviewChips(dateStr) {
+    const wrap = document.getElementById('reviewChips');
+    wrap.innerHTML = '';
+    intervals.forEach((days, i) => {
+      const col = REVIEW_COLORS[Math.min(i, REVIEW_COLORS.length - 1)];
+      const chip = document.createElement('div');
+      chip.className = 'review-chip';
+      chip.innerHTML =
+        `<span class="chip-interval" style="color:${col}">${intervalLabel(days)}</span>` +
+        `<span>${displayDate(addDays(dateStr, days))}</span>`;
+      wrap.appendChild(chip);
+    });
+  }
+
+  document.getElementById('dateInput').addEventListener('change', e => {
+    addModalTargetDate = e.target.value;
+    buildReviewChips(addModalTargetDate);
+    // Keep weekly weekday in sync with the chosen date
+    if (!document.getElementById('recurCheck').checked) {
+      const wd = new Date(addModalTargetDate + 'T00:00:00').getDay();
+      document.getElementById('recurWeekday').value = wd;
+    }
+  });
+
+  async function saveStudySession() {
+    const topic   = document.getElementById('topicInput').value.trim();
+    const subject = document.getElementById('subjectInput').value.trim();
+    const date    = document.getElementById('dateInput').value;
+    const notes   = document.getElementById('notesInput').value.trim();
+    if (!topic) { document.getElementById('topicInput').focus(); return; }
+
+    const btn = document.getElementById('saveBtn');
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+
+    const recurrenceRule = getRecurrenceRule();
+    const recurrenceId   = recurrenceRule ? crypto.randomUUID() : null;
+    const tags           = [...editTags];
+
+    const session = {
+      id:          Date.now().toString(),
+      topic, subject, studiedDate: date, notes, tags,
+      reviews: intervals.map(d => ({ date: addDays(date, d), done: false })),
+      recurrenceRule, recurrenceId
+    };
+
+    try {
+      if (editingSessionId) {
+        await authFetch(`/api/sessions/${editingSessionId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ topic, subject, notes, tags })
+        });
+        const s = sessions.find(x => x.id === editingSessionId);
+        if (s) { s.topic = topic; s.subject = subject; s.notes = notes; s.tags = tags; }
+        showToast(`"${topic}" updated`);
+      } else {
+        await authFetch('/api/sessions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(session)
+        });
+        sessions.push(session);
+        const recurSuffix = recurrenceRule ? ` · 🔁 ${recurRuleLabel(recurrenceRule)}` : '';
+        showToast(`"${topic}" saved — ${intervals.length} reviews scheduled${recurSuffix}`);
+      }
+      closeAddModal();
+      renderCalendar();
+    } catch {
+      showToast('Error saving — is the server running?');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = editingSessionId ? 'Save Changes' : 'Save & Schedule';
+    }
+  }
+
+  // ── Day Modal ────────────────────────────────────────────
+  function openDayModal(dateStr) {
+    currentDayDate = dateStr;
+    document.getElementById('dayModalTitle').textContent = displayDate(dateStr);
+
+    const wrap = document.getElementById('dayModalEvents');
+    wrap.innerHTML = '';
+    const evs = getEventsForDate(dateStr);
+
+    if (!evs.length) {
+      wrap.innerHTML = '<div class="empty-day">No events — click "+ Add Study" to log a session.</div>';
+    } else {
+      evs.forEach(ev => {
+        const item = document.createElement('div');
+        item.className = 'event-item';
+
+        const dot = document.createElement('div');
+        dot.className = 'event-dot';
+        dot.style.background = ev.type === 'study'
+          ? getSubjectColor(ev.session.subject).border
+          : REVIEW_COLORS[Math.min(ev.reviewIndex, REVIEW_COLORS.length - 1)];
+
+        const info = document.createElement('div');
+        info.className = 'event-info';
+        const tagsHtml = ev.type === 'study' && (ev.session.tags || []).length
+          ? `<div class="session-tags">${ev.session.tags.map(t =>
+              `<span class="session-tag" onclick="filterByTag('${t}');closeDayModal()">#${t}</span>`
+            ).join('')}</div>`
+          : '';
+        info.innerHTML =
+          `<div class="event-title">${ev.type === 'study' ? ev.session.topic : 'Review: ' + ev.session.topic}</div>` +
+          `<div class="event-meta">${ev.type === 'study'
+            ? (ev.session.notes || 'Initial study session') + (ev.session.reviewStreak >= 2 ? ` &nbsp;<span class="streak-badge">🔥 ${ev.session.reviewStreak}-review streak</span>` : '')
+            : `Spaced review (${intervalLabel(intervals[ev.reviewIndex] ?? ev.reviewIndex)})${ev.done ? ' — Done ✓' + (ev.session.reviews[ev.reviewIndex]?.confidence ? ' · ' + RATINGS[ev.session.reviews[ev.reviewIndex].confidence - 1]?.emoji : '') : ''}`
+          }</div>${tagsHtml}`;
+
+        item.appendChild(dot);
+        item.appendChild(info);
+
+        if (ev.type === 'review') {
+          if (ev.done) {
+            const btn = document.createElement('button');
+            btn.className = 'undo-btn';
+            btn.textContent = 'Undo';
+            btn.title = 'Mark as not done';
+            btn.onclick = e => { e.stopPropagation(); markDone(ev.session.id, ev.reviewIndex, dateStr, false); };
+            item.appendChild(btn);
+          } else if (ev.session.reviews[ev.reviewIndex].date > todayStr()) {
+            const badge = document.createElement('span');
+            badge.className = 'scheduled-badge';
+            badge.textContent = 'Scheduled';
+            item.appendChild(badge);
+          } else {
+            const btn = document.createElement('button');
+            btn.className = 'check-btn';
+            btn.textContent = 'Mark done';
+            btn.onclick = e => { e.stopPropagation(); openRatingModal(ev.session.id, ev.reviewIndex, dateStr); };
+            item.appendChild(btn);
+          }
+        }
+
+        if (ev.type === 'study') {
+          // Links section — renders below info, before action buttons
+          renderSessionLinks(info, ev.session.id);
+
+          const curveBtn = document.createElement('button');
+          curveBtn.className = 'edit-btn';
+          curveBtn.title = 'View forgetting curve';
+          curveBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,11 4,6 7,8 10,3 13,5"/></svg>';
+          curveBtn.onclick = e => { e.stopPropagation(); openCurveModal(ev.session.id); };
+          item.appendChild(curveBtn);
+
+          const editBtn = document.createElement('button');
+          editBtn.className = 'edit-btn';
+          editBtn.title = 'Edit session';
+          editBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 1.5l2 2-7 7H2.5v-2l7-7z"/></svg>';
+          editBtn.onclick = e => { e.stopPropagation(); openEditModal(ev.session); };
+          item.appendChild(editBtn);
+
+          const del = document.createElement('button');
+          del.className = 'delete-btn';
+          del.title = 'Delete session';
+          del.textContent = '×';
+          del.onclick = e => { e.stopPropagation(); deleteSession(ev.session.id, dateStr); };
+          item.appendChild(del);
+        }
+
+        wrap.appendChild(item);
+      });
+    }
+
+    document.getElementById('dayModal').classList.add('active');
+  }
+
+  function closeDayModal() { document.getElementById('dayModal').classList.remove('active'); }
+
+  async function markDone(sessionId, reviewIdx, dateStr, done = true, confidence = null, rescheduleFromToday = false) {
+    const body = { done };
+    if (confidence)          body.confidence          = confidence;
+    if (rescheduleFromToday) body.rescheduleFromToday = true;
+
+    const res  = await authFetch(`/api/sessions/${sessionId}/reviews/${reviewIdx}`, {
+      method:  'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(body)
+    });
+    const data = await res.json();
+    const s = sessions.find(x => x.id === sessionId);
+    if (s && data.reviews) {
+      s.reviews      = data.reviews;
+      s.easeFactor   = data.easeFactor;
+      s.reviewStreak = data.reviewStreak;
+    } else if (s) {
+      s.reviews[reviewIdx].done = done;
+    }
+    renderCalendar();
+    if (dateStr) openDayModal(dateStr);
+    showToast(done ? 'Review marked complete!' : 'Review marked incomplete.');
+  }
+
+  async function markAllDone(items) {
+    await Promise.all(items.map(({ sessionId, reviewIdx }) =>
+      authFetch(`/api/sessions/${sessionId}/reviews/${reviewIdx}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ done: true })
+      }).then(() => {
+        const s = sessions.find(x => x.id === sessionId);
+        if (s) s.reviews[reviewIdx].done = true;
+      })
+    ));
+    renderCalendar();
+    showToast(`${items.length} reviews marked complete!`);
+  }
+
+  // ── Confidence Rating Modal ──────────────────────────────
+  function openRatingModal(sessionId, reviewIdx, dateStr) {
+    const session = sessions.find(s => s.id === sessionId);
+    if (!session) return;
+    const review  = session.reviews[reviewIdx];
+
+    // Check if late
+    const today     = todayStr();
+    const isLate    = review.date < today;
+    const daysMissed = isLate
+      ? Math.round((new Date(today + 'T00:00:00') - new Date(review.date + 'T00:00:00')) / 86400000)
+      : 0;
+    const hasNext = reviewIdx + 1 < session.reviews.length;
+
+    pendingRating = { sessionId, reviewIdx, dateStr };
+
+    // Subtitle
+    const reviewNum = reviewIdx + 1;
+    document.getElementById('ratingSubtitle').textContent =
+      `Review ${reviewNum} of 5 — "${session.topic}"`;
+
+    // Late recovery row
+    const lateRow = document.getElementById('lateRecoveryRow');
+    if (isLate && hasNext) {
+      lateRow.style.display = '';
+      document.getElementById('lateRecoveryText').textContent =
+        `Reschedule next review from today (was ${daysMissed} day${daysMissed !== 1 ? 's' : ''} late)`;
+    } else {
+      lateRow.style.display = 'none';
+    }
+
+    // Build rating buttons
+    const grid = document.getElementById('ratingGrid');
+    grid.innerHTML = '';
+    RATINGS.forEach(r => {
+      const btn = document.createElement('button');
+      btn.className = 'rating-btn';
+      btn.style.cssText = `color:${r.color};`;
+      btn.innerHTML = `<span class="rating-emoji">${r.emoji}</span><span class="rating-label">${r.label}</span>`;
+      btn.onclick = () => submitRating(r.score);
+      grid.appendChild(btn);
+    });
+
+    document.getElementById('ratingModal').classList.add('active');
+  }
+
+  function closeRatingModal() {
+    document.getElementById('ratingModal').classList.remove('active');
+    pendingRating = null;
+  }
+
+  async function submitRating(confidence) {
+    if (!pendingRating) return;
+    const { sessionId, reviewIdx, dateStr } = pendingRating;
+    const rescheduleFromToday = document.getElementById('rescheduleCheck')?.checked ?? false;
+    closeRatingModal();
+    await markDone(sessionId, reviewIdx, dateStr, true, confidence, rescheduleFromToday);
+  }
+
+  async function skipRating() {
+    if (!pendingRating) return;
+    const { sessionId, reviewIdx, dateStr } = pendingRating;
+    const rescheduleFromToday = document.getElementById('rescheduleCheck')?.checked ?? false;
+    closeRatingModal();
+    await markDone(sessionId, reviewIdx, dateStr, true, null, rescheduleFromToday);
+  }
+
+  async function deleteSession(sessionId, dateStr) {
+    if (!confirm('Delete this study session and all its scheduled reviews?')) return;
+    await authFetch(`/api/sessions/${sessionId}`, { method: 'DELETE' });
+    sessions = sessions.filter(s => s.id !== sessionId);
+    renderCalendar();
+    openDayModal(dateStr);
+    showToast('Session deleted.');
+  }
+
+  // ── Stats Modal ──────────────────────────────────────────
+  function openStats() {
+    // stat cards
+    const totalTopics      = sessions.length;
+    const totalReviews     = sessions.reduce((n, s) => n + s.reviews.length, 0);
+    const completedReviews = sessions.reduce((n, s) => n + s.reviews.filter(r => r.done).length, 0);
+    const completionPct    = totalReviews ? Math.round((completedReviews / totalReviews) * 100) : 0;
+
+    const today   = new Date(todayStr() + 'T00:00:00');
+    const weekEnd = new Date(today); weekEnd.setDate(today.getDate() + 7);
+    let dueThisWeek = 0;
+    sessions.forEach(s => s.reviews.forEach(r => {
+      const d = new Date(r.date + 'T00:00:00');
+      if (!r.done && d >= today && d < weekEnd) dueThisWeek++;
+    }));
+
+    document.getElementById('statCards').innerHTML =
+      statCard(totalTopics, 'Topics studied') +
+      statCard(completedReviews + ' / ' + totalReviews, 'Reviews complete') +
+      statCard(completionPct + '%', 'Completion rate') +
+      statCard(dueThisWeek, 'Due this week');
+
+    // heatmap
+    buildHeatmap();
+
+    // subject breakdown
+    buildSubjectBreakdown();
+
+    // retention scores
+    buildRetentionList();
+
+    document.getElementById('statsModal').classList.add('active');
+  }
+
+  function statCard(value, label) {
+    return `<div class="stat-card"><div class="stat-value">${value}</div><div class="stat-label">${label}</div></div>`;
+  }
+
+  function buildHeatmap() {
+    const activityMap = {};
+    sessions.forEach(s => {
+      activityMap[s.studiedDate] = (activityMap[s.studiedDate] || 0) + 2;
+      s.reviews.forEach(r => {
+        if (r.done) activityMap[r.date] = (activityMap[r.date] || 0) + 1;
+      });
+    });
+
+    const grid = document.getElementById('heatmapGrid');
+    grid.innerHTML = '';
+
+    const today = todayStr();
+
+    // anchor start to the Sunday of the week 12 weeks before the current week
+    // so today always lands in the final column
+    const startOfCurrentWeek = new Date(today + 'T00:00:00');
+    startOfCurrentWeek.setDate(startOfCurrentWeek.getDate() - startOfCurrentWeek.getDay());
+    const cursor = new Date(startOfCurrentWeek);
+    cursor.setDate(cursor.getDate() - 12 * 7);
+
+    for (let i = 0; i < 91; i++) {
+      const ds       = ymd(cursor.getFullYear(), cursor.getMonth() + 1, cursor.getDate());
+      const future   = ds > today;
+      const activity = future ? 0 : (activityMap[ds] || 0);
+      const cell     = document.createElement('div');
+      cell.className = 'heatmap-cell';
+      cell.style.background = future ? '#f8fafc' : heatColor(activity);
+      cell.style.opacity = future ? '0.3' : '1';
+      if (!future) cell.title = `${displayDate(ds)}: ${activity ? activity + ' points' : 'no activity'}`;
+      grid.appendChild(cell);
+      cursor.setDate(cursor.getDate() + 1);
+    }
+  }
+
+  function heatColor(a) {
+    if (a === 0) return '#f1f5f9';
+    if (a <= 1)  return '#c7d2fe';
+    if (a <= 3)  return '#818cf8';
+    return '#4f46e5';
+  }
+
+  function buildSubjectBreakdown() {
+    const wrap  = document.getElementById('subjectBreakdown');
+    const today = todayStr();
+
+    // Aggregate per-subject stats
+    const data = {};
+    sessions.forEach(s => {
+      const k = s.subject || '(No subject)';
+      if (!data[k]) data[k] = { topics: 0, totalRev: 0, doneRev: 0, overdue: 0, sessions: [] };
+      const d = data[k];
+      d.topics++;
+      d.sessions.push(s);
+      s.reviews.forEach(r => {
+        d.totalRev++;
+        if (r.done) d.doneRev++;
+        else if (r.date < today) d.overdue++;
+      });
+    });
+
+    const entries = Object.entries(data).sort((a, b) => b[1].doneRev - a[1].doneRev);
+    if (!entries.length) { wrap.innerHTML = ''; return; }
+
+    const maxRev = Math.max(1, ...entries.map(([, d]) => d.totalRev));
+    wrap.innerHTML = `<div class="stats-section-title" style="margin-top:8px">By subject</div>`;
+
+    entries.forEach(([subj, d]) => {
+      const col        = getSubjectColor(subj === '(No subject)' ? '' : subj);
+      const barPct     = Math.round((d.totalRev / maxRev) * 100);
+      const compPct    = d.totalRev ? Math.round((d.doneRev / d.totalRev) * 100) : 0;
+      const avgRet     = d.sessions.length
+        ? Math.round(d.sessions.reduce((s, x) => s + calcRetention(x), 0) / d.sessions.length)
+        : 0;
+      const retCol     = retentionColor(avgRet);
+
+      const row = document.createElement('div');
+      row.className = 'subject-row';
+      row.innerHTML =
+        `<div class="subject-name" title="${subj}">${subj}</div>
+         <div class="subject-bar-wrap">
+           <div class="subject-bar" style="width:${barPct}%;background:${col.border}"></div>
+         </div>
+         <div class="subject-stats">
+           <span>${d.topics} topic${d.topics !== 1 ? 's' : ''}</span>
+           <span>${d.doneRev}/${d.totalRev}</span>
+           <span class="s-ret" style="color:${retCol}">${avgRet}%</span>
+           ${d.overdue > 0 ? `<span class="s-overdue">${d.overdue} overdue</span>` : ''}
+         </div>`;
+      wrap.appendChild(row);
+    });
+
+    // Activity grid — only show when there are multiple subjects
+    if (entries.length > 1) buildSubjectHeatmap(wrap, entries);
+  }
+
+  function buildSubjectHeatmap(container, entries) {
+    const WEEKS = 8;
+    const today = todayStr();
+
+    // Compute week start dates (Sunday-anchored, ending this week)
+    const anchor = new Date(today + 'T00:00:00');
+    anchor.setDate(anchor.getDate() - anchor.getDay());
+    const weeks = [];
+    for (let w = WEEKS - 1; w >= 0; w--) {
+      const ws = new Date(anchor);
+      ws.setDate(anchor.getDate() - w * 7);
+      const we = new Date(ws);
+      we.setDate(ws.getDate() + 6);
+      weeks.push({
+        start: ws.toISOString().slice(0, 10),
+        end:   we.toISOString().slice(0, 10),
+        label: SHORT_MONTHS[ws.getMonth()] + ' ' + ws.getDate()
+      });
+    }
+
+    // Count completed reviews per subject per week
+    const act = {};
+    entries.forEach(([k]) => { act[k] = new Array(WEEKS).fill(0); });
+    sessions.forEach(s => {
+      const k = s.subject || '(No subject)';
+      if (!act[k]) return;
+      s.reviews.forEach(r => {
+        if (!r.done) return;
+        for (let w = 0; w < WEEKS; w++) {
+          if (r.date >= weeks[w].start && r.date <= weeks[w].end) { act[k][w]++; break; }
+        }
+      });
+    });
+
+    const maxAct = Math.max(1, ...Object.values(act).flat());
+
+    const wrap = document.createElement('div');
+    wrap.className = 'subject-heatmap';
+
+    // Week-label header row
+    const header = document.createElement('div');
+    header.className = 'sh-header';
+    header.innerHTML = `<div class="sh-subject-label"></div>` +
+      weeks.map(w => `<div class="sh-week-label">${w.label}</div>`).join('');
+    wrap.appendChild(header);
+
+    // Subject rows
+    entries.forEach(([subj]) => {
+      const col = getSubjectColor(subj === '(No subject)' ? '' : subj);
+      const row = document.createElement('div');
+      row.className = 'sh-row';
+      row.innerHTML = `<div class="sh-subject-label" title="${subj}">${subj}</div>`;
+      act[subj].forEach((count, wi) => {
+        const cell = document.createElement('div');
+        cell.className = 'sh-cell';
+        if (count > 0) {
+          cell.style.background = col.border;
+          cell.style.opacity    = (0.2 + (count / maxAct) * 0.8).toFixed(2);
+        }
+        cell.title = `${subj} · ${weeks[wi].label}: ${count} review${count !== 1 ? 's' : ''}`;
+        row.appendChild(cell);
+      });
+      wrap.appendChild(row);
+    });
+
+    container.appendChild(wrap);
+  }
+
+  // ── Retention score ──────────────────────────────────────
+  // Uses Ebbinghaus decay: R = e^(-t/S)
+  // S (stability) = interval of last completed event × ease factor
+  function calcRetention(session) {
+    const todayMs  = new Date(todayStr() + 'T00:00:00').getTime();
+    let lastDate   = session.studiedDate;
+    let lastRevIdx = -1;
+
+    for (let i = 0; i < session.reviews.length; i++) {
+      if (session.reviews[i].done) { lastDate = session.reviews[i].date; lastRevIdx = i; }
+    }
+
+    const daysSince    = Math.max(0, Math.round((todayMs - new Date(lastDate + 'T00:00:00').getTime()) / 86400000));
+    const ef           = session.easeFactor || 2.5;
+    const baseInterval = lastRevIdx === -1
+      ? (intervals[0] || 1)
+      : (intervals[lastRevIdx] || intervals[intervals.length - 1]);
+    const stability    = baseInterval * ef;
+
+    return Math.max(0, Math.min(100, Math.round(Math.exp(-daysSince / stability) * 100)));
+  }
+
+  function retentionColor(pct) {
+    if (pct >= 80) return '#10b981';
+    if (pct >= 60) return '#14b8a6';
+    if (pct >= 40) return '#f59e0b';
+    if (pct >= 20) return '#f97316';
+    return '#ef4444';
+  }
+
+  function buildRetentionList() {
+    const el = document.getElementById('retentionList');
+    if (!sessions.length) { el.innerHTML = ''; return; }
+
+    const scored = sessions
+      .map(s => ({ s, pct: calcRetention(s) }))
+      .sort((a, b) => b.pct - a.pct);
+
+    el.innerHTML = `<div class="stats-section-title" style="margin-top:8px">Retention by topic</div>`;
+    scored.forEach(({ s, pct }) => {
+      const col = retentionColor(pct);
+      const row = document.createElement('div');
+      row.className = 'retention-row';
+      row.innerHTML =
+        `<div class="retention-topic" title="${s.topic}">${s.topic}</div>
+         <div class="retention-bar-wrap">
+           <div class="retention-bar" style="width:0%;background:${col}" data-target="${pct}"></div>
+         </div>
+         <div class="retention-pct" style="color:${col}">${pct}%</div>`;
+      el.appendChild(row);
+    });
+
+    // Animate bars in on next frame
+    requestAnimationFrame(() => {
+      el.querySelectorAll('.retention-bar').forEach(bar => {
+        bar.style.width = bar.dataset.target + '%';
+      });
+    });
+  }
+
+  function exportCSV() {
+    const esc = s => `"${String(s ?? '').replace(/"/g, '""')}"`;
+    const rows = [
+      ['Topic','Subject','Studied Date','Notes','Review #','Due Date','Done','Confidence (1-5)','Ease Factor','Review Streak']
+    ];
+    sessions.forEach(s => {
+      s.reviews.forEach((r, i) => {
+        rows.push([
+          esc(s.topic),
+          esc(s.subject),
+          s.studiedDate,
+          esc(s.notes),
+          i + 1,
+          r.date,
+          r.done ? 'true' : 'false',
+          r.confidence ?? '',
+          (s.easeFactor ?? 2.5).toFixed(2),
+          s.reviewStreak ?? 0
+        ]);
+      });
+    });
+    const csv  = rows.map(r => r.join(',')).join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `recall-export-${todayStr()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('CSV exported!');
+  }
+
+  function closeStats() { document.getElementById('statsModal').classList.remove('active'); }
+
+  // ── Forgetting Curve Modal ────────────────────────────────
+  function openCurveModal(sessionId) {
+    const session = sessions.find(s => s.id === sessionId);
+    if (!session) return;
+    closeDayModal();
+    document.getElementById('curveTitle').textContent    = session.topic;
+    document.getElementById('curveSubtitle').textContent =
+      `Studied ${displayDate(session.studiedDate)}` +
+      (session.subject ? ` · ${session.subject}` : '') +
+      (session.recurrenceRule ? ` · 🔁 ${recurRuleLabel(session.recurrenceRule)}` : '');
+    document.getElementById('curveChart').innerHTML  = buildCurveSVG(session);
+    document.getElementById('curveLegend').innerHTML = buildCurveLegend(session);
+    document.getElementById('curveModal').classList.add('active');
+  }
+
+  function closeCurveModal() { document.getElementById('curveModal').classList.remove('active'); }
+
+  function buildCurveSVG(session) {
+    const today    = todayStr();
+    const studyMs  = new Date(session.studiedDate + 'T00:00:00').getTime();
+    const toDays   = d => (new Date(d + 'T00:00:00').getTime() - studyMs) / 86400000;
+    const todayDay = toDays(today);
+
+    const lastRevDay = Math.max(0, ...session.reviews.map(r => toDays(r.date)));
+    const maxDay     = Math.max(lastRevDay + 4, todayDay + 2, 33);
+
+    // SVG viewport
+    const W = 500, H = 190;
+    const ML = 44, MR = 14, MT = 18, MB = 28;
+    const PW = W - ML - MR, PH = H - MT - MB;
+
+    const toX = d   => ML + (d / maxDay) * PW;
+    const toY = pct => MT + (1 - Math.min(1, Math.max(0, pct / 100))) * PH;
+
+    // Build curve phases: each phase starts after a completed review
+    // stability = gap-to-next-review × ease factor (grows with each pass)
+    const ef = session.easeFactor || 2.5;
+    const phases = [];
+    let curEF = 2.5; // replay EF forward from initial 2.5
+
+    phases.push({ startDay: 0, stability: (intervals[0] || 1) * curEF });
+
+    session.reviews.forEach((r, i) => {
+      if (!r.done) return;
+      const day = toDays(r.date);
+      if (r.confidence) {
+        // simplified SM-2 replay
+        const q     = r.confidence;
+        const newEF = Math.max(1.3, curEF + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02)));
+        curEF = q < 3 ? Math.max(1.3, curEF - 0.2) : newEF;
+      }
+      const nextGap = i + 1 < intervals.length
+        ? (intervals[i + 1] - intervals[i])
+        : (intervals[intervals.length - 1]);
+      phases.push({ startDay: day, stability: Math.max(1, nextGap) * curEF });
+    });
+
+    // ── Draw grid ──────────────────────────────────────────
+    let grid = '', xLabels = '';
+    [0, 25, 50, 75, 100].forEach(pct => {
+      const y = toY(pct).toFixed(1);
+      grid += `<line class="curve-grid-line" x1="${ML}" y1="${y}" x2="${ML + PW}" y2="${y}"/>`;
+      grid += `<text class="curve-label" x="${ML - 5}" y="${(+y + 3.5).toFixed(1)}" text-anchor="end">${pct}%</text>`;
+    });
+    [0, 7, 14, 21, 30].filter(d => d <= maxDay + 1).forEach(d => {
+      const x = toX(d).toFixed(1);
+      xLabels += `<text class="curve-label" x="${x}" y="${H - 6}" text-anchor="middle">+${d}d</text>`;
+    });
+
+    // ── Draw curve segments + area fills ──────────────────
+    let paths = '', areas = '';
+    phases.forEach((phase, pi) => {
+      const endDay = pi < phases.length - 1 ? phases[pi + 1].startDay : maxDay;
+      const pts = [], areaPts = [];
+      for (let d = phase.startDay; d <= endDay + 0.1; d += 0.25) {
+        const t   = d - phase.startDay;
+        const ret = 100 * Math.exp(-t / phase.stability);
+        const x   = toX(d).toFixed(2);
+        const y   = toY(ret).toFixed(2);
+        pts.push(`${x},${y}`);
+        areaPts.push(`${x},${y}`);
+      }
+      if (pts.length < 2) return;
+      paths += `<polyline class="curve-path" points="${pts.join(' ')}"/>`;
+      const x0 = toX(phase.startDay).toFixed(2);
+      const x1 = toX(Math.min(endDay, maxDay)).toFixed(2);
+      const yBase = (MT + PH).toFixed(2);
+      areas += `<polygon class="curve-area" points="${x0},${yBase} ${areaPts.join(' ')} ${x1},${yBase}"/>`;
+    });
+
+    // ── Today line ─────────────────────────────────────────
+    let todayLine = '';
+    if (todayDay > 0.5 && todayDay <= maxDay) {
+      const tx = toX(todayDay).toFixed(1);
+      todayLine = `<line class="curve-today" x1="${tx}" y1="${MT}" x2="${tx}" y2="${MT + PH}"/>
+                   <text class="curve-today-lbl" x="${tx}" y="${MT - 4}" text-anchor="middle">today</text>`;
+    }
+
+    // ── Review dots ────────────────────────────────────────
+    const confFill = ['#ef4444','#f97316','#eab308','#22c55e','#6366f1'];
+    let dots = '', resets = '';
+
+    // Study dot at day 0
+    dots += `<circle cx="${toX(0).toFixed(1)}" cy="${toY(100).toFixed(1)}" r="5" fill="#6366f1" stroke="white" stroke-width="1.5"/>`;
+
+    session.reviews.forEach((r, i) => {
+      const day = toDays(r.date);
+      // Find phase active at this day
+      let phase = phases[0];
+      for (const p of phases) { if (p.startDay <= day) phase = p; }
+
+      const t   = day - phase.startDay;
+      const ret = Math.min(100, Math.max(0, 100 * Math.exp(-t / phase.stability)));
+      const cx  = toX(day).toFixed(1);
+      const cy  = toY(ret).toFixed(1);
+
+      if (r.done) {
+        const col = r.confidence ? confFill[r.confidence - 1] : '#6366f1';
+        // vertical reset line
+        resets += `<line x1="${cx}" y1="${cy}" x2="${cx}" y2="${toY(100).toFixed(1)}" stroke="${col}" stroke-width="1" stroke-dasharray="3 2" opacity="0.45"/>`;
+        dots   += `<circle cx="${cx}" cy="${cy}" r="5" fill="${col}" stroke="white" stroke-width="1.5"/>`;
+      } else {
+        const overdue = r.date < today;
+        const col = overdue ? '#ef4444' : '#94a3b8';
+        dots += `<circle cx="${cx}" cy="${cy}" r="5" fill="white" stroke="${col}" stroke-width="2"/>`;
+      }
+    });
+
+    // ── Axes ───────────────────────────────────────────────
+    const axes = `<line class="curve-axis" x1="${ML}" y1="${MT}" x2="${ML}" y2="${MT + PH}"/>
+                  <line class="curve-axis" x1="${ML}" y1="${MT + PH}" x2="${ML + PW}" y2="${MT + PH}"/>`;
+
+    return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+      ${grid}${xLabels}${axes}${todayLine}${areas}${paths}${resets}${dots}
+    </svg>`;
+  }
+
+  function buildCurveLegend(session) {
+    const confEmoji = ['😶','😕','😐','😊','🎯'];
+    const confColor = ['#ef4444','#f97316','#eab308','#22c55e','#6366f1'];
+    const confLabel = ['Blank','Hard','Okay','Good','Perfect'];
+
+    // Collect which confidence scores were actually used
+    const used = new Set(session.reviews.filter(r => r.done && r.confidence).map(r => r.confidence));
+
+    let html = `<div class="curve-legend-item"><div class="curve-legend-dot" style="background:#6366f1"></div>Study / reviewed</div>`;
+
+    used.forEach(c => {
+      html += `<div class="curve-legend-item">
+        <div class="curve-legend-dot" style="background:${confColor[c-1]}"></div>
+        ${confEmoji[c-1]} ${confLabel[c-1]}
+      </div>`;
+    });
+
+    const hasPending = session.reviews.some(r => !r.done);
+    if (hasPending) {
+      const hasOverdue = session.reviews.some(r => !r.done && r.date < todayStr());
+      html += `<div class="curve-legend-item"><div class="curve-legend-ring" style="border-color:${hasOverdue ? '#ef4444' : '#94a3b8'}"></div>
+        ${hasOverdue ? 'Overdue' : 'Upcoming'} review</div>`;
+    }
+
+    return html;
+  }
+
+  // ── Settings Modal ───────────────────────────────────────
+  function openSettings() {
+    renderIntervalsList(intervals);
+    document.getElementById('settingsModal').classList.add('active');
+  }
+
+  function renderIntervalsList(ivs) {
+    const list = document.getElementById('intervalsList');
+    list.innerHTML = '';
+    ivs.forEach((days, i) => {
+      const row = document.createElement('div');
+      row.className = 'interval-row';
+      const col = REVIEW_COLORS[Math.min(i, REVIEW_COLORS.length - 1)];
+      row.innerHTML =
+        `<span class="interval-label" style="color:${col}">Review ${i + 1}</span>
+         <input class="interval-input" type="number" min="1" max="365" value="${days}" data-index="${i}" />
+         <span class="interval-unit">days after</span>
+         <span class="interval-date" id="idate-${i}">${displayDate(addDays(todayStr(), days))}</span>`;
+      list.appendChild(row);
+
+      row.querySelector('.interval-input').addEventListener('input', e => {
+        const val = parseInt(e.target.value);
+        if (val > 0) document.getElementById(`idate-${i}`).textContent = displayDate(addDays(todayStr(), val));
+      });
+    });
+  }
+
+  function resetIntervals() {
+    renderIntervalsList([...DEFAULT_INTERVALS]);
+  }
+
+  async function saveSettings() {
+    const inputs = document.querySelectorAll('#intervalsList .interval-input');
+    const newIntervals = [...inputs].map(inp => parseInt(inp.value)).filter(n => n > 0);
+    if (!newIntervals.length) return;
+
+    await authFetch('/api/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ intervals: newIntervals })
+    });
+    intervals = newIntervals;
+    closeSettings();
+    renderLegend();
+    showToast('Intervals saved — applies to new sessions');
+  }
+
+  function closeSettings() { document.getElementById('settingsModal').classList.remove('active'); }
+
+  // ── Overlay click-outside ────────────────────────────────
+  function handleOverlayClick(e, id) {
+    if (e.target === document.getElementById(id)) {
+      ({ addModal: closeAddModal, dayModal: closeDayModal,
+         statsModal: closeStats, settingsModal: closeSettings })[id]?.();
+    }
+  }
+
+  // ── Keyboard ─────────────────────────────────────────────
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { clearSearch(); closeAddModal(); closeDayModal(); closeStats(); closeSettings(); closeCurveModal(); closeLinkModal(); closeGraphModal(); }
+    if (e.key === 'Enter' && document.getElementById('addModal').classList.contains('active'))
+      if (document.activeElement.tagName !== 'TEXTAREA') saveStudySession();
+    if (!document.querySelector('.modal-overlay.active')) {
+      if (e.key === 'ArrowLeft')  prevMonth();
+      if (e.key === 'ArrowRight') nextMonth();
+      const activeTag = document.activeElement.tagName;
+      if ((e.key === 'n' || e.key === 'N') && !['INPUT','TEXTAREA'].includes(activeTag))
+        openAddModal();
+      // / or Cmd+K → focus search
+      if (e.key === '/' && !['INPUT','TEXTAREA'].includes(activeTag)) {
+        e.preventDefault();
+        focusSearch();
+      }
+      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        focusSearch();
+      }
+    }
+  });
+
+  // ── Swipe gestures (month navigation) ────────────────────
+  (() => {
+    let startX = null, startY = null;
+    const cal  = document.querySelector('.calendar-container');
+
+    cal.addEventListener('touchstart', e => {
+      startX = e.changedTouches[0].clientX;
+      startY = e.changedTouches[0].clientY;
+    }, { passive: true });
+
+    cal.addEventListener('touchend', e => {
+      if (startX === null) return;
+      const dx = e.changedTouches[0].clientX - startX;
+      const dy = e.changedTouches[0].clientY - startY;
+      // Only register horizontal swipes wider than 50px that are more horizontal than vertical
+      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+        if (document.querySelector('.modal-overlay.active')) return; // ignore while modal open
+        dx < 0 ? nextMonth() : prevMonth();
+      }
+      startX = null;
+    }, { passive: true });
+  })();
+
+  // ── Nav ──────────────────────────────────────────────────
+  function prevMonth() {
+    if (currentMonth === 0) { currentMonth = 11; currentYear--; } else currentMonth--;
+    renderCalendar();
+  }
+
+  function nextMonth() {
+    if (currentMonth === 11) { currentMonth = 0; currentYear++; } else currentMonth++;
+    renderCalendar();
+  }
+
+  function goToToday() {
+    const d = new Date();
+    currentYear = d.getFullYear();
+    currentMonth = d.getMonth();
+    renderCalendar();
+  }
+
+  // ── Toast ─────────────────────────────────────────────────
+  let toastTimer;
+  function showToast(msg) {
+    clearTimeout(toastTimer);
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  // ── Init ──────────────────────────────────────────────────
+  initDark();
+
+  const now = new Date();
+  currentYear  = now.getFullYear();
+  currentMonth = now.getMonth();
+
+  Promise.all([loadSessions(), loadSettings()]).then(() => renderCalendar());
+
+  // ── Service Worker ────────────────────────────────────────
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  }
+</script>
+</body>
+</html>

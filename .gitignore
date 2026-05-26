@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Database (contains user data — never commit)
+recall.db
+*.db
+
+# Environment / secrets
+.env
+.env.*
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Editor / IDE
+.vscode/
+.idea/
+*.suo
+*.user
+
+# Logs
+*.log
+npm-debug.log*
+
+# Runtime artefacts
+.claude/
+EVIDENCE.txt
