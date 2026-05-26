@@ -1,5 +1,6 @@
 # Recall — Spaced Repetition Calendar
 
+[![CI](https://github.com/Garuda8887/recall/actions/workflows/ci.yml/badge.svg)](https://github.com/Garuda8887/recall/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](https://nodejs.org/)
 [![Frontend](https://img.shields.io/badge/frontend-zero%20dependencies-orange.svg)]()
@@ -8,6 +9,8 @@
 > Anki's algorithm. A calendar you actually want to open.
 
 Anki is effective but its interface is stuck in 2004. Recall gives you the same scientifically-proven SM-2 spaced repetition wrapped in a month-view calendar that makes your entire study schedule visible at a glance. Self-hosted, no sync fees, no card decks — log what you studied and show up when it tells you to.
+
+If Recall is useful to you, consider giving it a ⭐ — it helps others find it.
 
 ![Calendar main view](screenshots/01-calendar-main.png)
 
