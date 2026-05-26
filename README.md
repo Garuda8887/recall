@@ -1,6 +1,13 @@
 # Recall — Spaced Repetition Calendar
 
-> A self-hosted, privacy-first study planner that automatically schedules reviews using the SM-2 spaced-repetition algorithm — visualised as a calendar so you always know what to revise and when.
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](https://nodejs.org/)
+[![Frontend](https://img.shields.io/badge/frontend-zero%20dependencies-orange.svg)]()
+[![Database](https://img.shields.io/badge/database-SQLite-lightgrey.svg)]()
+
+> Anki's algorithm. A calendar you actually want to open.
+
+Anki is effective but its interface is stuck in 2004. Recall gives you the same scientifically-proven SM-2 spaced repetition wrapped in a month-view calendar that makes your entire study schedule visible at a glance. Self-hosted, no sync fees, no card decks — log what you studied and show up when it tells you to.
 
 ![Calendar main view](screenshots/01-calendar-main.png)
 
@@ -30,93 +37,57 @@
 
 ## Screenshots
 
-### Calendar — main view
-![Calendar main view](screenshots/01-calendar-main.png)
-*Month view with colour-coded studied sessions and upcoming review chips. Streak counter and due-today banner at the top.*
+<table>
+  <tr>
+    <td><img src="screenshots/03-calendar-populated.png"/><br/><sub><b>Populated calendar</b> — studied chips in subject colour, review chips in red → blue gradient.</sub></td>
+    <td><img src="screenshots/07-confidence-rating.png"/><br/><sub><b>Confidence rating</b> — rate recall after each review; SM-2 reschedules the next date.</sub></td>
+  </tr>
+  <tr>
+    <td><img src="screenshots/08-forgetting-curve.png"/><br/><sub><b>Forgetting curve</b> — per-session exponential decay chart with past and upcoming review markers.</sub></td>
+    <td><img src="screenshots/11-knowledge-graph.png"/><br/><sub><b>Knowledge graph</b> — Obsidian-style force-directed graph of all linked sessions.</sub></td>
+  </tr>
+  <tr>
+    <td><img src="screenshots/12-dark-mode-graph.png"/><br/><sub><b>Dark mode</b> — full dark palette across the calendar, modals, and graph.</sub></td>
+    <td><img src="screenshots/09-stats-modal.png"/><br/><sub><b>Stats & heatmap</b> — 13-week activity heatmap and per-subject retention bars.</sub></td>
+  </tr>
+</table>
 
----
+<details>
+<summary>More screenshots</summary>
 
 ### Add Study Session
 ![Add session modal](screenshots/02-add-session-modal.png)
 *Log a new topic with subject, notes, tags, and an optional weekly or interval-based recurrence rule.*
 
----
-
-### Populated calendar
-![Populated calendar](screenshots/03-calendar-populated.png)
-*Multiple sessions across the month — studied chips in their subject colour, review chips in red → orange → yellow → green → blue gradient.*
-
----
-
 ### Full-text search
 ![Search](screenshots/04-search-mechanics.png)
 *Live search filters the calendar to matching sessions. Matches topics, notes, subject, and tags simultaneously.*
 
----
-
 ### Subject filter
 ![Subject filter](screenshots/05-subject-filter.png)
-*One-click subject pill hides all other subjects from the calendar. Physics selected here — only Newton's Laws of Motion and Projectile Motion are shown.*
-
----
+*One-click subject pill hides all other subjects. Physics selected here — only Newton's Laws and Projectile Motion shown.*
 
 ### Day modal — session details, tags & links
 ![Day modal](screenshots/06-day-modal.png)
-*Click any day to see all sessions and reviews. Shows tags, second-brain links with relation labels, forgetting-curve button, and edit/delete controls.*
-
----
-
-### Confidence rating popup
-![Confidence rating](screenshots/07-confidence-rating.png)
-*After clicking "Mark done" on a review, pick your recall confidence. The SM-2 algorithm uses your rating to reschedule the next review.*
-
----
-
-### Forgetting curve
-![Forgetting curve](screenshots/08-forgetting-curve.png)
-*Per-session exponential decay chart. Filled dots = reviewed; hollow dots = upcoming reviews. Recurring session indicator shown in the header.*
-
----
-
-### Stats modal
-![Stats modal](screenshots/09-stats-modal.png)
-*Progress dashboard: activity heatmap (last 13 weeks), per-subject review completion bars with overdue counts, and per-topic retention percentages.*
-
----
+*Click any day to see all sessions and reviews. Shows tags, second-brain links, forgetting-curve button, and edit/delete controls.*
 
 ### Second brain — link sessions
 ![Link sessions](screenshots/10-link-sessions.png)
-*Link any two sessions with a typed relationship. Choose the relation type and target session — click Save Link to persist the connection.*
-
----
-
-### Knowledge graph
-![Knowledge graph](screenshots/11-knowledge-graph.png)
-*Force-directed graph of all linked topics. Drag nodes to reposition, scroll to zoom, pan the canvas. Edge colours indicate relation type (purple = builds-on, orange = prerequisite, teal = see-also).*
-
----
+*Link any two sessions with a typed relationship. Choose the relation type and target session — click Save Link to persist.*
 
 ### Knowledge graph — subject focus
 ![Graph subject filter](screenshots/11b-graph-subject-filter.png)
-*Click a subject pill in the graph toolbar to dim non-matching nodes and edges — isolates a discipline's knowledge cluster at a glance.*
-
----
-
-### Dark mode
-![Dark mode graph](screenshots/12-dark-mode-graph.png)
-*Toggle dark mode from the header. The full app — calendar, modals, and knowledge graph — switches to a deep-navy palette.*
-
----
+*Click a subject pill in the graph toolbar to dim non-matching nodes — isolates a discipline's knowledge cluster at a glance.*
 
 ### Drag-and-drop reschedule
 ![Drag and drop](screenshots/13-drag-reschedule.png)
-*Drag any undone review chip to a new calendar day to reschedule it. The chip moves and the server persists the new date immediately.*
-
----
+*Drag any undone review chip to a new calendar day to reschedule it. The server persists the new date immediately.*
 
 ### Settings — custom intervals
 ![Settings](screenshots/14-settings-intervals.png)
-*Override the default SM-2 intervals (1 / 3 / 7 / 14 / 30 days) with any values you prefer. Preview dates update live as you type.*
+*Override the default SM-2 intervals with any values you prefer. Preview dates update live as you type.*
+
+</details>
 
 ---
 
@@ -130,13 +101,9 @@
 ### Install & run
 
 ```bash
-# Clone or download the project
-cd calender
-
-# Install dependencies
+git clone https://github.com/Garuda8887/recall.git
+cd recall
 npm install
-
-# Start the server
 node server.js
 ```
 
@@ -159,25 +126,11 @@ JWT_SECRET=my-super-secret-key PORT=8080 node server.js
 
 ### SM-2 algorithm
 
-When you mark a review done with a confidence rating (1–5), the server computes:
-
-```
-newEaseFactor = max(1.3, EF + 0.1 − (5 − q) × (0.08 + (5 − q) × 0.02))
-nextInterval  = max(1, round(currentInterval × newEaseFactor))
-```
-
-- **Confidence ≥ 3** → pass; ease factor increases slightly; next interval grows.
-- **Confidence < 3** → fail; ease factor decreases; review resets to +1 day.
-- **"Reschedule from today"** anchors the next review to today rather than the originally-scheduled date, useful for late reviews.
-
-### Review intervals
-
-Default schedule after a study session: **+1 · +3 · +7 · +14 · +30 days**.  
-Customise via Settings — changes apply to new sessions only.
+After each review you rate your recall from 1 (blank) to 5 (perfect). SM-2 uses that score to grow or shrink the next interval — ace it repeatedly and reviews get pushed further out; struggle and it resets to the next day. The default schedule after a new session is **+1 · +3 · +7 · +14 · +30 days**, fully customisable in Settings.
 
 ### Recurring sessions
 
-Set a session to recur *every Tuesday* or *every N days*. On each page load, the server auto-generates any missing instances up to today (capped at 14 catch-up instances per series to prevent runaway creation).
+Set a session to recur *every Tuesday* or *every N days*. Any missed instances since the last login are auto-created (capped at 14 catch-ups per series).
 
 ---
 
