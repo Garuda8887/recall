@@ -215,4 +215,12 @@ All session routes require `Authorization: Bearer <token>`.
 
 ---
 
+## License
+
+MIT © [Garuda8887](https://github.com/Garuda8887)
+
+Free to use, copy, modify and distribute. The copyright notice above must be included in all copies or substantial portions of the software — if you build on this, you must credit the original author.
+
+---
+
 *Built with ❤️ as a self-hosted alternative to Anki, optimised for visual learners who think in calendars.*
