@@ -1,6 +1,5 @@
 # Recall — Spaced Repetition Calendar
 
-[![CI](https://github.com/Garuda8887/recall/actions/workflows/ci.yml/badge.svg)](https://github.com/Garuda8887/recall/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](https://nodejs.org/)
 [![Frontend](https://img.shields.io/badge/frontend-zero%20dependencies-orange.svg)]()
