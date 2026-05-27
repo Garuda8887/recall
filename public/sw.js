@@ -1,12 +1,13 @@
-const CACHE = 'recall-v1';
+const CACHE = 'recall-v2';
 const SHELL = [
   '/',
   '/auth.html',
   '/favicon.svg',
   '/logo.svg',
   '/manifest.json',
-  '/icon-192.svg',
-  '/icon-512.svg'
+  '/icon-192.png',
+  '/icon-512.png',
+  '/apple-touch-icon.png'
 ];
 
 self.addEventListener('install', e => {
