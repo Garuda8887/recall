@@ -34,6 +34,7 @@ If Recall is useful to you, consider giving it a ⭐ — it helps others find it
 | **Dark Mode** | Toggle dark mode — the calendar, modals, and knowledge graph all adapt. |
 | **Custom Intervals** | Set your own review intervals (e.g. 1 / 7 / 21 / 60 / 120 days). Changes apply to new sessions going forward. |
 | **JWT Auth** | Full registration and login; all data is isolated per user. |
+| **PWA** | Installable as a native-feeling app on iOS and Android — works offline, home screen icon, no app store required. |
 
 ---
 
@@ -121,6 +122,20 @@ Open **http://localhost:3000** in your browser, register an account, and start l
 ```bash
 JWT_SECRET=my-super-secret-key PORT=8080 node server.js
 ```
+
+### Install as an app (PWA)
+
+Recall is a fully installable Progressive Web App — no app store required.
+
+| Platform | How to install |
+|---|---|
+| **iOS / iPadOS** | Open in Safari → Share → **Add to Home Screen** |
+| **Android** | Open in Chrome → three-dot menu → **Add to Home Screen** (or accept the install prompt) |
+| **Desktop (Chrome / Edge)** | Click the install icon in the address bar |
+
+Once installed it launches fullscreen with its own icon, just like a native app. It also works offline — the app shell is cached locally so the UI loads instantly even without a connection (data syncs when you're back online).
+
+**Updating:** just `git pull` on your server. The service worker detects the new version and refreshes automatically on next open — no reinstall needed.
 
 ---
 
