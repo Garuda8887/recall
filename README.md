@@ -11,7 +11,7 @@ Anki is effective but its interface is stuck in 2004. Recall gives you the same 
 
 If Recall is useful to you, consider giving it a ⭐ — it helps others find it.
 
-![Calendar main view](screenshots/01-calendar-main.png)
+![Calendar main view](screenshots/recall.gif)
 
 ---
 
