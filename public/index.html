@@ -382,6 +382,8 @@
 
     /* ── Calendar grid ── */
     .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
       background: white;
       border-radius: 14px;
       border: 1px solid #e2e8f0;
@@ -406,13 +408,6 @@
       letter-spacing: 0.01em;
     }
 
-    .day-headers {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      background: #f8fafc;
-      border-bottom: 1px solid #e2e8f0;
-    }
-
     .day-header {
       padding: 11px 8px;
       text-align: center;
@@ -423,9 +418,9 @@
       letter-spacing: 0.07em;
       min-width: 0;
       overflow: hidden;
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
     }
-
-    .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
 
     .day-cell {
       min-height: 90px;
@@ -1148,7 +1143,6 @@
       .nav-btn { width: 30px; height: 30px; font-size: 16px; }
 
       /* Calendar grid */
-      .day-headers { }
       .day-header { font-size: 9px; padding: 7px 2px; letter-spacing: 0; }
       .day-cell { min-height: 58px; padding: 5px 3px 3px; }
       .day-number { font-size: 11px; width: 22px; height: 22px; margin-bottom: 2px; }
@@ -1262,8 +1256,7 @@
     body.dark .nav-btn:hover { background: #334155; color: #e2e8f0; }
 
     body.dark .calendar-grid { background: #1e293b; border-color: #334155; }
-    body.dark .day-headers { background: #0f172a; border-color: #334155; }
-    body.dark .day-header { color: #475569; }
+    body.dark .day-header { color: #475569; background: #0f172a; border-bottom-color: #334155; }
     body.dark .day-cell { border-color: #1e293b; }
     body.dark .day-cell:hover { background: #1e293b; }
     body.dark .day-cell.other-month { background: #0a0f1a; }
@@ -1471,17 +1464,14 @@
     </div>
   </div>
 
-  <div class="calendar-grid">
-    <div class="day-headers">
-      <div class="day-header">Sun</div>
-      <div class="day-header">Mon</div>
-      <div class="day-header">Tue</div>
-      <div class="day-header">Wed</div>
-      <div class="day-header">Thu</div>
-      <div class="day-header">Fri</div>
-      <div class="day-header">Sat</div>
-    </div>
-    <div class="days-grid" id="daysGrid"></div>
+  <div class="calendar-grid" id="calendarGrid">
+    <div class="day-header">Sun</div>
+    <div class="day-header">Mon</div>
+    <div class="day-header">Tue</div>
+    <div class="day-header">Wed</div>
+    <div class="day-header">Thu</div>
+    <div class="day-header">Fri</div>
+    <div class="day-header">Sat</div>
   </div>
 
   <div class="legend" id="legend"></div>
@@ -2700,8 +2690,9 @@
     const isEmpty = sessions.length === 0;
     document.getElementById('emptyState').style.display = isEmpty ? '' : 'none';
 
-    const grid = document.getElementById('daysGrid');
-    grid.innerHTML = '';
+    const grid = document.getElementById('calendarGrid');
+    // Remove only day-cells, preserving the 7 day-header children
+    Array.from(grid.querySelectorAll('.day-cell')).forEach(el => el.remove());
     document.getElementById('monthYear').textContent = `${MONTH_NAMES[currentMonth]} ${currentYear}`;
 
     const today    = todayStr();
@@ -2718,18 +2709,19 @@
       grid.appendChild(makeCell(prevDays - i, ymd(prevY, prevM + 1, prevDays - i), true, today));
     for (let d = 1; d <= dimMax; d++)
       grid.appendChild(makeCell(d, ymd(currentYear, currentMonth + 1, d), false, today));
-    const tail = grid.children.length % 7 === 0 ? 0 : 7 - (grid.children.length % 7);
+    const dayCells = Array.from(grid.querySelectorAll('.day-cell'));
+    const tail = dayCells.length % 7 === 0 ? 0 : 7 - (dayCells.length % 7);
     for (let d = 1; d <= tail; d++)
       grid.appendChild(makeCell(d, ymd(nextY, nextM + 1, d), true, today));
 
-    // today-column tint
+    // today-column tint (operate only on day-cells, not headers)
     const todayCol = new Date().getDay();
-    Array.from(grid.children).forEach((cell, i) => {
+    Array.from(grid.querySelectorAll('.day-cell')).forEach((cell, i) => {
       if (i % 7 === todayCol) cell.classList.add('today-col');
     });
 
     // empty-month watermark
-    const calGrid = document.querySelector('.calendar-grid');
+    const calGrid = grid;
     const existing = document.getElementById('emptyMonthMsg');
     if (existing) existing.remove();
     const monthHasEvents = sessions
