@@ -393,9 +393,12 @@
       position: relative;        /* anchor for .empty-month absolute overlay */
     }
 
-    .calendar-grid {
+    .calendar-grid { width: 100%; }
+
+    /* Each row is its own independent flex container so chip content in
+       one row cannot widen a column and push SAT off-screen in another */
+    .cal-row {
       display: flex;
-      flex-wrap: wrap;
       width: 100%;
     }
 
@@ -416,8 +419,8 @@
     }
 
     .day-header {
-      flex: 0 0 calc(100% / 7);
-      width: calc(100% / 7);
+      flex: none;
+      width: 14.285714%;
       box-sizing: border-box;
       padding: 11px 8px;
       text-align: center;
@@ -433,8 +436,8 @@
     }
 
     .day-cell {
-      flex: 0 0 calc(100% / 7);
-      width: calc(100% / 7);
+      flex: none;
+      width: 14.285714%;
       box-sizing: border-box;
       min-height: 90px;
       min-width: 0;
@@ -448,7 +451,7 @@
       transition: background 0.1s;
     }
 
-    .day-cell:nth-child(7n) { border-right: none; }
+    .day-cell:nth-child(7) { border-right: none; }  /* SAT = 7th cell in each .cal-row */
     .day-cell:hover { background: #fafbff; }
     .day-cell.other-month { background: #fcfcfd; }
     .day-cell.other-month .day-number { color: #d1d5db; }
@@ -1481,13 +1484,15 @@
 
   <div class="calendar-outer" id="calendarOuter">
     <div class="calendar-grid" id="calendarGrid">
-      <div class="day-header">Sun</div>
-      <div class="day-header">Mon</div>
-      <div class="day-header">Tue</div>
-      <div class="day-header">Wed</div>
-      <div class="day-header">Thu</div>
-      <div class="day-header">Fri</div>
-      <div class="day-header">Sat</div>
+      <div class="cal-row">
+        <div class="day-header">Sun</div>
+        <div class="day-header">Mon</div>
+        <div class="day-header">Tue</div>
+        <div class="day-header">Wed</div>
+        <div class="day-header">Thu</div>
+        <div class="day-header">Fri</div>
+        <div class="day-header">Sat</div>
+      </div>
     </div>
   </div>
 
@@ -2708,8 +2713,8 @@
     document.getElementById('emptyState').style.display = isEmpty ? '' : 'none';
 
     const grid = document.getElementById('calendarGrid');
-    // Remove only day-cells, preserving the 7 day-header children
-    Array.from(grid.querySelectorAll('.day-cell')).forEach(el => el.remove());
+    // Remove all data rows, keeping the header row
+    Array.from(grid.querySelectorAll('.cal-row:not(:first-child)')).forEach(el => el.remove());
     document.getElementById('monthYear').textContent = `${MONTH_NAMES[currentMonth]} ${currentYear}`;
 
     const today    = todayStr();
@@ -2722,20 +2727,28 @@
     const nextM = currentMonth === 11 ? 0 : currentMonth + 1;
     const nextY = currentMonth === 11 ? currentYear + 1 : currentYear;
 
+    // Build flat cell list then arrange into row containers of 7
+    const cells = [];
     for (let i = firstDay - 1; i >= 0; i--)
-      grid.appendChild(makeCell(prevDays - i, ymd(prevY, prevM + 1, prevDays - i), true, today));
+      cells.push(makeCell(prevDays - i, ymd(prevY, prevM + 1, prevDays - i), true, today));
     for (let d = 1; d <= dimMax; d++)
-      grid.appendChild(makeCell(d, ymd(currentYear, currentMonth + 1, d), false, today));
-    const dayCells = Array.from(grid.querySelectorAll('.day-cell'));
-    const tail = dayCells.length % 7 === 0 ? 0 : 7 - (dayCells.length % 7);
+      cells.push(makeCell(d, ymd(currentYear, currentMonth + 1, d), false, today));
+    const tail = cells.length % 7 === 0 ? 0 : 7 - (cells.length % 7);
     for (let d = 1; d <= tail; d++)
-      grid.appendChild(makeCell(d, ymd(nextY, nextM + 1, d), true, today));
+      cells.push(makeCell(d, ymd(nextY, nextM + 1, d), true, today));
 
-    // today-column tint (operate only on day-cells, not headers)
+    // today-column tint
     const todayCol = new Date().getDay();
-    Array.from(grid.querySelectorAll('.day-cell')).forEach((cell, i) => {
-      if (i % 7 === todayCol) cell.classList.add('today-col');
-    });
+    cells.forEach((cell, i) => { if (i % 7 === todayCol) cell.classList.add('today-col'); });
+
+    // Append cells in rows of 7 — each row is its own flex container so
+    // chip content in one row cannot push the SAT column out of view
+    for (let r = 0; r < cells.length / 7; r++) {
+      const row = document.createElement('div');
+      row.className = 'cal-row';
+      for (let c = 0; c < 7; c++) row.appendChild(cells[r * 7 + c]);
+      grid.appendChild(row);
+    }
 
     // empty-month watermark (appended to outer wrapper which has position:relative)
     const calGrid = document.getElementById('calendarOuter');
