@@ -1,4 +1,4 @@
-const CACHE = 'recall-v6';
+const CACHE = 'recall-v7';
 
 // Static assets only — index.html is intentionally excluded so CSS/JS
 // changes are always served fresh from the server without a cache bust.

@@ -20,7 +20,6 @@
       background: #f1f5f9;
       color: #1e293b;
       min-height: 100vh;
-      overflow-x: hidden;
     }
 
     /* ── Header ── */
@@ -1180,9 +1179,12 @@
       .legend-item { font-size: 11px; }
     }
 
-    @media (max-width: 380px) {
-      .add-btn span { display: none; }
+    @media (max-width: 640px) {
+      .add-btn-text { display: none; }
       .header-right { gap: 4px; }
+    }
+
+    @media (max-width: 380px) {
       .day-cell { min-height: 48px; }
       .day-header { font-size: 8px; }
     }
@@ -1434,7 +1436,7 @@
         <path d="M7.5 1.5v1M7.5 12.5v1M1.5 7.5h1M12.5 7.5h1M3.4 3.4l.7.7M10.9 10.9l.7.7M3.4 11.6l.7-.7M10.9 4.1l.7-.7"/>
       </svg>
     </button>
-    <button class="add-btn" onclick="openAddModal()" title="Log a study session (N)">&#43; Log Study Session</button>
+    <button class="add-btn" onclick="openAddModal()" title="Log a study session (N)">&#43;<span class="add-btn-text"> Log Study Session</span></button>
     <div class="user-avatar" id="userAvatar" title="" onclick="toggleUserMenu()"></div>
     <div class="user-menu" id="userMenu">
       <div class="user-menu-email" id="userMenuEmail"></div>
