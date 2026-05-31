@@ -74,6 +74,20 @@ app.use((req, res, next) => {
   next();
 });
 
+// index.html must never be served from browser or proxy cache — always fresh
+app.get('/', (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+app.get('/index.html', (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 // Serve auth page at root if no token — the SPA handles this on the client side;
 // we still serve all static files normally.
 app.use(express.static(path.join(__dirname, 'public')));
