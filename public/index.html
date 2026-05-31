@@ -463,7 +463,7 @@
       to   { opacity: 1; transform: translateY(0); }
     }
 
-    .events { display: flex; flex-direction: column; gap: 2px; width: 100%; min-width: 0; }
+    .events { display: flex; flex-direction: column; gap: 2px; min-width: 0; overflow: hidden; }
 
     .event {
       animation: eventFadeIn 0.18s ease both;
@@ -475,10 +475,8 @@
       text-overflow: ellipsis;
       font-weight: 500;
       line-height: 1.3;
-      width: 100%;
-      max-width: 100%;
       min-width: 0;
-      box-sizing: border-box;
+      display: block;
     }
 
     .event.review-0 { background: #fff1f2; color: #be123c; border-left: 3px solid #ef4444; }

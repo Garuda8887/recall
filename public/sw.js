@@ -1,4 +1,4 @@
-const CACHE = 'recall-v4';
+const CACHE = 'recall-v5';
 const SHELL = [
   '/',
   '/auth.html',
