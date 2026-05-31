@@ -426,6 +426,8 @@
 
     .day-cell {
       min-height: 90px;
+      min-width: 0;        /* prevent CSS grid column blowout */
+      overflow: hidden;    /* clip chips that would spill into adjacent cells */
       border-right: 1px solid #f1f5f9;
       border-bottom: 1px solid #f1f5f9;
       padding: 8px 6px 6px;
