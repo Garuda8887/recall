@@ -14,6 +14,7 @@
   <meta name="apple-mobile-web-app-title" content="Recall">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { overflow-x: hidden; max-width: 100%; }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -381,15 +382,21 @@
     .nav-btn:hover { background: #f8fafc; color: #1e293b; }
 
     /* ── Calendar grid ── */
-    .calendar-grid {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
+    .calendar-outer {
       background: white;
       border-radius: 14px;
       border: 1px solid #e2e8f0;
-      overflow: hidden;
+      overflow: hidden;          /* clipping must be on a non-grid element —
+                                    overflow:hidden on display:grid breaks 1fr
+                                    column sizing in WebKit/Safari mobile */
       box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-      position: relative;
+      position: relative;        /* anchor for .empty-month absolute overlay */
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      width: 100%;
     }
 
     .empty-month {
@@ -424,8 +431,12 @@
 
     .day-cell {
       min-height: 90px;
-      min-width: 0;        /* prevent CSS grid column blowout */
-      overflow: hidden;    /* clip chips that would spill into adjacent cells */
+      min-width: 0;
+      overflow: hidden;
+      position: relative;   /* contain animated chips — transforms on children
+                               bypass overflow:hidden without a positioned ancestor */
+      isolation: isolate;   /* new stacking context so chips never paint over
+                               a neighbouring cell's day number */
       border-right: 1px solid #f1f5f9;
       border-bottom: 1px solid #f1f5f9;
       padding: 8px 6px 6px;
@@ -1255,7 +1266,7 @@
     body.dark .nav-btn { background: #1e293b; border-color: #334155; color: #94a3b8; }
     body.dark .nav-btn:hover { background: #334155; color: #e2e8f0; }
 
-    body.dark .calendar-grid { background: #1e293b; border-color: #334155; }
+    body.dark .calendar-outer { background: #1e293b; border-color: #334155; }
     body.dark .day-header { color: #475569; background: #0f172a; border-bottom-color: #334155; }
     body.dark .day-cell { border-color: #1e293b; }
     body.dark .day-cell:hover { background: #1e293b; }
@@ -1464,14 +1475,16 @@
     </div>
   </div>
 
-  <div class="calendar-grid" id="calendarGrid">
-    <div class="day-header">Sun</div>
-    <div class="day-header">Mon</div>
-    <div class="day-header">Tue</div>
-    <div class="day-header">Wed</div>
-    <div class="day-header">Thu</div>
-    <div class="day-header">Fri</div>
-    <div class="day-header">Sat</div>
+  <div class="calendar-outer" id="calendarOuter">
+    <div class="calendar-grid" id="calendarGrid">
+      <div class="day-header">Sun</div>
+      <div class="day-header">Mon</div>
+      <div class="day-header">Tue</div>
+      <div class="day-header">Wed</div>
+      <div class="day-header">Thu</div>
+      <div class="day-header">Fri</div>
+      <div class="day-header">Sat</div>
+    </div>
   </div>
 
   <div class="legend" id="legend"></div>
@@ -2720,8 +2733,8 @@
       if (i % 7 === todayCol) cell.classList.add('today-col');
     });
 
-    // empty-month watermark
-    const calGrid = grid;
+    // empty-month watermark (appended to outer wrapper which has position:relative)
+    const calGrid = document.getElementById('calendarOuter');
     const existing = document.getElementById('emptyMonthMsg');
     if (existing) existing.remove();
     const monthHasEvents = sessions
