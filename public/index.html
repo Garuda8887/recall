@@ -3740,7 +3740,6 @@
   }
 
   function switchToLocal() {
-    if (!confirm('Switch to local mode? You will be signed out.')) return;
     localStorage.setItem('recall_mode', 'local');
     localStorage.removeItem('recall_server');
     localStorage.removeItem('recall_token');
@@ -3762,9 +3761,7 @@
       const res = await fetch(url + '/api/auth/me', { signal: controller.signal });
       clearTimeout(timer);
       if (res.status === 401 || res.ok) {
-        if (!confirm('Switch to ' + url + '? You will be signed out.')) {
-          btn.disabled = false; btn.textContent = 'Connect'; return;
-        }
+        // Server reachable — switch immediately, no confirm dialog
         localStorage.setItem('recall_server', url);
         localStorage.setItem('recall_mode', 'server');
         localStorage.removeItem('recall_token');
@@ -3775,10 +3772,11 @@
       }
     } catch (e) {
       clearTimeout(timer);
-      errEl.textContent = e.name === 'AbortError'
-        ? 'Server not reachable — check the URL.'
-        : 'Could not connect. Check the URL.';
-      errEl.style.display = 'block';
+      const msg = e.name === 'AbortError'
+        ? 'Timed out — server not reachable on this network.'
+        : 'Could not connect: ' + (e.message || 'network error');
+      errEl.textContent = msg;
+      errEl.style.cssText = 'display:block;font-size:12px;color:#ef4444;margin-top:10px;padding:8px 10px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;';
     } finally {
       btn.disabled = false; btn.textContent = 'Connect';
     }
