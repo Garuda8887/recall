@@ -374,15 +374,14 @@
   }
 
   // Decide which view to show
-  if (isNative && !localStorage.getItem('recall_mode')) {
-    // First launch in native app — show onboarding
-    showView('viewOnboarding');
-  } else if (localStorage.getItem('recall_mode') === 'server' && localStorage.getItem('recall_server')) {
-    // Server mode, server URL set — show login
-    document.getElementById('serverBadgeUrl').textContent = localStorage.getItem('recall_server');
-    showView('viewLogin');
+  if (isNative) {
+    // Native app — always local mode, go straight to app
+    localStorage.setItem('recall_mode', 'local');
+    localStorage.setItem('recall_token', 'local-token');
+    localStorage.setItem('recall_user', JSON.stringify({ id: 'local', email: 'local' }));
+    window.location.href = '/';
   } else {
-    // Browser (self-hosted web) — show simple login
+    // Browser (self-hosted web) — show login
     showView('viewBrowserLogin');
   }
 

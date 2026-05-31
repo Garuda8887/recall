@@ -463,7 +463,7 @@
       to   { opacity: 1; transform: translateY(0); }
     }
 
-    .events { display: flex; flex-direction: column; gap: 2px; }
+    .events { display: flex; flex-direction: column; gap: 2px; width: 100%; min-width: 0; }
 
     .event {
       animation: eventFadeIn 0.18s ease both;
@@ -475,6 +475,10 @@
       text-overflow: ellipsis;
       font-weight: 500;
       line-height: 1.3;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
     }
 
     .event.review-0 { background: #fff1f2; color: #be123c; border-left: 3px solid #ef4444; }
@@ -1600,31 +1604,8 @@
 <div class="modal-overlay" id="settingsModal" onclick="handleOverlayClick(event,'settingsModal')">
   <div class="modal">
     <div class="modal-header">
-      <h3>Settings</h3>
+      <h3>Review Intervals</h3>
       <button class="modal-close" onclick="closeSettings()">&#215;</button>
-    </div>
-
-    <!-- Server / mode section -->
-    <div id="serverSection" style="margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid #e2e8f0;">
-      <p style="font-size:12px;font-weight:700;color:#94a3b8;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;">Server</p>
-      <div id="serverStatusRow" style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
-        <div>
-          <p style="font-size:13px;font-weight:600;" id="serverModeLabel"></p>
-          <p style="font-size:12px;color:#94a3b8;margin-top:2px;" id="serverUrlLabel"></p>
-        </div>
-        <button onclick="openServerChange()" style="font-size:12px;font-weight:600;color:#6366f1;background:none;border:1px solid #6366f1;border-radius:7px;padding:5px 10px;cursor:pointer;white-space:nowrap;">Change</button>
-      </div>
-      <!-- Inline server change form -->
-      <div id="serverChangeForm" style="display:none;margin-top:14px;">
-        <input id="serverChangeInput" type="url" placeholder="https://recall.yourdomain.com"
-          style="width:100%;border:1.5px solid #e2e8f0;border-radius:9px;padding:9px 12px;font-size:13px;outline:none;font-family:inherit;margin-bottom:8px;"
-          autocapitalize="none" spellcheck="false"/>
-        <div style="display:flex;gap:8px;">
-          <button onclick="switchToLocal()" style="flex:1;padding:8px;font-size:13px;font-weight:600;border:1.5px solid #e2e8f0;border-radius:8px;background:white;cursor:pointer;">Use locally</button>
-          <button onclick="connectNewServer()" style="flex:1;padding:8px;font-size:13px;font-weight:600;background:#6366f1;color:white;border:none;border-radius:8px;cursor:pointer;" id="serverConnectBtn">Connect</button>
-        </div>
-        <p style="font-size:11px;color:#ef4444;margin-top:8px;display:none;" id="serverChangeError"></p>
-      </div>
     </div>
 
     <p class="subtitle">Customize when reviews are scheduled after a study session.</p>
@@ -3713,73 +3694,7 @@
   // ── Settings Modal ───────────────────────────────────────
   function openSettings() {
     renderIntervalsList(intervals);
-    // Populate server status
-    const mode = localStorage.getItem('recall_mode');
-    const url  = localStorage.getItem('recall_server');
-    const modeLabel = document.getElementById('serverModeLabel');
-    const urlLabel  = document.getElementById('serverUrlLabel');
-    if (mode === 'local') {
-      modeLabel.textContent = '📱 Local device';
-      urlLabel.textContent  = 'Data stored on this device only';
-    } else if (url) {
-      modeLabel.textContent = '🖥️ Server connected';
-      urlLabel.textContent  = url;
-    } else {
-      modeLabel.textContent = '🖥️ Server mode';
-      urlLabel.textContent  = 'Same origin';
-    }
-    document.getElementById('serverChangeForm').style.display = 'none';
     document.getElementById('settingsModal').classList.add('active');
-  }
-
-  function openServerChange() {
-    const form = document.getElementById('serverChangeForm');
-    form.style.display = form.style.display === 'none' ? 'block' : 'none';
-    const url = localStorage.getItem('recall_server');
-    if (url) document.getElementById('serverChangeInput').value = url;
-  }
-
-  function switchToLocal() {
-    localStorage.setItem('recall_mode', 'local');
-    localStorage.removeItem('recall_server');
-    localStorage.removeItem('recall_token');
-    localStorage.removeItem('recall_user');
-    window.location.href = '/auth.html';
-  }
-
-  async function connectNewServer() {
-    const errEl = document.getElementById('serverChangeError');
-    const btn   = document.getElementById('serverConnectBtn');
-    errEl.style.display = 'none';
-    let url = document.getElementById('serverChangeInput').value.trim().replace(/\/$/, '');
-    if (!url) { errEl.textContent = 'Enter a server URL.'; errEl.style.display = 'block'; return; }
-    if (!url.startsWith('http')) url = 'https://' + url;
-    btn.disabled = true; btn.textContent = '…';
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 8000);
-    try {
-      const res = await fetch(url + '/api/auth/me', { signal: controller.signal });
-      clearTimeout(timer);
-      if (res.status === 401 || res.ok) {
-        // Server reachable — switch immediately, no confirm dialog
-        localStorage.setItem('recall_server', url);
-        localStorage.setItem('recall_mode', 'server');
-        localStorage.removeItem('recall_token');
-        localStorage.removeItem('recall_user');
-        window.location.href = '/auth.html';
-      } else {
-        throw new Error('Server returned ' + res.status);
-      }
-    } catch (e) {
-      clearTimeout(timer);
-      const msg = e.name === 'AbortError'
-        ? 'Timed out — server not reachable on this network.'
-        : 'Could not connect: ' + (e.message || 'network error');
-      errEl.textContent = msg;
-      errEl.style.cssText = 'display:block;font-size:12px;color:#ef4444;margin-top:10px;padding:8px 10px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;';
-    } finally {
-      btn.disabled = false; btn.textContent = 'Connect';
-    }
   }
 
   function renderIntervalsList(ivs) {
