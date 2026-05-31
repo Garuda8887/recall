@@ -394,8 +394,8 @@
     }
 
     .calendar-grid {
-      display: grid;
-      grid-template-columns: repeat(7, minmax(0, 1fr));
+      display: flex;
+      flex-wrap: wrap;
       width: 100%;
     }
 
@@ -416,6 +416,9 @@
     }
 
     .day-header {
+      flex: 0 0 calc(100% / 7);
+      width: calc(100% / 7);
+      box-sizing: border-box;
       padding: 11px 8px;
       text-align: center;
       font-size: 11px;
@@ -430,13 +433,14 @@
     }
 
     .day-cell {
+      flex: 0 0 calc(100% / 7);
+      width: calc(100% / 7);
+      box-sizing: border-box;
       min-height: 90px;
       min-width: 0;
       overflow: hidden;
-      position: relative;   /* contain animated chips — transforms on children
-                               bypass overflow:hidden without a positioned ancestor */
-      isolation: isolate;   /* new stacking context so chips never paint over
-                               a neighbouring cell's day number */
+      position: relative;
+      isolation: isolate;
       border-right: 1px solid #f1f5f9;
       border-bottom: 1px solid #f1f5f9;
       padding: 8px 6px 6px;
