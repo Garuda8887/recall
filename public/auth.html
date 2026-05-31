@@ -187,6 +187,12 @@
     window.location.href = '/';
   }
 
+  // If running as installed app and no server configured, go to setup
+  const isApp = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  if (isApp && !localStorage.getItem('recall_server')) {
+    window.location.href = '/setup.html';
+  }
+
   let isRegister = false;
 
   const form       = document.getElementById('authForm');
@@ -233,8 +239,9 @@
     submitBtn.textContent = isRegister ? 'Creating account…' : 'Signing in…';
 
     try {
+      const serverUrl = localStorage.getItem('recall_server') || '';
       const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
-      const res  = await fetch(endpoint, {
+      const res  = await fetch(serverUrl + endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })

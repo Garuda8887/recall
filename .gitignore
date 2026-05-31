@@ -26,3 +26,9 @@ npm-debug.log*
 # Runtime artefacts
 .claude/
 EVIDENCE.txt
+
+# Android build outputs (keep source, ignore binaries)
+android/build/
+android/app/build/
+android/.gradle/
+android/local.properties

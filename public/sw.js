@@ -1,7 +1,8 @@
-const CACHE = 'recall-v2';
+const CACHE = 'recall-v3';
 const SHELL = [
   '/',
   '/auth.html',
+  '/setup.html',
   '/favicon.svg',
   '/logo.svg',
   '/manifest.json',

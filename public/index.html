@@ -1821,8 +1821,9 @@
   });
 
   function authFetch(url, options = {}) {
-    const token = localStorage.getItem('recall_token');
-    return fetch(url, {
+    const token     = localStorage.getItem('recall_token');
+    const serverUrl = localStorage.getItem('recall_server') || '';
+    return fetch(serverUrl + url, {
       ...options,
       headers: { ...options.headers, 'Authorization': `Bearer ${token}` }
     }).then(res => {
