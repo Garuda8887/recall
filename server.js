@@ -65,6 +65,15 @@ try { db.exec(`ALTER TABLE sessions ADD COLUMN tags            TEXT DEFAULT '[]'
 
 app.use(express.json({ limit: '25mb' }));
 
+// CORS — allow Capacitor WebView and any self-hosted origin to reach the API
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin',  '*');
+  res.header('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  if (req.method === 'OPTIONS') return res.sendStatus(200);
+  next();
+});
+
 // Serve auth page at root if no token — the SPA handles this on the client side;
 // we still serve all static files normally.
 app.use(express.static(path.join(__dirname, 'public')));

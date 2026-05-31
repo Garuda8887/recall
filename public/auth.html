@@ -418,8 +418,11 @@
     btn.disabled = true;
     btn.textContent = 'Connecting…';
 
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
     try {
-      const res = await fetch(url + '/api/auth/me', { signal: AbortSignal.timeout(8000) });
+      const res = await fetch(url + '/api/auth/me', { signal: controller.signal });
+      clearTimeout(timer);
       if (res.status === 401 || res.ok) {
         localStorage.setItem('recall_server', url);
         localStorage.setItem('recall_mode', 'server');
@@ -429,7 +432,8 @@
         throw new Error(`Server returned ${res.status}`);
       }
     } catch (err) {
-      urlError.textContent = err.name?.includes('Timeout') || err.name?.includes('Abort')
+      clearTimeout(timer);
+      urlError.textContent = (err.name === 'AbortError')
         ? 'Server not reachable — check the URL and your connection.'
         : 'Could not connect. Is your server running?';
       urlError.classList.add('show');

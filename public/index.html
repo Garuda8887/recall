@@ -3754,10 +3754,15 @@
     if (!url) { errEl.textContent = 'Enter a server URL.'; errEl.style.display = 'block'; return; }
     if (!url.startsWith('http')) url = 'https://' + url;
     btn.disabled = true; btn.textContent = '…';
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
     try {
-      const res = await fetch(url + '/api/auth/me', { signal: AbortSignal.timeout(8000) });
+      const res = await fetch(url + '/api/auth/me', { signal: controller.signal });
+      clearTimeout(timer);
       if (res.status === 401 || res.ok) {
-        if (!confirm('Switch to ' + url + '? You will be signed out.')) { btn.disabled = false; btn.textContent = 'Connect'; return; }
+        if (!confirm('Switch to ' + url + '? You will be signed out.')) {
+          btn.disabled = false; btn.textContent = 'Connect'; return;
+        }
         localStorage.setItem('recall_server', url);
         localStorage.setItem('recall_mode', 'server');
         localStorage.removeItem('recall_token');
@@ -3767,7 +3772,10 @@
         throw new Error('Server returned ' + res.status);
       }
     } catch (e) {
-      errEl.textContent = 'Could not connect. Check the URL.';
+      clearTimeout(timer);
+      errEl.textContent = e.name === 'AbortError'
+        ? 'Server not reachable — check the URL.'
+        : 'Could not connect. Check the URL.';
       errEl.style.display = 'block';
     } finally {
       btn.disabled = false; btn.textContent = 'Connect';
