@@ -20,6 +20,7 @@
       background: #f1f5f9;
       color: #1e293b;
       min-height: 100vh;
+      overflow-x: hidden;
     }
 
     /* ── Header ── */
@@ -216,7 +217,7 @@
     .logout-item:hover { background: #fef2f2; }
 
     /* ── Layout ── */
-    .calendar-container { max-width: 1140px; margin: 24px auto; padding: 0 24px; }
+    .calendar-container { max-width: 1140px; width: 100%; margin: 24px auto; padding: 0 24px; box-sizing: border-box; }
 
     /* ── Due Today ── */
     .due-today {
@@ -420,6 +421,8 @@
       color: #94a3b8;
       text-transform: uppercase;
       letter-spacing: 0.07em;
+      min-width: 0;
+      overflow: hidden;
     }
 
     .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
@@ -3832,11 +3835,11 @@
 
   Promise.all([loadSessions(), loadSettings()]).then(() => renderCalendar());
 
-  // ── Service Worker ────────────────────────────────────────
+  // ── Service Worker — unregister all to prevent stale cache ──
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js')
-      .then(reg => reg.update())  // force version check on every load
-      .catch(() => {});
+    navigator.serviceWorker.getRegistrations().then(regs => {
+      regs.forEach(r => r.unregister());
+    });
   }
 </script>
 </body>
