@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 40" width="160" height="40">
+  <text
+    x="0" y="31"
+    font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    font-size="34"
+    font-weight="800"
+    letter-spacing="-0.5"
+    fill="#6366f1">recall</text>
+  <text
+    x="141" y="31"
+    font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    font-size="34"
+    font-weight="800"
+    fill="#1e293b">.</text>
+</svg>

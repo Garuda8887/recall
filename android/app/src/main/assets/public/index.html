@@ -1,0 +1,2474 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recall — Spaced Repetition Calendar</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <script src="/local-api.js"></script>
+  <meta name="theme-color" content="#6366f1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Recall">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<header>
+  <div class="logo">recall<span>.</span></div>
+  <div class="header-right">
+    <div class="search-wrap">
+      <button class="icon-btn" id="searchBtn" title="Search topics and notes (/ or ⌘K)" onclick="focusSearch()">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="6.5" cy="6.5" r="4.5"/>
+          <line x1="10" y1="10" x2="13.5" y2="13.5"/>
+        </svg>
+      </button>
+      <input class="search-input" id="searchInput" placeholder="Search topics, notes…" autocomplete="off" spellcheck="false">
+      <button class="search-clear" id="searchClear" title="Clear search" onclick="clearSearch()">×</button>
+    </div>
+    <span class="search-count" id="searchCount"></span>
+    <div class="streak" id="streakBadge"></div>
+    <button class="icon-btn" title="Stats" onclick="openStats()">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="8" width="3" height="6" rx="1"/>
+        <rect x="6" y="4.5" width="3" height="9.5" rx="1"/>
+        <rect x="11" y="1" width="3" height="13" rx="1"/>
+      </svg>
+    </button>
+    <button class="icon-btn" title="Knowledge graph" onclick="openGraphModal()">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="7.5" cy="2.5" r="1.5" fill="currentColor" stroke="none"/>
+        <circle cx="2" cy="11.5" r="1.5" fill="currentColor" stroke="none"/>
+        <circle cx="13" cy="11.5" r="1.5" fill="currentColor" stroke="none"/>
+        <line x1="7.5" y1="4" x2="3.2" y2="10.2"/>
+        <line x1="7.5" y1="4" x2="11.8" y2="10.2"/>
+        <line x1="3.7" y1="11.5" x2="11.3" y2="11.5"/>
+      </svg>
+    </button>
+    <button class="icon-btn" id="darkToggle" title="Toggle dark mode" onclick="toggleDark()"></button>
+    <button class="icon-btn" title="Settings" onclick="openSettings()">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="7.5" cy="7.5" r="2"/>
+        <path d="M7.5 1.5v1M7.5 12.5v1M1.5 7.5h1M12.5 7.5h1M3.4 3.4l.7.7M10.9 10.9l.7.7M3.4 11.6l.7-.7M10.9 4.1l.7-.7"/>
+      </svg>
+    </button>
+    <button class="add-btn" onclick="openAddModal()" title="Log a study session (N)">&#43;<span class="add-btn-text"> Log Study Session</span></button>
+    <div class="user-avatar" id="userAvatar" title="" onclick="toggleUserMenu()"></div>
+    <div class="user-menu" id="userMenu">
+      <div class="user-menu-email" id="userMenuEmail"></div>
+      <button class="user-menu-item logout-item" onclick="logout()">Sign out</button>
+    </div>
+  </div>
+</header>
+
+<div class="calendar-container">
+  <div id="emptyState" style="display:none">
+    <div class="empty-state-card">
+      <div class="empty-state-icon">🧠</div>
+      <h2 class="empty-state-title">Welcome to Recall</h2>
+      <p class="empty-state-body">Log what you study today and Recall will automatically schedule review sessions across your calendar — so you never forget.</p>
+      <button class="add-btn empty-state-btn" onclick="openAddModal()">+ Log Your First Session</button>
+      <p class="empty-state-hint">Based on the Ebbinghaus forgetting curve · Reviews at +1, +3, +7, +14, +30 days</p>
+    </div>
+  </div>
+  <div id="dueToday"></div>
+  <div class="filter-bar" id="filterBar"></div>
+  <div class="tag-filter-row" id="tagFilterBar"></div>
+
+  <div class="calendar-nav">
+    <h2 id="monthYear"></h2>
+    <span id="buildTag" style="display:none;font-size:10px;color:#94a3b8;margin-left:8px">d3442a9</span>
+    <div class="nav-controls">
+      <button class="today-btn" onclick="goToToday()">Today</button>
+      <button class="nav-btn" onclick="prevMonth()">&#8249;</button>
+      <button class="nav-btn" onclick="nextMonth()">&#8250;</button>
+    </div>
+  </div>
+
+  <div class="calendar-outer" id="calendarOuter">
+    <div class="calendar-grid" id="calendarGrid">
+      <div class="cal-row">
+        <div class="day-header">Sun</div>
+        <div class="day-header">Mon</div>
+        <div class="day-header">Tue</div>
+        <div class="day-header">Wed</div>
+        <div class="day-header">Thu</div>
+        <div class="day-header">Fri</div>
+        <div class="day-header">Sat</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend" id="legend"></div>
+</div>
+
+<!-- ── Add Study Modal ── -->
+<div class="modal-overlay" id="addModal" onclick="handleOverlayClick(event,'addModal')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Log Study Session</h3>
+      <button class="modal-close" onclick="closeAddModal()">&#215;</button>
+    </div>
+    <p class="subtitle">Reviews will be auto-scheduled based on the forgetting curve.</p>
+    <div class="form-group">
+      <label>What did you study?</label>
+      <input type="text" id="topicInput" placeholder="e.g. Calculus Ch.3, Spanish vocab, React hooks…" />
+    </div>
+    <div class="form-group">
+      <label>Subject <span style="font-weight:400;color:#94a3b8">(optional)</span></label>
+      <input type="text" id="subjectInput" placeholder="e.g. Math, Spanish, Biology…" list="subjectList" autocomplete="off" />
+      <datalist id="subjectList"></datalist>
+    </div>
+    <div class="form-group">
+      <label>Date studied</label>
+      <input type="date" id="dateInput" />
+    </div>
+    <div class="form-group recur-group" id="recurGroup">
+      <label class="recur-toggle-label">
+        <input type="checkbox" id="recurCheck" onchange="toggleRecurOptions()">
+        Repeat this session
+      </label>
+      <div class="recur-options" id="recurOptions" style="display:none">
+        <div class="recur-option-row">
+          <input type="radio" name="recurType" id="recurTypeWeekly" value="weekly" checked onchange="syncRecurPreview()">
+          <label for="recurTypeWeekly">Every</label>
+          <select id="recurWeekday" onchange="syncRecurPreview()">
+            <option value="0">Sunday</option>
+            <option value="1">Monday</option>
+            <option value="2">Tuesday</option>
+            <option value="3">Wednesday</option>
+            <option value="4">Thursday</option>
+            <option value="5">Friday</option>
+            <option value="6">Saturday</option>
+          </select>
+        </div>
+        <div class="recur-option-row">
+          <input type="radio" name="recurType" id="recurTypeInterval" value="interval" onchange="syncRecurPreview()">
+          <label for="recurTypeInterval">Every</label>
+          <input type="number" id="recurDays" value="7" min="1" max="365" onchange="syncRecurPreview()">
+          <span>days</span>
+        </div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Notes <span style="font-weight:400;color:#94a3b8">(optional)</span></label>
+      <textarea id="notesInput" placeholder="Anything worth remembering about this session…"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Tags <span style="font-weight:400;color:#94a3b8">(optional)</span></label>
+      <div class="tag-input-wrap" id="tagInputWrap" onclick="document.getElementById('tagChipInput').focus()">
+        <input class="tag-chip-input" id="tagChipInput" placeholder="Type a tag and press Enter…" autocomplete="off" spellcheck="false">
+      </div>
+    </div>
+    <div class="review-preview">
+      <p>Scheduled reviews</p>
+      <div class="review-chips" id="reviewChips"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeAddModal()">Cancel</button>
+      <button class="btn-save" id="saveBtn" onclick="saveStudySession()">Save &amp; Schedule</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Day Detail Modal ── -->
+<div class="modal-overlay" id="dayModal" onclick="handleOverlayClick(event,'dayModal')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="dayModalTitle"></h3>
+      <button class="modal-close" onclick="closeDayModal()">&#215;</button>
+    </div>
+    <p class="subtitle">Click a review to mark it complete.</p>
+    <div id="dayModalEvents"></div>
+    <div class="modal-actions" style="margin-top:18px">
+      <button class="btn-cancel" onclick="closeDayModal()">Close</button>
+      <button class="btn-save" onclick="openAddModalForDate(currentDayDate)">&#43; Add Study</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Stats Modal ── -->
+<div class="modal-overlay" id="statsModal" onclick="handleOverlayClick(event,'statsModal')">
+  <div class="modal wide">
+    <div class="modal-header">
+      <h3>Progress</h3>
+      <button class="modal-close" onclick="closeStats()">&#215;</button>
+    </div>
+    <p class="subtitle">Your study activity and retention at a glance.</p>
+    <div class="stat-cards" id="statCards"></div>
+    <div class="heatmap-wrap">
+      <div class="stats-section-title">Activity — last 13 weeks</div>
+      <div class="heatmap-grid" id="heatmapGrid"></div>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:8px">
+        <span style="font-size:11px;color:#94a3b8">Less</span>
+        <div style="width:12px;height:12px;border-radius:2px;background:#f1f5f9"></div>
+        <div style="width:12px;height:12px;border-radius:2px;background:#c7d2fe"></div>
+        <div style="width:12px;height:12px;border-radius:2px;background:#818cf8"></div>
+        <div style="width:12px;height:12px;border-radius:2px;background:#4f46e5"></div>
+        <span style="font-size:11px;color:#94a3b8">More</span>
+      </div>
+    </div>
+    <div id="subjectBreakdown"></div>
+    <div id="retentionList"></div>
+    <div class="modal-actions" style="margin-top:24px; border-top:1px solid #f1f5f9; padding-top:16px">
+      <button class="btn-ghost" onclick="exportCSV()" title="Download all sessions and review history as CSV">
+        ↓ Export CSV
+      </button>
+      <button class="btn-cancel" onclick="closeStats()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Settings Modal ── -->
+<div class="modal-overlay" id="settingsModal" onclick="handleOverlayClick(event,'settingsModal')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Review Intervals</h3>
+      <button class="modal-close" onclick="closeSettings()">&#215;</button>
+    </div>
+
+    <p class="subtitle">Customize when reviews are scheduled after a study session.</p>
+    <div class="settings-note">
+      ⚠️ Changes only apply to new sessions logged after saving.
+    </div>
+    <div class="intervals-list" id="intervalsList"></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="resetIntervals()">Reset to defaults</button>
+      <button class="btn-cancel" onclick="closeSettings()">Cancel</button>
+      <button class="btn-save" onclick="saveSettings()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Confidence Rating Modal ── -->
+<div class="modal-overlay" id="ratingModal" onclick="handleOverlayClick(event,'ratingModal')">
+  <div class="modal rating-modal">
+    <div class="modal-header">
+      <div>
+        <h3>How well did you recall this?</h3>
+        <p class="subtitle" id="ratingSubtitle" style="margin-bottom:0"></p>
+      </div>
+      <button class="modal-close" onclick="skipRating()">×</button>
+    </div>
+    <div class="late-recovery-row" id="lateRecoveryRow" style="display:none">
+      <label class="late-recovery-label">
+        <input type="checkbox" id="rescheduleCheck" checked>
+        <span id="lateRecoveryText">Reschedule next review from today</span>
+      </label>
+    </div>
+    <div class="rating-grid" id="ratingGrid"></div>
+    <div class="rating-skip"><a onclick="skipRating()">Skip — just mark done</a></div>
+  </div>
+</div>
+
+<!-- ── Knowledge Graph Modal ── -->
+<div class="graph-overlay" id="graphModal" onclick="handleGraphOverlayClick(event)">
+  <div class="graph-modal-content" onclick="event.stopPropagation()">
+    <div class="graph-header">
+      <h3>Knowledge Graph</h3>
+      <button class="modal-close" onclick="closeGraphModal()">×</button>
+    </div>
+    <div class="graph-toolbar" id="graphToolbar">
+      <div class="graph-edge-legend">
+        <span class="graph-leg-item"><span class="graph-leg-line" style="background:#94a3b8"></span>Related to</span>
+        <span class="graph-leg-item"><span class="graph-leg-line" style="background:#818cf8"></span>Builds on</span>
+        <span class="graph-leg-item"><span class="graph-leg-line" style="background:#fb923c"></span>Prerequisite of</span>
+        <span class="graph-leg-item"><span class="graph-leg-line" style="background:#2dd4bf"></span>See also</span>
+      </div>
+      <div class="graph-toolbar-sep"></div>
+      <div id="graphSubjBar" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"></div>
+    </div>
+    <div class="graph-container" id="graphContainer"></div>
+    <div class="graph-hint">Drag nodes · Scroll to zoom · Click a node to open session · Filter by subject →</div>
+  </div>
+</div>
+
+<!-- ── Link Picker Modal ── -->
+<div class="modal-overlay" id="linkModal" onclick="handleOverlayClick(event,'linkModal')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Link to a session</h3>
+      <button class="modal-close" onclick="closeLinkModal()">×</button>
+    </div>
+    <p class="subtitle">Connect related topics to build your second brain.</p>
+    <div class="form-group">
+      <label>Relationship</label>
+      <div class="link-relation-picker" id="linkRelationPicker"></div>
+    </div>
+    <div class="form-group">
+      <label>Session</label>
+      <input type="text" id="linkSearchInput" placeholder="Search by topic, subject…" autocomplete="off" oninput="renderLinkSearch(this.value)">
+      <div class="link-session-list" id="linkSessionList"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeLinkModal()">Cancel</button>
+      <button class="btn-save" id="linkSaveBtn" onclick="saveLink()" disabled>Save Link</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Forgetting Curve Modal ── -->
+<div class="modal-overlay" id="curveModal" onclick="handleOverlayClick(event,'curveModal')">
+  <div class="modal wide">
+    <div class="modal-header">
+      <div>
+        <h3 id="curveTitle">Forgetting Curve</h3>
+        <p class="subtitle" id="curveSubtitle" style="margin-bottom:0"></p>
+      </div>
+      <button class="modal-close" onclick="closeCurveModal()">×</button>
+    </div>
+    <div class="curve-wrap" id="curveChart"></div>
+    <div class="curve-legend" id="curveLegend"></div>
+    <div class="modal-actions" style="margin-top:16px">
+      <button class="btn-cancel" onclick="closeCurveModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── Constants ────────────────────────────────────────────
+  const MONTH_NAMES  = ['January','February','March','April','May','June',
+                        'July','August','September','October','November','December'];
+  const SHORT_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun',
+                        'Jul','Aug','Sep','Oct','Nov','Dec'];
+  const REVIEW_COLORS = ['#ef4444','#f97316','#14b8a6','#3b82f6','#8b5cf6'];
+  const DEFAULT_INTERVALS = [1, 3, 7, 14, 30];
+
+  const SUBJECT_PALETTE = [
+    { bg: '#eef2ff', text: '#4338ca', border: '#6366f1' },
+    { bg: '#fdf2f8', text: '#9d174d', border: '#ec4899' },
+    { bg: '#f0fdfa', text: '#065f46', border: '#14b8a6' },
+    { bg: '#fff7ed', text: '#9a3412', border: '#f97316' },
+    { bg: '#fdf4ff', text: '#7e22ce', border: '#a855f7' },
+    { bg: '#f0f9ff', text: '#075985', border: '#0ea5e9' },
+    { bg: '#fefce8', text: '#854d0e', border: '#eab308' },
+    { bg: '#f0fdf4', text: '#166534', border: '#22c55e' },
+  ];
+
+  function getSubjectColor(subject) {
+    if (!subject) return SUBJECT_PALETTE[0];
+    let h = 0;
+    for (const c of subject) h = (h * 31 + c.charCodeAt(0)) & 0xffff;
+    return SUBJECT_PALETTE[h % SUBJECT_PALETTE.length];
+  }
+
+  // ── State ────────────────────────────────────────────────
+  let currentYear, currentMonth;
+  let currentDayDate     = null;
+  let addModalTargetDate    = null;
+  let activeSubject         = null;
+  let activeTagFilter       = null; // active tag filter string, or null
+  let editTags              = [];   // tags being edited in the add/edit modal
+  let searchQuery           = '';
+  let editingSessionId      = null; // null = create, string = edit
+  let sessions              = [];
+  let links                 = [];   // all link objects for the user
+  let intervals             = [...DEFAULT_INTERVALS];
+  let dragReview            = null; // { sessionId, reviewIndex, fromDate } while dragging
+  let linkingSessionId      = null; // session being linked in the link modal
+  let selectedLinkTargetId  = null; // target session selected in link modal
+  let selectedLinkRelation  = 'related';
+
+  // Graph state
+  let graphNodes     = [];
+  let graphEdges     = [];
+  let graphAnimId    = null;
+  let graphDragNode  = null;   // { node, x0, y0, ox, oy }
+  let graphPanState  = null;   // { sx, sy, tx, ty }
+  let graphTransform = { x: 0, y: 0, k: 1 };
+  let graphSubjFocus = null;   // subject being highlighted (null = all)
+  let graphSvgEl     = null;
+  let graphRootEl    = null;
+  let _graphMoveFn   = null;
+  let _graphUpFn     = null;
+  let pendingRating      = null; // { sessionId, reviewIdx, dateStr }
+
+  const RATINGS = [
+    { score: 1, emoji: '😶', label: 'Blank',   color: '#ef4444', bg: '#fef2f2' },
+    { score: 2, emoji: '😕', label: 'Hard',    color: '#f97316', bg: '#fff7ed' },
+    { score: 3, emoji: '😐', label: 'Okay',    color: '#eab308', bg: '#fefce8' },
+    { score: 4, emoji: '😊', label: 'Good',    color: '#22c55e', bg: '#f0fdf4' },
+    { score: 5, emoji: '🎯', label: 'Perfect', color: '#6366f1', bg: '#eef2ff' },
+  ];
+
+  // ── Date helpers ─────────────────────────────────────────
+  function todayStr() {
+    const d = new Date();
+    return ymd(d.getFullYear(), d.getMonth() + 1, d.getDate());
+  }
+
+  function ymd(y, m, d) {
+    return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  }
+
+  function addDays(dateStr, days) {
+    const d = new Date(dateStr + 'T00:00:00');
+    d.setDate(d.getDate() + days);
+    return ymd(d.getFullYear(), d.getMonth() + 1, d.getDate());
+  }
+
+  function displayDate(dateStr) {
+    const [y, m, d] = dateStr.split('-');
+    return `${SHORT_MONTHS[parseInt(m)-1]} ${parseInt(d)}, ${y}`;
+  }
+
+  function intervalLabel(days) {
+    return days === 1 ? '+1 day' : `+${days} days`;
+  }
+
+  // ── Auth ─────────────────────────────────────────────────
+  (function checkAuth() {
+    if (!localStorage.getItem('recall_token')) {
+      window.location.href = '/auth.html';
+    }
+    const user = JSON.parse(localStorage.getItem('recall_user') || '{}');
+    const initials = (user.email || '?').slice(0, 2).toUpperCase();
+    const avatar = document.getElementById('userAvatar');
+    if (avatar) {
+      avatar.textContent = initials;
+      avatar.title = user.email || '';
+    }
+    const menuEmail = document.getElementById('userMenuEmail');
+    if (menuEmail) menuEmail.textContent = user.email || '';
+  })();
+
+  function toggleUserMenu() {
+    document.getElementById('userMenu').classList.toggle('open');
+  }
+
+  // Close user menu when clicking outside
+  document.addEventListener('click', e => {
+    const menu   = document.getElementById('userMenu');
+    const avatar = document.getElementById('userAvatar');
+    if (menu && !menu.contains(e.target) && e.target !== avatar) {
+      menu.classList.remove('open');
+    }
+  });
+
+  function authFetch(url, options = {}) {
+    // Local mode — route to on-device SQLite, no network needed
+    if (localStorage.getItem('recall_mode') === 'local') {
+      return LocalAPI.handle(url, options);
+    }
+    // Server mode — hit the configured (or same-origin) server
+    const token     = localStorage.getItem('recall_token');
+    const serverUrl = localStorage.getItem('recall_server') || '';
+    return fetch(serverUrl + url, {
+      ...options,
+      headers: { ...options.headers, 'Authorization': `Bearer ${token}` }
+    }).then(res => {
+      if (res.status === 401) {
+        localStorage.removeItem('recall_token');
+        localStorage.removeItem('recall_user');
+        window.location.href = '/auth.html';
+      }
+      return res;
+    });
+  }
+
+  function logout() {
+    localStorage.removeItem('recall_token');
+    localStorage.removeItem('recall_user');
+    window.location.href = '/auth.html';
+  }
+
+  // ── Dark mode ────────────────────────────────────────────
+  function applyDark(on) {
+    document.body.classList.toggle('dark', on);
+    const btn = document.getElementById('darkToggle');
+    if (btn) btn.textContent = on ? '☀️' : '🌙';
+  }
+
+  function toggleDark() {
+    const on = !document.body.classList.contains('dark');
+    localStorage.setItem('darkMode', on ? '1' : '0');
+    applyDark(on);
+  }
+
+  function initDark() {
+    applyDark(localStorage.getItem('darkMode') === '1');
+  }
+
+  // ── API ──────────────────────────────────────────────────
+  async function loadSessions() {
+    const [sessRes, linksRes] = await Promise.all([
+      authFetch('/api/sessions'),
+      authFetch('/api/links')
+    ]);
+    const data      = await sessRes.json();
+    const linksData = await linksRes.json();
+    sessions = data.sessions;
+    links    = linksData.links || [];
+    if (data.newRecurrences > 0) {
+      const n = data.newRecurrences;
+      showToast(`🔁 ${n} recurring session${n > 1 ? 's' : ''} auto-logged`);
+    }
+  }
+
+  async function loadSettings() {
+    const res = await authFetch('/api/settings');
+    const data = await res.json();
+    intervals = data.intervals;
+  }
+
+  // ── Search ───────────────────────────────────────────────
+  function focusSearch() {
+    const input = document.getElementById('searchInput');
+    input.classList.add('open');
+    input.focus();
+    input.select();
+  }
+
+  function clearSearch() {
+    const input = document.getElementById('searchInput');
+    searchQuery = '';
+    input.value = '';
+    input.classList.remove('open');
+    document.getElementById('searchClear').classList.remove('show');
+    document.getElementById('searchCount').classList.remove('show');
+    renderCalendar();
+  }
+
+  function sessionMatchesSearch(s) {
+    if (!searchQuery) return true;
+    const q = searchQuery;
+    return s.topic.toLowerCase().includes(q) ||
+           (s.subject || '').toLowerCase().includes(q) ||
+           (s.notes   || '').toLowerCase().includes(q) ||
+           (s.tags    || []).some(t => t.toLowerCase().includes(q));
+  }
+
+  (() => {
+    const input = document.getElementById('searchInput');
+    input.addEventListener('input', e => {
+      searchQuery = e.target.value.trim().toLowerCase();
+      const hasQ  = searchQuery.length > 0;
+      document.getElementById('searchClear').classList.toggle('show', hasQ);
+
+      if (hasQ) {
+        const count = sessions.filter(sessionMatchesSearch).length;
+        const el    = document.getElementById('searchCount');
+        el.textContent = count === 0 ? 'No matches' : count === 1 ? '1 match' : `${count} matches`;
+        el.classList.add('show');
+      } else {
+        document.getElementById('searchCount').classList.remove('show');
+      }
+      renderCalendar();
+    });
+
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Escape') { e.stopPropagation(); clearSearch(); }
+    });
+  })();
+
+  // ── Tag helpers ──────────────────────────────────────────
+
+  function renderModalTagChips() {
+    const wrap  = document.getElementById('tagInputWrap');
+    const input = document.getElementById('tagChipInput');
+    // Remove existing chips (all children except the input)
+    Array.from(wrap.children).forEach(c => { if (c !== input) c.remove(); });
+    editTags.forEach((tag, i) => {
+      const chip = document.createElement('span');
+      chip.className = 'tag-chip';
+      chip.innerHTML = `${tag}<button type="button" class="tag-chip-remove" title="Remove tag" onclick="removeEditTag(${i})">×</button>`;
+      wrap.insertBefore(chip, input);
+    });
+  }
+
+  function addEditTag(raw) {
+    const tag = raw.trim().toLowerCase().replace(/[,#]/g, '').slice(0, 32);
+    if (!tag || editTags.includes(tag)) return false;
+    editTags.push(tag);
+    renderModalTagChips();
+    return true;
+  }
+
+  function removeEditTag(i) {
+    editTags.splice(i, 1);
+    renderModalTagChips();
+    document.getElementById('tagChipInput').focus();
+  }
+
+  function resetEditTags(initial = []) {
+    editTags = [...initial];
+    renderModalTagChips();
+    document.getElementById('tagChipInput').value = '';
+  }
+
+  function filterByTag(tag) {
+    activeTagFilter = activeTagFilter === tag ? null : tag;
+    renderTagFilterBar();
+    renderCalendar();
+  }
+
+  function renderTagFilterBar() {
+    const bar  = document.getElementById('tagFilterBar');
+    bar.innerHTML = '';
+    const allTags = [...new Set(sessions.flatMap(s => s.tags || []))].sort();
+    if (!allTags.length) return;
+    allTags.forEach(tag => {
+      const pill = document.createElement('button');
+      pill.className = 'tag-pill' + (activeTagFilter === tag ? ' active' : '');
+      pill.innerHTML = `<span class="tag-pill-hash">#</span>${tag}`;
+      pill.onclick = () => filterByTag(tag);
+      bar.appendChild(pill);
+    });
+  }
+
+  // Tag input IIFE
+  (() => {
+    const input = document.getElementById('tagChipInput');
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ',') {
+        e.preventDefault();
+        if (addEditTag(input.value)) input.value = '';
+      } else if (e.key === 'Backspace' && !input.value && editTags.length) {
+        removeEditTag(editTags.length - 1);
+      }
+    });
+    input.addEventListener('blur', () => {
+      if (input.value.trim()) { addEditTag(input.value); input.value = ''; }
+    });
+    // prevent Enter from submitting the form when in the tag input
+    input.addEventListener('keypress', e => { if (e.key === 'Enter') e.preventDefault(); });
+  })();
+
+  // ── Knowledge Graph ──────────────────────────────────────
+
+  const GRAPH_EDGE_COLORS = {
+    'related':     '#94a3b8',
+    'builds-on':   '#818cf8',
+    'prerequisite':'#fb923c',
+    'see-also':    '#2dd4bf',
+  };
+  const GRAPH = { repel:5500, spring:0.05, springLen:170, gravity:0.018, damping:0.78 };
+
+  function openGraphModal() {
+    document.getElementById('graphModal').classList.add('active');
+    _graphMoveFn = e => onGraphMouseMove(e);
+    _graphUpFn   = e => onGraphMouseUp(e);
+    window.addEventListener('mousemove', _graphMoveFn);
+    window.addEventListener('mouseup',   _graphUpFn);
+    setTimeout(() => initGraph(null), 60);
+  }
+
+  function closeGraphModal() {
+    document.getElementById('graphModal').classList.remove('active');
+    if (graphAnimId) { cancelAnimationFrame(graphAnimId); graphAnimId = null; }
+    if (_graphMoveFn) { window.removeEventListener('mousemove', _graphMoveFn); _graphMoveFn = null; }
+    if (_graphUpFn)   { window.removeEventListener('mouseup',   _graphUpFn);   _graphUpFn   = null; }
+  }
+
+  function handleGraphOverlayClick(e) {
+    if (e.target === document.getElementById('graphModal')) closeGraphModal();
+  }
+
+  function initGraph(subjFocus) {
+    if (graphAnimId) { cancelAnimationFrame(graphAnimId); graphAnimId = null; }
+    graphSubjFocus = subjFocus;
+    graphDragNode  = null;
+    graphPanState  = null;
+    graphTransform = { x: 0, y: 0, k: 1 };
+
+    const container = document.getElementById('graphContainer');
+    const W = container.clientWidth  || 800;
+    const H = container.clientHeight || 500;
+
+    // All sessions as nodes (subject focus = dim others, not hide)
+    graphNodes = sessions.map((s, i) => {
+      const angle = (i / sessions.length) * Math.PI * 2 - Math.PI / 2;
+      const r     = Math.min(W, H) * 0.27 + (Math.random() - 0.5) * 50;
+      return {
+        id: s.id, session: s,
+        x: W/2 + r * Math.cos(angle),
+        y: H/2 + r * Math.sin(angle),
+        vx: 0, vy: 0, degree: 0, pinned: false,
+        el: null, circleEl: null, r: 14,
+      };
+    });
+
+    const nodeMap = new Map(graphNodes.map(n => [n.id, n]));
+    graphEdges = links
+      .filter(l => nodeMap.has(l.from_id) && nodeMap.has(l.to_id))
+      .map(l => ({
+        source: nodeMap.get(l.from_id),
+        target: nodeMap.get(l.to_id),
+        relation: l.relation, id: l.id, el: null,
+      }));
+    graphEdges.forEach(e => { e.source.degree++; e.target.degree++; });
+
+    buildGraphSVG(W, H);
+    renderGraphSubjBar();
+    if (subjFocus) applySubjFocus(subjFocus);
+    runGraphSim();
+  }
+
+  function buildGraphSVG(W, H) {
+    const container = document.getElementById('graphContainer');
+    container.innerHTML = '';
+
+    // Floating tooltip
+    const tip = document.createElement('div');
+    tip.id = 'graphTip';
+    tip.style.cssText = 'position:absolute;background:#1e293b;color:#f1f5f9;padding:7px 11px;border-radius:9px;font-size:12px;pointer-events:none;opacity:0;transition:opacity 0.12s;max-width:190px;z-index:10;line-height:1.6;box-shadow:0 4px 16px rgba(0,0,0,0.3)';
+    container.appendChild(tip);
+
+    graphSvgEl = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    graphSvgEl.style.cssText = 'width:100%;height:100%;display:block;';
+    container.appendChild(graphSvgEl);
+
+    graphRootEl = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    graphSvgEl.appendChild(graphRootEl);
+
+    const edgeG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    const nodeG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    graphRootEl.appendChild(edgeG);
+    graphRootEl.appendChild(nodeG);
+
+    // Draw edges
+    graphEdges.forEach(e => {
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('stroke', GRAPH_EDGE_COLORS[e.relation] || GRAPH_EDGE_COLORS.related);
+      line.setAttribute('stroke-width', '2');
+      line.setAttribute('stroke-linecap', 'round');
+      line.setAttribute('opacity', '0.75');
+      edgeG.appendChild(line);
+      e.el = line;
+    });
+
+    // Draw nodes
+    graphNodes.forEach(n => {
+      n.r = 14 + Math.min(n.degree * 3, 10);
+      const col = getSubjectColor(n.session.subject);
+
+      const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      g.style.cursor = 'grab';
+
+      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      circle.setAttribute('r', n.r);
+      circle.setAttribute('fill', col.bg);
+      circle.setAttribute('stroke', col.border);
+      circle.setAttribute('stroke-width', '2.5');
+
+      const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      label.setAttribute('text-anchor', 'middle');
+      label.setAttribute('dy', n.r + 13);
+      label.setAttribute('font-size', '11');
+      label.setAttribute('font-family', 'system-ui,sans-serif');
+      label.setAttribute('fill', '#475569');
+      label.setAttribute('pointer-events', 'none');
+      label.setAttribute('font-weight', '500');
+      label.textContent = n.session.topic.length > 18 ? n.session.topic.slice(0, 16) + '…' : n.session.topic;
+
+      g.appendChild(circle);
+      g.appendChild(label);
+      nodeG.appendChild(g);
+      n.el = g; n.circleEl = circle;
+
+      // Drag
+      g.addEventListener('mousedown', evt => {
+        evt.stopPropagation();
+        n.pinned = true;
+        g.style.cursor = 'grabbing';
+        graphDragNode = { node: n, x0: evt.clientX, y0: evt.clientY, ox: n.x, oy: n.y };
+      });
+
+      // Hover
+      g.addEventListener('mouseenter', evt => {
+        const tip = document.getElementById('graphTip');
+        const tags = (n.session.tags || []).map(t => `<span style="color:#a78bfa">#${t}</span>`).join(' ');
+        tip.innerHTML = `<strong style="font-size:13px">${n.session.topic}</strong>` +
+          (n.session.subject ? `<br><span style="color:#94a3b8">${n.session.subject}</span>` : '') +
+          (tags ? `<br>${tags}` : '') +
+          `<br><span style="color:#475569;font-size:10px">${n.session.studiedDate}</span>`;
+        tip.style.opacity = '1';
+        // Highlight ring
+        circle.setAttribute('stroke-width', '4');
+        // Dim unconnected
+        const connIds = new Set(graphEdges.filter(e => e.source===n||e.target===n).map(e=>e.id));
+        const connNodes = new Set(graphEdges.flatMap(e => e.source===n||e.target===n ? [e.source.id,e.target.id] : []));
+        graphEdges.forEach(e => { e.el.setAttribute('opacity', connIds.has(e.id) ? '1' : '0.08'); });
+        graphNodes.forEach(nd => { nd.el.style.opacity = nd===n||connNodes.has(nd.id) ? '1' : '0.15'; });
+      });
+      g.addEventListener('mousemove', evt => {
+        const tip = document.getElementById('graphTip');
+        const rect = container.getBoundingClientRect();
+        tip.style.left = (evt.clientX - rect.left + 14) + 'px';
+        tip.style.top  = (evt.clientY - rect.top  + 14) + 'px';
+      });
+      g.addEventListener('mouseleave', () => {
+        document.getElementById('graphTip').style.opacity = '0';
+        circle.setAttribute('stroke-width', '2.5');
+        graphEdges.forEach(e => { e.el.setAttribute('opacity', '0.75'); });
+        graphNodes.forEach(nd => { nd.el.style.opacity = ''; });
+        if (graphSubjFocus) applySubjFocus(graphSubjFocus);
+      });
+
+      // Click to navigate
+      let didDrag = false;
+      g.addEventListener('mousedown', () => { didDrag = false; });
+      g.addEventListener('mousemove', () => { didDrag = true; });
+      g.addEventListener('click', () => {
+        if (didDrag) return;
+        closeGraphModal();
+        setTimeout(() => openDayModal(n.session.studiedDate), 50);
+      });
+    });
+
+    // Pan (drag on background)
+    graphSvgEl.addEventListener('mousedown', evt => {
+      if (evt.target !== graphSvgEl && evt.target !== graphRootEl) return;
+      graphPanState = { sx: evt.clientX, sy: evt.clientY, tx: graphTransform.x, ty: graphTransform.y };
+      graphSvgEl.style.cursor = 'grabbing';
+    });
+
+    // Wheel zoom toward cursor
+    graphSvgEl.addEventListener('wheel', evt => {
+      evt.preventDefault();
+      const factor = evt.deltaY < 0 ? 1.12 : 0.89;
+      const newK   = Math.min(4, Math.max(0.2, graphTransform.k * factor));
+      const rect   = graphSvgEl.getBoundingClientRect();
+      const mx = evt.clientX - rect.left;
+      const my = evt.clientY - rect.top;
+      graphTransform.x = mx - (mx - graphTransform.x) * (newK / graphTransform.k);
+      graphTransform.y = my - (my - graphTransform.y) * (newK / graphTransform.k);
+      graphTransform.k = newK;
+      applyGraphTransform();
+    }, { passive: false });
+  }
+
+  function onGraphMouseMove(evt) {
+    if (graphDragNode) {
+      const n  = graphDragNode.node;
+      const dx = (evt.clientX - graphDragNode.x0) / graphTransform.k;
+      const dy = (evt.clientY - graphDragNode.y0) / graphTransform.k;
+      n.x = graphDragNode.ox + dx;
+      n.y = graphDragNode.oy + dy;
+      n.vx = 0; n.vy = 0;
+      updateGraphPositions();
+      if (!graphAnimId) runGraphSim(); // re-kick physics
+    } else if (graphPanState) {
+      graphTransform.x = graphPanState.tx + (evt.clientX - graphPanState.sx);
+      graphTransform.y = graphPanState.ty + (evt.clientY - graphPanState.sy);
+      applyGraphTransform();
+    }
+  }
+
+  function onGraphMouseUp() {
+    if (graphDragNode) {
+      graphDragNode.node.pinned = false;
+      if (graphDragNode.node.el) graphDragNode.node.el.style.cursor = 'grab';
+      graphDragNode = null;
+      if (!graphAnimId) runGraphSim();
+    }
+    if (graphPanState) {
+      graphPanState = null;
+      if (graphSvgEl) graphSvgEl.style.cursor = 'default';
+    }
+  }
+
+  function applyGraphTransform() {
+    if (graphRootEl) graphRootEl.setAttribute('transform',
+      `translate(${graphTransform.x},${graphTransform.y}) scale(${graphTransform.k})`);
+  }
+
+  function updateGraphPositions() {
+    graphEdges.forEach(e => {
+      e.el.setAttribute('x1', e.source.x); e.el.setAttribute('y1', e.source.y);
+      e.el.setAttribute('x2', e.target.x); e.el.setAttribute('y2', e.target.y);
+    });
+    graphNodes.forEach(n => {
+      if (n.el) n.el.setAttribute('transform', `translate(${n.x},${n.y})`);
+    });
+  }
+
+  function runGraphSim() {
+    let frame = 0;
+    const step = () => {
+      if (!document.getElementById('graphModal').classList.contains('active')) return;
+      const W = (graphSvgEl?.clientWidth  || 800);
+      const H = (graphSvgEl?.clientHeight || 500);
+      const cx = W / 2, cy = H / 2;
+
+      graphNodes.forEach(n => { n.fx = 0; n.fy = 0; });
+
+      // Repulsion between all pairs
+      for (let i = 0; i < graphNodes.length; i++) {
+        for (let j = i + 1; j < graphNodes.length; j++) {
+          const a = graphNodes[i], b = graphNodes[j];
+          const dx = b.x - a.x, dy = b.y - a.y;
+          const d2 = Math.max(64, dx*dx + dy*dy);
+          const d  = Math.sqrt(d2);
+          const f  = GRAPH.repel / d2;
+          const fx = f*dx/d, fy = f*dy/d;
+          a.fx -= fx; a.fy -= fy;
+          b.fx += fx; b.fy += fy;
+        }
+      }
+
+      // Spring attraction along edges
+      graphEdges.forEach(e => {
+        const dx = e.target.x - e.source.x, dy = e.target.y - e.source.y;
+        const d  = Math.max(1, Math.sqrt(dx*dx + dy*dy));
+        const f  = GRAPH.spring * (d - GRAPH.springLen);
+        const fx = f*dx/d, fy = f*dy/d;
+        if (!e.source.pinned) { e.source.fx += fx; e.source.fy += fy; }
+        if (!e.target.pinned) { e.target.fx -= fx; e.target.fy -= fy; }
+      });
+
+      // Gravity toward viewport center
+      graphNodes.forEach(n => {
+        if (!n.pinned) { n.fx += GRAPH.gravity*(cx-n.x); n.fy += GRAPH.gravity*(cy-n.y); }
+      });
+
+      // Integrate
+      let energy = 0;
+      graphNodes.forEach(n => {
+        if (n.pinned) return;
+        n.vx = (n.vx + n.fx) * GRAPH.damping;
+        n.vy = (n.vy + n.fy) * GRAPH.damping;
+        n.x += n.vx; n.y += n.vy;
+        energy += n.vx*n.vx + n.vy*n.vy;
+      });
+
+      updateGraphPositions();
+      frame++;
+
+      if (energy > 0.04 || frame < 180) {
+        graphAnimId = requestAnimationFrame(step);
+      } else {
+        graphAnimId = null; // settled
+      }
+    };
+    graphAnimId = requestAnimationFrame(step);
+  }
+
+  function applySubjFocus(subj) {
+    graphNodes.forEach(n => {
+      n.el.style.opacity = (!subj || n.session.subject === subj) ? '1' : '0.12';
+    });
+    graphEdges.forEach(e => {
+      const active = !subj || e.source.session.subject === subj || e.target.session.subject === subj;
+      e.el.setAttribute('opacity', active ? '0.75' : '0.06');
+    });
+  }
+
+  function renderGraphSubjBar() {
+    const bar = document.getElementById('graphSubjBar');
+    if (!bar) return;
+    bar.innerHTML = '';
+    const subjects = [...new Set(sessions.map(s => s.subject).filter(Boolean))].sort();
+    if (!subjects.length) return;
+
+    const allBtn = document.createElement('button');
+    allBtn.className = 'graph-pill' + (graphSubjFocus === null ? ' active' : '');
+    allBtn.textContent = 'All';
+    allBtn.onclick = () => { graphSubjFocus = null; applySubjFocus(null); renderGraphSubjBar(); };
+    bar.appendChild(allBtn);
+
+    subjects.forEach(subj => {
+      const col = getSubjectColor(subj);
+      const btn = document.createElement('button');
+      btn.className = 'graph-pill' + (graphSubjFocus === subj ? ' active' : '');
+      btn.textContent = subj;
+      if (graphSubjFocus === subj) {
+        btn.style.background  = col.bg;
+        btn.style.color       = col.text;
+        btn.style.borderColor = col.border;
+      }
+      btn.onclick = () => {
+        graphSubjFocus = graphSubjFocus === subj ? null : subj;
+        applySubjFocus(graphSubjFocus);
+        renderGraphSubjBar();
+      };
+      bar.appendChild(btn);
+    });
+  }
+
+  // ── Second brain links ───────────────────────────────────
+
+  const LINK_RELATIONS = {
+    'related':     { label: 'Related to',      inverse: 'Related to' },
+    'builds-on':   { label: 'Builds on',        inverse: 'Built on by' },
+    'prerequisite':{ label: 'Prerequisite of',  inverse: 'Required by' },
+    'see-also':    { label: 'See also',         inverse: 'See also' },
+  };
+
+  function getLinksForSession(sessionId) {
+    return links
+      .filter(l => l.from_id === sessionId || l.to_id === sessionId)
+      .map(l => {
+        const isFrom   = l.from_id === sessionId;
+        const otherId  = isFrom ? l.to_id : l.from_id;
+        const relDef   = LINK_RELATIONS[l.relation] || LINK_RELATIONS['related'];
+        const relLabel = isFrom ? relDef.label : relDef.inverse;
+        const other    = sessions.find(s => s.id === otherId);
+        return { linkId: l.id, relLabel, other };
+      })
+      .filter(x => x.other); // discard orphans (deleted sessions)
+  }
+
+  function renderSessionLinks(container, sessionId) {
+    const sessionLinks = getLinksForSession(sessionId);
+    const wrap = document.createElement('div');
+    wrap.className = 'session-links';
+
+    sessionLinks.forEach(({ linkId, relLabel, other }) => {
+      const item = document.createElement('div');
+      item.className = 'link-item';
+      item.innerHTML =
+        `<span class="link-rel-badge">${relLabel}</span>` +
+        `<span class="link-target-topic" title="${other.topic}${other.subject ? ' · ' + other.subject : ''}"
+               onclick="closeDayModal();openDayModal('${other.studiedDate}')">${other.topic}</span>` +
+        (other.subject ? `<span class="link-target-subject">${other.subject}</span>` : '') +
+        `<button class="link-remove-btn" title="Remove link" onclick="deleteLink('${linkId}','${sessionId}')">×</button>`;
+      wrap.appendChild(item);
+    });
+
+    const addBtn = document.createElement('button');
+    addBtn.className = 'add-link-btn';
+    addBtn.innerHTML = '<svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 5.5h3M5.5 4v3"/><path d="M7.5 3.5l1.5-1.5a1.414 1.414 0 012 2L9.5 5.5"/><path d="M3.5 7.5L2 9a1.414 1.414 0 01-2-2L1.5 5.5"/></svg> Link topic';
+    addBtn.onclick = () => openLinkModal(sessionId);
+    wrap.appendChild(addBtn);
+
+    container.appendChild(wrap);
+  }
+
+  function openLinkModal(sessionId) {
+    linkingSessionId     = sessionId;
+    selectedLinkTargetId = null;
+    selectedLinkRelation = 'related';
+
+    // Build relation picker
+    const picker = document.getElementById('linkRelationPicker');
+    picker.innerHTML = '';
+    Object.entries(LINK_RELATIONS).forEach(([key, def]) => {
+      const btn = document.createElement('button');
+      btn.className = 'link-rel-option' + (key === 'related' ? ' selected' : '');
+      btn.textContent = def.label;
+      btn.dataset.rel = key;
+      btn.onclick = () => {
+        selectedLinkRelation = key;
+        picker.querySelectorAll('.link-rel-option').forEach(b => b.classList.toggle('selected', b.dataset.rel === key));
+      };
+      picker.appendChild(btn);
+    });
+
+    document.getElementById('linkSearchInput').value = '';
+    renderLinkSearch('');
+    document.getElementById('linkModal').classList.add('active');
+    setTimeout(() => document.getElementById('linkSearchInput').focus(), 220);
+  }
+
+  function closeLinkModal() {
+    document.getElementById('linkModal').classList.remove('active');
+    linkingSessionId = selectedLinkTargetId = null;
+  }
+
+  function renderLinkSearch(query) {
+    const q    = query.trim().toLowerCase();
+    const list = document.getElementById('linkSessionList');
+    list.innerHTML = '';
+
+    // Already-linked session IDs (exclude from picker)
+    const alreadyLinked = new Set(
+      links.filter(l => l.from_id === linkingSessionId || l.to_id === linkingSessionId)
+           .map(l => l.from_id === linkingSessionId ? l.to_id : l.from_id)
+    );
+
+    const candidates = sessions.filter(s =>
+      s.id !== linkingSessionId &&
+      !alreadyLinked.has(s.id) &&
+      (!q || s.topic.toLowerCase().includes(q) || (s.subject || '').toLowerCase().includes(q))
+    );
+
+    if (!candidates.length) {
+      list.innerHTML = `<div class="link-empty">${q ? 'No matches' : 'No other sessions to link'}</div>`;
+      return;
+    }
+
+    candidates.slice(0, 30).forEach(s => {
+      const opt = document.createElement('div');
+      opt.className = 'link-session-option' + (s.id === selectedLinkTargetId ? ' selected' : '');
+      opt.innerHTML =
+        `<div class="link-session-option-topic">${s.topic}</div>` +
+        `<div class="link-session-option-sub">${[s.subject, s.studiedDate].filter(Boolean).join(' · ')}</div>`;
+      opt.onclick = () => {
+        selectedLinkTargetId = s.id;
+        list.querySelectorAll('.link-session-option').forEach(o => o.classList.toggle('selected', o === opt));
+        document.getElementById('linkSaveBtn').disabled = false;
+      };
+      list.appendChild(opt);
+    });
+  }
+
+  async function saveLink() {
+    if (!linkingSessionId || !selectedLinkTargetId) return;
+    const btn = document.getElementById('linkSaveBtn');
+    btn.disabled = true;
+    const res = await authFetch('/api/links', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fromId: linkingSessionId, toId: selectedLinkTargetId, relation: selectedLinkRelation })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      links.push({ id: data.id, user_id: '', from_id: linkingSessionId, to_id: selectedLinkTargetId, relation: selectedLinkRelation });
+      closeLinkModal();
+      // Refresh the day modal to show the new link
+      if (currentDayDate) openDayModal(currentDayDate);
+      showToast('Link saved');
+    } else {
+      const err = await res.json();
+      showToast(err.error || 'Could not save link');
+      btn.disabled = false;
+    }
+  }
+
+  async function deleteLink(linkId, sessionId) {
+    await authFetch(`/api/links/${linkId}`, { method: 'DELETE' });
+    links = links.filter(l => l.id !== linkId);
+    if (currentDayDate) openDayModal(currentDayDate);
+    showToast('Link removed');
+  }
+
+  // ── Events for a date ────────────────────────────────────
+  function getEventsForDate(dateStr) {
+    const today  = todayStr();
+    const events = [];
+    sessions
+      .filter(s => activeSubject === null || s.subject === activeSubject)
+      .filter(s => activeTagFilter === null || (s.tags || []).includes(activeTagFilter))
+      .filter(sessionMatchesSearch)
+      .forEach(session => {
+        if (session.studiedDate === dateStr)
+          events.push({ type: 'study', session });
+        session.reviews.forEach((rev, i) => {
+          if (rev.date === dateStr)
+            events.push({
+              type: 'review', reviewIndex: i, session, done: rev.done,
+              overdue: !rev.done && rev.date < today
+            });
+        });
+      });
+    return events;
+  }
+
+  // ── Streak ───────────────────────────────────────────────
+  function calcStreak() {
+    // count any day with a study session OR a completed review
+    const activeDays = new Set();
+    sessions.forEach(s => {
+      activeDays.add(s.studiedDate);
+      s.reviews.forEach(r => { if (r.done) activeDays.add(r.date); });
+    });
+    if (!activeDays.size) return 0;
+    let streak = 0;
+    const check = new Date(todayStr() + 'T00:00:00');
+    while (true) {
+      const s = ymd(check.getFullYear(), check.getMonth() + 1, check.getDate());
+      if (activeDays.has(s)) { streak++; check.setDate(check.getDate() - 1); }
+      else break;
+    }
+    return streak;
+  }
+
+  // ── Due Today panel ──────────────────────────────────────
+  function renderDueToday() {
+    const today    = todayStr();
+    const overdue  = [];
+    const dueToday = [];
+
+    sessions.forEach(session => {
+      session.reviews.forEach((rev, i) => {
+        if (rev.done) return;
+        if (rev.date < today)       overdue.push({ session, reviewIndex: i, date: rev.date });
+        else if (rev.date === today) dueToday.push({ session, reviewIndex: i, date: rev.date });
+      });
+    });
+
+    const container = document.getElementById('dueToday');
+    if (!overdue.length && !dueToday.length) { container.innerHTML = ''; return; }
+
+    container.innerHTML = '';
+    const panel = document.createElement('div');
+    panel.className = 'due-today';
+
+    // header label
+    const parts = [];
+    if (overdue.length)  parts.push(`<span style="color:#dc2626;font-weight:700">${overdue.length} overdue</span>`);
+    if (dueToday.length) parts.push(`${dueToday.length} due today`);
+    const totalCount = overdue.length + dueToday.length;
+
+    const allPending = [
+      ...overdue.map(x => ({ sessionId: x.session.id, reviewIdx: x.reviewIndex })),
+      ...dueToday.map(x => ({ sessionId: x.session.id, reviewIdx: x.reviewIndex }))
+    ];
+
+    const header = document.createElement('div');
+    header.className = 'due-today-header';
+    header.innerHTML =
+      `<div class="due-today-title">
+        📋 ${parts.join(' · ')}
+        <span class="due-count" style="${overdue.length ? 'background:#ef4444' : ''}">${totalCount}</span>
+      </div>
+      ${totalCount >= 2 ? `<button class="mark-all-btn" id="markAllBtn">✓ Mark all done</button>` : ''}
+      <span class="due-toggle" id="dueTodayToggle">▲ hide</span>`;
+    panel.appendChild(header);
+
+    if (totalCount >= 2) {
+      header.querySelector('#markAllBtn').addEventListener('click', e => {
+        e.stopPropagation();
+        markAllDone(allPending);
+      });
+    }
+
+    const body = document.createElement('div');
+    body.className = 'due-today-body';
+    body.id = 'dueTodayBody';
+
+    const makeItem = ({ session, reviewIndex, date }, isOverdue) => {
+      const col  = getSubjectColor(session.subject);
+      const item = document.createElement('div');
+      item.className = 'due-item';
+      if (isOverdue) item.style.borderColor = '#fecaca';
+
+      const daysDiff = Math.round((new Date(today + 'T00:00:00') - new Date(date + 'T00:00:00')) / 86400000);
+      const overdueLabel = isOverdue ? ` · ${daysDiff}d overdue` : '';
+
+      item.innerHTML =
+        `<div class="due-dot" style="background:${isOverdue ? '#ef4444' : col.border}"></div>
+         <div class="due-info">
+           <div class="due-topic">${session.topic}</div>
+           <div class="due-meta">${session.subject ? session.subject + ' · ' : ''}${intervalLabel(intervals[reviewIndex] ?? reviewIndex)} review${overdueLabel}${session.reviewStreak >= 2 ? ` · <span class="streak-badge">🔥 ${session.reviewStreak}</span>` : ''}</div>
+         </div>`;
+      const btn = document.createElement('button');
+      btn.className = 'due-done-btn';
+      btn.textContent = 'Mark done';
+      if (isOverdue) btn.style.borderColor = '#fca5a5';
+      btn.onclick = () => openRatingModal(session.id, reviewIndex, null);
+      item.appendChild(btn);
+      return item;
+    };
+
+    // overdue first, then due today
+    overdue.sort((a, b) => a.date.localeCompare(b.date))
+      .forEach(item => body.appendChild(makeItem(item, true)));
+    dueToday.forEach(item => body.appendChild(makeItem(item, false)));
+
+    panel.appendChild(body);
+    container.appendChild(panel);
+
+    let collapsed = false;
+    header.onclick = () => {
+      collapsed = !collapsed;
+      body.style.display = collapsed ? 'none' : '';
+      document.getElementById('dueTodayToggle').textContent = collapsed ? '▼ show' : '▲ hide';
+    };
+  }
+
+  // ── Filter bar ───────────────────────────────────────────
+  function renderFilters() {
+    renderTagFilterBar();
+    const bar = document.getElementById('filterBar');
+    bar.innerHTML = '';
+    const subjects = [...new Set(sessions.map(s => s.subject).filter(Boolean))].sort();
+    if (!subjects.length) return;
+
+    const allPill = document.createElement('button');
+    allPill.className = 'filter-pill' + (activeSubject === null ? ' active-all' : '');
+    allPill.textContent = 'All';
+    allPill.onclick = () => { activeSubject = null; renderCalendar(); };
+    bar.appendChild(allPill);
+
+    subjects.forEach(subj => {
+      const col  = getSubjectColor(subj);
+      const pill = document.createElement('button');
+      pill.className = 'filter-pill';
+      pill.textContent = subj;
+      if (activeSubject === subj) {
+        pill.style.background  = col.bg;
+        pill.style.color       = col.text;
+        pill.style.borderColor = col.border;
+      }
+      pill.onclick = () => { activeSubject = subj; renderCalendar(); };
+      bar.appendChild(pill);
+    });
+  }
+
+  // ── Legend ───────────────────────────────────────────────
+  function renderLegend() {
+    const leg = document.getElementById('legend');
+    leg.innerHTML = '<div class="legend-item"><div class="legend-swatch" style="background:#6366f1"></div> Studied</div>';
+    intervals.forEach((days, i) => {
+      const col      = REVIEW_COLORS[i] || REVIEW_COLORS[REVIEW_COLORS.length - 1];
+      const shortLbl = `+${days}d`;
+      leg.innerHTML += `<div class="legend-item"><div class="legend-swatch" style="background:${col}"></div> Review ${i + 1} <span style="color:#94a3b8">(${shortLbl})</span></div>`;
+    });
+  }
+
+  // ── Calendar render ──────────────────────────────────────
+  function renderCalendar() {
+    const isEmpty = sessions.length === 0;
+    document.getElementById('emptyState').style.display = isEmpty ? '' : 'none';
+
+    const grid = document.getElementById('calendarGrid');
+    // Remove all data rows, keeping the header row
+    Array.from(grid.querySelectorAll('.cal-row:not(:first-child)')).forEach(el => el.remove());
+    document.getElementById('monthYear').textContent = `${MONTH_NAMES[currentMonth]} ${currentYear}`;
+
+    const today    = todayStr();
+    const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+    const dimMax   = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const prevDays = new Date(currentYear, currentMonth, 0).getDate();
+
+    const prevM = currentMonth === 0 ? 11 : currentMonth - 1;
+    const prevY = currentMonth === 0 ? currentYear - 1 : currentYear;
+    const nextM = currentMonth === 11 ? 0 : currentMonth + 1;
+    const nextY = currentMonth === 11 ? currentYear + 1 : currentYear;
+
+    // Build flat cell list then arrange into row containers of 7
+    const cells = [];
+    for (let i = firstDay - 1; i >= 0; i--)
+      cells.push(makeCell(prevDays - i, ymd(prevY, prevM + 1, prevDays - i), true, today));
+    for (let d = 1; d <= dimMax; d++)
+      cells.push(makeCell(d, ymd(currentYear, currentMonth + 1, d), false, today));
+    const tail = cells.length % 7 === 0 ? 0 : 7 - (cells.length % 7);
+    for (let d = 1; d <= tail; d++)
+      cells.push(makeCell(d, ymd(nextY, nextM + 1, d), true, today));
+
+    // today-column tint
+    const todayCol = new Date().getDay();
+    cells.forEach((cell, i) => { if (i % 7 === todayCol) cell.classList.add('today-col'); });
+
+    // Append cells in rows of 7 — each row is its own flex container so
+    // chip content in one row cannot push the SAT column out of view
+    for (let r = 0; r < cells.length / 7; r++) {
+      const row = document.createElement('div');
+      row.className = 'cal-row';
+      for (let c = 0; c < 7; c++) row.appendChild(cells[r * 7 + c]);
+      grid.appendChild(row);
+    }
+
+    // empty-month watermark (appended to outer wrapper which has position:relative)
+    const calGrid = document.getElementById('calendarOuter');
+    const existing = document.getElementById('emptyMonthMsg');
+    if (existing) existing.remove();
+    const monthHasEvents = sessions
+      .filter(s => activeSubject === null || s.subject === activeSubject)
+      .some(s => {
+        const inMonth = (d) => { const [y,m] = d.split('-'); return +y === currentYear && +m - 1 === currentMonth; };
+        return inMonth(s.studiedDate) || s.reviews.some(r => inMonth(r.date));
+      });
+    if (!monthHasEvents) {
+      const msg = document.createElement('div');
+      msg.id = 'emptyMonthMsg';
+      msg.className = 'empty-month';
+      msg.innerHTML = '<span>Nothing studied this month</span>';
+      calGrid.appendChild(msg);
+    }
+
+    renderFilters();
+    renderDueToday();
+    renderLegend();
+    document.getElementById('streakBadge').textContent =
+      calcStreak() > 0 ? `🔥 ${calcStreak()}-day streak` : 'No streak yet';
+  }
+
+  function makeCell(day, dateStr, other, today) {
+    const cell = document.createElement('div');
+    cell.className = 'day-cell' + (other ? ' other-month' : '') + (dateStr === today ? ' today' : '');
+    cell.dataset.date = dateStr;
+    cell.onclick = () => openDayModal(dateStr);
+
+    // ── Drop target ──────────────────────────────────────────
+    cell.addEventListener('dragover', evt => {
+      if (!dragReview) return;
+      evt.preventDefault();
+      evt.dataTransfer.dropEffect = 'move';
+      cell.classList.add('drag-over');
+    });
+    cell.addEventListener('dragleave', evt => {
+      // only remove if leaving to outside the cell (not to a child)
+      if (!cell.contains(evt.relatedTarget)) cell.classList.remove('drag-over');
+    });
+    cell.addEventListener('drop', async evt => {
+      evt.preventDefault();
+      cell.classList.remove('drag-over');
+      if (!dragReview) return;
+      const newDate = cell.dataset.date;
+      if (newDate === dragReview.fromDate) return;
+      const { sessionId, reviewIndex } = dragReview;
+      dragReview = null;
+      const res = await authFetch(`/api/sessions/${sessionId}/reviews/${reviewIndex}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newDate })
+      });
+      if (res.ok) {
+        await loadSessions();
+        renderCalendar();
+        showToast(`Review rescheduled to ${displayDate(newDate)}`);
+      }
+    });
+
+    const num = document.createElement('div');
+    num.className = 'day-number';
+    num.textContent = day;
+    cell.appendChild(num);
+
+    const evWrap = document.createElement('div');
+    evWrap.className = 'events';
+    const evs = getEventsForDate(dateStr);
+
+    evs.slice(0, 3).forEach((ev, i) => {
+      const e = document.createElement('div');
+      if (ev.type === 'study') {
+        const col = getSubjectColor(ev.session.subject);
+        e.className = 'event';
+        e.style.background = col.bg;
+        e.style.color = col.text;
+        e.style.borderLeft = `3px solid ${col.border}`;
+      } else if (ev.overdue) {
+        e.className = 'event overdue';
+      } else {
+        const idx = Math.min(ev.reviewIndex, REVIEW_COLORS.length - 1);
+        e.className = `event review-${idx}${ev.done ? ' done' : ''}`;
+      }
+      e.style.animationDelay = `${i * 30}ms`;
+      const isRecurring = !!ev.session.recurrenceRule;
+      if (isRecurring) e.classList.add('recurring');
+      e.textContent = ev.type === 'study' ? ev.session.topic : `↻ ${ev.session.topic}`;
+
+      // ── Draggable review chips (undone only) ─────────────
+      if (ev.type === 'review' && !ev.done) {
+        e.draggable = true;
+        e.classList.add('draggable-review');
+        e.addEventListener('dragstart', evt => {
+          dragReview = { sessionId: ev.session.id, reviewIndex: ev.reviewIndex, fromDate: dateStr };
+          evt.dataTransfer.effectAllowed = 'move';
+          evt.dataTransfer.setData('text/plain', dateStr);
+          evt.stopPropagation();
+          // use setTimeout so the "dragging" class is applied after the drag image is captured
+          setTimeout(() => e.classList.add('dragging'), 0);
+        });
+        e.addEventListener('dragend', () => {
+          e.classList.remove('dragging');
+          // clean up any lingering drag-over highlights
+          document.querySelectorAll('.day-cell.drag-over').forEach(c => c.classList.remove('drag-over'));
+          dragReview = null;
+        });
+      }
+
+      evWrap.appendChild(e);
+    });
+
+    if (evs.length > 3) {
+      const more = document.createElement('div');
+      more.className = 'more-events';
+      more.textContent = `+${evs.length - 3} more`;
+      evWrap.appendChild(more);
+    }
+
+    cell.appendChild(evWrap);
+    return cell;
+  }
+
+  // ── Add Modal ────────────────────────────────────────────
+  function openAddModal() { openAddModalForDate(todayStr()); }
+
+  function openEditModal(session) {
+    closeDayModal();
+    editingSessionId = session.id;
+    document.querySelector('#addModal h3').textContent = 'Edit Session';
+    document.getElementById('dateInput').value    = session.studiedDate;
+    document.getElementById('dateInput').disabled = true;
+    document.getElementById('topicInput').value   = session.topic;
+    document.getElementById('subjectInput').value = session.subject || '';
+    document.getElementById('notesInput').value   = session.notes || '';
+    resetEditTags(session.tags || []);
+    document.getElementById('saveBtn').textContent = 'Save Changes';
+    buildReviewChips(session.studiedDate);
+    // hide review preview and recurrence on edit
+    document.querySelector('.review-preview').style.display = 'none';
+    document.getElementById('recurGroup').style.display = 'none';
+    document.getElementById('addModal').classList.add('active');
+    setTimeout(() => document.getElementById('topicInput').focus(), 220);
+  }
+
+  function openAddModalForDate(dateStr) {
+    closeDayModal();
+    editingSessionId  = null;
+    addModalTargetDate = dateStr;
+    document.querySelector('#addModal h3').textContent = 'Log Study Session';
+    document.getElementById('dateInput').disabled  = false;
+    document.getElementById('saveBtn').textContent = 'Save & Schedule';
+    document.querySelector('.review-preview').style.display = '';
+    document.getElementById('recurGroup').style.display = '';
+    document.getElementById('dateInput').value    = dateStr;
+    document.getElementById('topicInput').value   = '';
+    document.getElementById('subjectInput').value = activeSubject || '';
+    document.getElementById('notesInput').value   = '';
+    resetEditTags([]);
+    resetRecurUI(dateStr);
+
+    const list = document.getElementById('subjectList');
+    list.innerHTML = '';
+    [...new Set(sessions.map(s => s.subject).filter(Boolean))].sort().forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s;
+      list.appendChild(opt);
+    });
+
+    buildReviewChips(dateStr);
+    document.getElementById('addModal').classList.add('active');
+    setTimeout(() => document.getElementById('topicInput').focus(), 220);
+  }
+
+  function closeAddModal() {
+    document.getElementById('addModal').classList.remove('active');
+  }
+
+  // ── Recurrence UI helpers ────────────────────────────────
+  function toggleRecurOptions() {
+    const checked = document.getElementById('recurCheck').checked;
+    document.getElementById('recurOptions').style.display = checked ? '' : 'none';
+  }
+
+  function syncRecurPreview() {
+    // No-op preview for now; rule is read at save time
+  }
+
+  function resetRecurUI(dateStr) {
+    document.getElementById('recurCheck').checked = false;
+    document.getElementById('recurOptions').style.display = 'none';
+    // Pre-select the weekday matching the chosen study date
+    const wd = new Date(dateStr + 'T00:00:00').getDay();
+    document.getElementById('recurWeekday').value = wd;
+    document.getElementById('recurTypeWeekly').checked = true;
+    document.getElementById('recurDays').value = 7;
+  }
+
+  function getRecurrenceRule() {
+    if (!document.getElementById('recurCheck').checked) return null;
+    const isWeekly = document.getElementById('recurTypeWeekly').checked;
+    if (isWeekly) {
+      return { type: 'weekly', weekday: parseInt(document.getElementById('recurWeekday').value) };
+    }
+    const days = Math.max(1, parseInt(document.getElementById('recurDays').value) || 7);
+    return { type: 'interval', days };
+  }
+
+  function recurRuleLabel(rule) {
+    if (!rule) return '';
+    if (rule.type === 'weekly') {
+      const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+      return `every ${days[rule.weekday]}`;
+    }
+    return `every ${rule.days}d`;
+  }
+
+  function buildReviewChips(dateStr) {
+    const wrap = document.getElementById('reviewChips');
+    wrap.innerHTML = '';
+    intervals.forEach((days, i) => {
+      const col = REVIEW_COLORS[Math.min(i, REVIEW_COLORS.length - 1)];
+      const chip = document.createElement('div');
+      chip.className = 'review-chip';
+      chip.innerHTML =
+        `<span class="chip-interval" style="color:${col}">${intervalLabel(days)}</span>` +
+        `<span>${displayDate(addDays(dateStr, days))}</span>`;
+      wrap.appendChild(chip);
+    });
+  }
+
+  document.getElementById('dateInput').addEventListener('change', e => {
+    addModalTargetDate = e.target.value;
+    buildReviewChips(addModalTargetDate);
+    // Keep weekly weekday in sync with the chosen date
+    if (!document.getElementById('recurCheck').checked) {
+      const wd = new Date(addModalTargetDate + 'T00:00:00').getDay();
+      document.getElementById('recurWeekday').value = wd;
+    }
+  });
+
+  async function saveStudySession() {
+    const topic   = document.getElementById('topicInput').value.trim();
+    const subject = document.getElementById('subjectInput').value.trim();
+    const date    = document.getElementById('dateInput').value;
+    const notes   = document.getElementById('notesInput').value.trim();
+    if (!topic) { document.getElementById('topicInput').focus(); return; }
+
+    const btn = document.getElementById('saveBtn');
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+
+    const recurrenceRule = getRecurrenceRule();
+    const recurrenceId   = recurrenceRule ? crypto.randomUUID() : null;
+    const tags           = [...editTags];
+
+    const session = {
+      id:          Date.now().toString(),
+      topic, subject, studiedDate: date, notes, tags,
+      reviews: intervals.map(d => ({ date: addDays(date, d), done: false })),
+      recurrenceRule, recurrenceId
+    };
+
+    try {
+      if (editingSessionId) {
+        await authFetch(`/api/sessions/${editingSessionId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ topic, subject, notes, tags })
+        });
+        const s = sessions.find(x => x.id === editingSessionId);
+        if (s) { s.topic = topic; s.subject = subject; s.notes = notes; s.tags = tags; }
+        showToast(`"${topic}" updated`);
+      } else {
+        await authFetch('/api/sessions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(session)
+        });
+        sessions.push(session);
+        const recurSuffix = recurrenceRule ? ` · 🔁 ${recurRuleLabel(recurrenceRule)}` : '';
+        showToast(`"${topic}" saved — ${intervals.length} reviews scheduled${recurSuffix}`);
+      }
+      closeAddModal();
+      renderCalendar();
+    } catch {
+      showToast('Error saving — is the server running?');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = editingSessionId ? 'Save Changes' : 'Save & Schedule';
+    }
+  }
+
+  // ── Day Modal ────────────────────────────────────────────
+  function openDayModal(dateStr) {
+    currentDayDate = dateStr;
+    document.getElementById('dayModalTitle').textContent = displayDate(dateStr);
+
+    const wrap = document.getElementById('dayModalEvents');
+    wrap.innerHTML = '';
+    const evs = getEventsForDate(dateStr);
+
+    if (!evs.length) {
+      wrap.innerHTML = '<div class="empty-day">No events — click "+ Add Study" to log a session.</div>';
+    } else {
+      evs.forEach(ev => {
+        const item = document.createElement('div');
+        item.className = 'event-item';
+
+        const dot = document.createElement('div');
+        dot.className = 'event-dot';
+        dot.style.background = ev.type === 'study'
+          ? getSubjectColor(ev.session.subject).border
+          : REVIEW_COLORS[Math.min(ev.reviewIndex, REVIEW_COLORS.length - 1)];
+
+        const info = document.createElement('div');
+        info.className = 'event-info';
+        const tagsHtml = ev.type === 'study' && (ev.session.tags || []).length
+          ? `<div class="session-tags">${ev.session.tags.map(t =>
+              `<span class="session-tag" onclick="filterByTag('${t}');closeDayModal()">#${t}</span>`
+            ).join('')}</div>`
+          : '';
+        info.innerHTML =
+          `<div class="event-title">${ev.type === 'study' ? ev.session.topic : 'Review: ' + ev.session.topic}</div>` +
+          `<div class="event-meta">${ev.type === 'study'
+            ? (ev.session.notes || 'Initial study session') + (ev.session.reviewStreak >= 2 ? ` &nbsp;<span class="streak-badge">🔥 ${ev.session.reviewStreak}-review streak</span>` : '')
+            : `Spaced review (${intervalLabel(intervals[ev.reviewIndex] ?? ev.reviewIndex)})${ev.done ? ' — Done ✓' + (ev.session.reviews[ev.reviewIndex]?.confidence ? ' · ' + RATINGS[ev.session.reviews[ev.reviewIndex].confidence - 1]?.emoji : '') : ''}`
+          }</div>${tagsHtml}`;
+
+        item.appendChild(dot);
+        item.appendChild(info);
+
+        if (ev.type === 'review') {
+          if (ev.done) {
+            const btn = document.createElement('button');
+            btn.className = 'undo-btn';
+            btn.textContent = 'Undo';
+            btn.title = 'Mark as not done';
+            btn.onclick = e => { e.stopPropagation(); markDone(ev.session.id, ev.reviewIndex, dateStr, false); };
+            item.appendChild(btn);
+          } else if (ev.session.reviews[ev.reviewIndex].date > todayStr()) {
+            const badge = document.createElement('span');
+            badge.className = 'scheduled-badge';
+            badge.textContent = 'Scheduled';
+            item.appendChild(badge);
+          } else {
+            const btn = document.createElement('button');
+            btn.className = 'check-btn';
+            btn.textContent = 'Mark done';
+            btn.onclick = e => { e.stopPropagation(); openRatingModal(ev.session.id, ev.reviewIndex, dateStr); };
+            item.appendChild(btn);
+          }
+        }
+
+        if (ev.type === 'study') {
+          // Links section — renders below info, before action buttons
+          renderSessionLinks(info, ev.session.id);
+
+          const curveBtn = document.createElement('button');
+          curveBtn.className = 'edit-btn';
+          curveBtn.title = 'View forgetting curve';
+          curveBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,11 4,6 7,8 10,3 13,5"/></svg>';
+          curveBtn.onclick = e => { e.stopPropagation(); openCurveModal(ev.session.id); };
+          item.appendChild(curveBtn);
+
+          const editBtn = document.createElement('button');
+          editBtn.className = 'edit-btn';
+          editBtn.title = 'Edit session';
+          editBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 1.5l2 2-7 7H2.5v-2l7-7z"/></svg>';
+          editBtn.onclick = e => { e.stopPropagation(); openEditModal(ev.session); };
+          item.appendChild(editBtn);
+
+          const del = document.createElement('button');
+          del.className = 'delete-btn';
+          del.title = 'Delete session';
+          del.textContent = '×';
+          del.onclick = e => { e.stopPropagation(); deleteSession(ev.session.id, dateStr); };
+          item.appendChild(del);
+        }
+
+        wrap.appendChild(item);
+      });
+    }
+
+    document.getElementById('dayModal').classList.add('active');
+  }
+
+  function closeDayModal() { document.getElementById('dayModal').classList.remove('active'); }
+
+  async function markDone(sessionId, reviewIdx, dateStr, done = true, confidence = null, rescheduleFromToday = false) {
+    const body = { done };
+    if (confidence)          body.confidence          = confidence;
+    if (rescheduleFromToday) body.rescheduleFromToday = true;
+
+    const res  = await authFetch(`/api/sessions/${sessionId}/reviews/${reviewIdx}`, {
+      method:  'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(body)
+    });
+    const data = await res.json();
+    const s = sessions.find(x => x.id === sessionId);
+    if (s && data.reviews) {
+      s.reviews      = data.reviews;
+      s.easeFactor   = data.easeFactor;
+      s.reviewStreak = data.reviewStreak;
+    } else if (s) {
+      s.reviews[reviewIdx].done = done;
+    }
+    renderCalendar();
+    if (dateStr) openDayModal(dateStr);
+    showToast(done ? 'Review marked complete!' : 'Review marked incomplete.');
+  }
+
+  async function markAllDone(items) {
+    await Promise.all(items.map(({ sessionId, reviewIdx }) =>
+      authFetch(`/api/sessions/${sessionId}/reviews/${reviewIdx}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ done: true })
+      }).then(() => {
+        const s = sessions.find(x => x.id === sessionId);
+        if (s) s.reviews[reviewIdx].done = true;
+      })
+    ));
+    renderCalendar();
+    showToast(`${items.length} reviews marked complete!`);
+  }
+
+  // ── Confidence Rating Modal ──────────────────────────────
+  function openRatingModal(sessionId, reviewIdx, dateStr) {
+    const session = sessions.find(s => s.id === sessionId);
+    if (!session) return;
+    const review  = session.reviews[reviewIdx];
+
+    // Check if late
+    const today     = todayStr();
+    const isLate    = review.date < today;
+    const daysMissed = isLate
+      ? Math.round((new Date(today + 'T00:00:00') - new Date(review.date + 'T00:00:00')) / 86400000)
+      : 0;
+    const hasNext = reviewIdx + 1 < session.reviews.length;
+
+    pendingRating = { sessionId, reviewIdx, dateStr };
+
+    // Subtitle
+    const reviewNum = reviewIdx + 1;
+    document.getElementById('ratingSubtitle').textContent =
+      `Review ${reviewNum} of 5 — "${session.topic}"`;
+
+    // Late recovery row
+    const lateRow = document.getElementById('lateRecoveryRow');
+    if (isLate && hasNext) {
+      lateRow.style.display = '';
+      document.getElementById('lateRecoveryText').textContent =
+        `Reschedule next review from today (was ${daysMissed} day${daysMissed !== 1 ? 's' : ''} late)`;
+    } else {
+      lateRow.style.display = 'none';
+    }
+
+    // Build rating buttons
+    const grid = document.getElementById('ratingGrid');
+    grid.innerHTML = '';
+    RATINGS.forEach(r => {
+      const btn = document.createElement('button');
+      btn.className = 'rating-btn';
+      btn.style.cssText = `color:${r.color};`;
+      btn.innerHTML = `<span class="rating-emoji">${r.emoji}</span><span class="rating-label">${r.label}</span>`;
+      btn.onclick = () => submitRating(r.score);
+      grid.appendChild(btn);
+    });
+
+    document.getElementById('ratingModal').classList.add('active');
+  }
+
+  function closeRatingModal() {
+    document.getElementById('ratingModal').classList.remove('active');
+    pendingRating = null;
+  }
+
+  async function submitRating(confidence) {
+    if (!pendingRating) return;
+    const { sessionId, reviewIdx, dateStr } = pendingRating;
+    const rescheduleFromToday = document.getElementById('rescheduleCheck')?.checked ?? false;
+    closeRatingModal();
+    await markDone(sessionId, reviewIdx, dateStr, true, confidence, rescheduleFromToday);
+  }
+
+  async function skipRating() {
+    if (!pendingRating) return;
+    const { sessionId, reviewIdx, dateStr } = pendingRating;
+    const rescheduleFromToday = document.getElementById('rescheduleCheck')?.checked ?? false;
+    closeRatingModal();
+    await markDone(sessionId, reviewIdx, dateStr, true, null, rescheduleFromToday);
+  }
+
+  async function deleteSession(sessionId, dateStr) {
+    if (!confirm('Delete this study session and all its scheduled reviews?')) return;
+    await authFetch(`/api/sessions/${sessionId}`, { method: 'DELETE' });
+    sessions = sessions.filter(s => s.id !== sessionId);
+    renderCalendar();
+    openDayModal(dateStr);
+    showToast('Session deleted.');
+  }
+
+  // ── Stats Modal ──────────────────────────────────────────
+  function openStats() {
+    // stat cards
+    const totalTopics      = sessions.length;
+    const totalReviews     = sessions.reduce((n, s) => n + s.reviews.length, 0);
+    const completedReviews = sessions.reduce((n, s) => n + s.reviews.filter(r => r.done).length, 0);
+    const completionPct    = totalReviews ? Math.round((completedReviews / totalReviews) * 100) : 0;
+
+    const today   = new Date(todayStr() + 'T00:00:00');
+    const weekEnd = new Date(today); weekEnd.setDate(today.getDate() + 7);
+    let dueThisWeek = 0;
+    sessions.forEach(s => s.reviews.forEach(r => {
+      const d = new Date(r.date + 'T00:00:00');
+      if (!r.done && d >= today && d < weekEnd) dueThisWeek++;
+    }));
+
+    document.getElementById('statCards').innerHTML =
+      statCard(totalTopics, 'Topics studied') +
+      statCard(completedReviews + ' / ' + totalReviews, 'Reviews complete') +
+      statCard(completionPct + '%', 'Completion rate') +
+      statCard(dueThisWeek, 'Due this week');
+
+    // heatmap
+    buildHeatmap();
+
+    // subject breakdown
+    buildSubjectBreakdown();
+
+    // retention scores
+    buildRetentionList();
+
+    document.getElementById('statsModal').classList.add('active');
+  }
+
+  function statCard(value, label) {
+    return `<div class="stat-card"><div class="stat-value">${value}</div><div class="stat-label">${label}</div></div>`;
+  }
+
+  function buildHeatmap() {
+    const activityMap = {};
+    sessions.forEach(s => {
+      activityMap[s.studiedDate] = (activityMap[s.studiedDate] || 0) + 2;
+      s.reviews.forEach(r => {
+        if (r.done) activityMap[r.date] = (activityMap[r.date] || 0) + 1;
+      });
+    });
+
+    const grid = document.getElementById('heatmapGrid');
+    grid.innerHTML = '';
+
+    const today = todayStr();
+
+    // anchor start to the Sunday of the week 12 weeks before the current week
+    // so today always lands in the final column
+    const startOfCurrentWeek = new Date(today + 'T00:00:00');
+    startOfCurrentWeek.setDate(startOfCurrentWeek.getDate() - startOfCurrentWeek.getDay());
+    const cursor = new Date(startOfCurrentWeek);
+    cursor.setDate(cursor.getDate() - 12 * 7);
+
+    for (let i = 0; i < 91; i++) {
+      const ds       = ymd(cursor.getFullYear(), cursor.getMonth() + 1, cursor.getDate());
+      const future   = ds > today;
+      const activity = future ? 0 : (activityMap[ds] || 0);
+      const cell     = document.createElement('div');
+      cell.className = 'heatmap-cell';
+      cell.style.background = future ? '#f8fafc' : heatColor(activity);
+      cell.style.opacity = future ? '0.3' : '1';
+      if (!future) cell.title = `${displayDate(ds)}: ${activity ? activity + ' points' : 'no activity'}`;
+      grid.appendChild(cell);
+      cursor.setDate(cursor.getDate() + 1);
+    }
+  }
+
+  function heatColor(a) {
+    if (a === 0) return '#f1f5f9';
+    if (a <= 1)  return '#c7d2fe';
+    if (a <= 3)  return '#818cf8';
+    return '#4f46e5';
+  }
+
+  function buildSubjectBreakdown() {
+    const wrap  = document.getElementById('subjectBreakdown');
+    const today = todayStr();
+
+    // Aggregate per-subject stats
+    const data = {};
+    sessions.forEach(s => {
+      const k = s.subject || '(No subject)';
+      if (!data[k]) data[k] = { topics: 0, totalRev: 0, doneRev: 0, overdue: 0, sessions: [] };
+      const d = data[k];
+      d.topics++;
+      d.sessions.push(s);
+      s.reviews.forEach(r => {
+        d.totalRev++;
+        if (r.done) d.doneRev++;
+        else if (r.date < today) d.overdue++;
+      });
+    });
+
+    const entries = Object.entries(data).sort((a, b) => b[1].doneRev - a[1].doneRev);
+    if (!entries.length) { wrap.innerHTML = ''; return; }
+
+    const maxRev = Math.max(1, ...entries.map(([, d]) => d.totalRev));
+    wrap.innerHTML = `<div class="stats-section-title" style="margin-top:8px">By subject</div>`;
+
+    entries.forEach(([subj, d]) => {
+      const col        = getSubjectColor(subj === '(No subject)' ? '' : subj);
+      const barPct     = Math.round((d.totalRev / maxRev) * 100);
+      const compPct    = d.totalRev ? Math.round((d.doneRev / d.totalRev) * 100) : 0;
+      const avgRet     = d.sessions.length
+        ? Math.round(d.sessions.reduce((s, x) => s + calcRetention(x), 0) / d.sessions.length)
+        : 0;
+      const retCol     = retentionColor(avgRet);
+
+      const row = document.createElement('div');
+      row.className = 'subject-row';
+      row.innerHTML =
+        `<div class="subject-name" title="${subj}">${subj}</div>
+         <div class="subject-bar-wrap">
+           <div class="subject-bar" style="width:${barPct}%;background:${col.border}"></div>
+         </div>
+         <div class="subject-stats">
+           <span>${d.topics} topic${d.topics !== 1 ? 's' : ''}</span>
+           <span>${d.doneRev}/${d.totalRev}</span>
+           <span class="s-ret" style="color:${retCol}">${avgRet}%</span>
+           ${d.overdue > 0 ? `<span class="s-overdue">${d.overdue} overdue</span>` : ''}
+         </div>`;
+      wrap.appendChild(row);
+    });
+
+    // Activity grid — only show when there are multiple subjects
+    if (entries.length > 1) buildSubjectHeatmap(wrap, entries);
+  }
+
+  function buildSubjectHeatmap(container, entries) {
+    const WEEKS = 8;
+    const today = todayStr();
+
+    // Compute week start dates (Sunday-anchored, ending this week)
+    const anchor = new Date(today + 'T00:00:00');
+    anchor.setDate(anchor.getDate() - anchor.getDay());
+    const weeks = [];
+    for (let w = WEEKS - 1; w >= 0; w--) {
+      const ws = new Date(anchor);
+      ws.setDate(anchor.getDate() - w * 7);
+      const we = new Date(ws);
+      we.setDate(ws.getDate() + 6);
+      weeks.push({
+        start: ws.toISOString().slice(0, 10),
+        end:   we.toISOString().slice(0, 10),
+        label: SHORT_MONTHS[ws.getMonth()] + ' ' + ws.getDate()
+      });
+    }
+
+    // Count completed reviews per subject per week
+    const act = {};
+    entries.forEach(([k]) => { act[k] = new Array(WEEKS).fill(0); });
+    sessions.forEach(s => {
+      const k = s.subject || '(No subject)';
+      if (!act[k]) return;
+      s.reviews.forEach(r => {
+        if (!r.done) return;
+        for (let w = 0; w < WEEKS; w++) {
+          if (r.date >= weeks[w].start && r.date <= weeks[w].end) { act[k][w]++; break; }
+        }
+      });
+    });
+
+    const maxAct = Math.max(1, ...Object.values(act).flat());
+
+    const wrap = document.createElement('div');
+    wrap.className = 'subject-heatmap';
+
+    // Week-label header row
+    const header = document.createElement('div');
+    header.className = 'sh-header';
+    header.innerHTML = `<div class="sh-subject-label"></div>` +
+      weeks.map(w => `<div class="sh-week-label">${w.label}</div>`).join('');
+    wrap.appendChild(header);
+
+    // Subject rows
+    entries.forEach(([subj]) => {
+      const col = getSubjectColor(subj === '(No subject)' ? '' : subj);
+      const row = document.createElement('div');
+      row.className = 'sh-row';
+      row.innerHTML = `<div class="sh-subject-label" title="${subj}">${subj}</div>`;
+      act[subj].forEach((count, wi) => {
+        const cell = document.createElement('div');
+        cell.className = 'sh-cell';
+        if (count > 0) {
+          cell.style.background = col.border;
+          cell.style.opacity    = (0.2 + (count / maxAct) * 0.8).toFixed(2);
+        }
+        cell.title = `${subj} · ${weeks[wi].label}: ${count} review${count !== 1 ? 's' : ''}`;
+        row.appendChild(cell);
+      });
+      wrap.appendChild(row);
+    });
+
+    container.appendChild(wrap);
+  }
+
+  // ── Retention score ──────────────────────────────────────
+  // Uses Ebbinghaus decay: R = e^(-t/S)
+  // S (stability) = interval of last completed event × ease factor
+  function calcRetention(session) {
+    const todayMs  = new Date(todayStr() + 'T00:00:00').getTime();
+    let lastDate   = session.studiedDate;
+    let lastRevIdx = -1;
+
+    for (let i = 0; i < session.reviews.length; i++) {
+      if (session.reviews[i].done) { lastDate = session.reviews[i].date; lastRevIdx = i; }
+    }
+
+    const daysSince    = Math.max(0, Math.round((todayMs - new Date(lastDate + 'T00:00:00').getTime()) / 86400000));
+    const ef           = session.easeFactor || 2.5;
+    const baseInterval = lastRevIdx === -1
+      ? (intervals[0] || 1)
+      : (intervals[lastRevIdx] || intervals[intervals.length - 1]);
+    const stability    = baseInterval * ef;
+
+    return Math.max(0, Math.min(100, Math.round(Math.exp(-daysSince / stability) * 100)));
+  }
+
+  function retentionColor(pct) {
+    if (pct >= 80) return '#10b981';
+    if (pct >= 60) return '#14b8a6';
+    if (pct >= 40) return '#f59e0b';
+    if (pct >= 20) return '#f97316';
+    return '#ef4444';
+  }
+
+  function buildRetentionList() {
+    const el = document.getElementById('retentionList');
+    if (!sessions.length) { el.innerHTML = ''; return; }
+
+    const scored = sessions
+      .map(s => ({ s, pct: calcRetention(s) }))
+      .sort((a, b) => b.pct - a.pct);
+
+    el.innerHTML = `<div class="stats-section-title" style="margin-top:8px">Retention by topic</div>`;
+    scored.forEach(({ s, pct }) => {
+      const col = retentionColor(pct);
+      const row = document.createElement('div');
+      row.className = 'retention-row';
+      row.innerHTML =
+        `<div class="retention-topic" title="${s.topic}">${s.topic}</div>
+         <div class="retention-bar-wrap">
+           <div class="retention-bar" style="width:0%;background:${col}" data-target="${pct}"></div>
+         </div>
+         <div class="retention-pct" style="color:${col}">${pct}%</div>`;
+      el.appendChild(row);
+    });
+
+    // Animate bars in on next frame
+    requestAnimationFrame(() => {
+      el.querySelectorAll('.retention-bar').forEach(bar => {
+        bar.style.width = bar.dataset.target + '%';
+      });
+    });
+  }
+
+  function exportCSV() {
+    const esc = s => `"${String(s ?? '').replace(/"/g, '""')}"`;
+    const rows = [
+      ['Topic','Subject','Studied Date','Notes','Review #','Due Date','Done','Confidence (1-5)','Ease Factor','Review Streak']
+    ];
+    sessions.forEach(s => {
+      s.reviews.forEach((r, i) => {
+        rows.push([
+          esc(s.topic),
+          esc(s.subject),
+          s.studiedDate,
+          esc(s.notes),
+          i + 1,
+          r.date,
+          r.done ? 'true' : 'false',
+          r.confidence ?? '',
+          (s.easeFactor ?? 2.5).toFixed(2),
+          s.reviewStreak ?? 0
+        ]);
+      });
+    });
+    const csv  = rows.map(r => r.join(',')).join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `recall-export-${todayStr()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('CSV exported!');
+  }
+
+  function closeStats() { document.getElementById('statsModal').classList.remove('active'); }
+
+  // ── Forgetting Curve Modal ────────────────────────────────
+  function openCurveModal(sessionId) {
+    const session = sessions.find(s => s.id === sessionId);
+    if (!session) return;
+    closeDayModal();
+    document.getElementById('curveTitle').textContent    = session.topic;
+    document.getElementById('curveSubtitle').textContent =
+      `Studied ${displayDate(session.studiedDate)}` +
+      (session.subject ? ` · ${session.subject}` : '') +
+      (session.recurrenceRule ? ` · 🔁 ${recurRuleLabel(session.recurrenceRule)}` : '');
+    document.getElementById('curveChart').innerHTML  = buildCurveSVG(session);
+    document.getElementById('curveLegend').innerHTML = buildCurveLegend(session);
+    document.getElementById('curveModal').classList.add('active');
+  }
+
+  function closeCurveModal() { document.getElementById('curveModal').classList.remove('active'); }
+
+  function buildCurveSVG(session) {
+    const today    = todayStr();
+    const studyMs  = new Date(session.studiedDate + 'T00:00:00').getTime();
+    const toDays   = d => (new Date(d + 'T00:00:00').getTime() - studyMs) / 86400000;
+    const todayDay = toDays(today);
+
+    const lastRevDay = Math.max(0, ...session.reviews.map(r => toDays(r.date)));
+    const maxDay     = Math.max(lastRevDay + 4, todayDay + 2, 33);
+
+    // SVG viewport
+    const W = 500, H = 190;
+    const ML = 44, MR = 14, MT = 18, MB = 28;
+    const PW = W - ML - MR, PH = H - MT - MB;
+
+    const toX = d   => ML + (d / maxDay) * PW;
+    const toY = pct => MT + (1 - Math.min(1, Math.max(0, pct / 100))) * PH;
+
+    // Build curve phases: each phase starts after a completed review
+    // stability = gap-to-next-review × ease factor (grows with each pass)
+    const ef = session.easeFactor || 2.5;
+    const phases = [];
+    let curEF = 2.5; // replay EF forward from initial 2.5
+
+    phases.push({ startDay: 0, stability: (intervals[0] || 1) * curEF });
+
+    session.reviews.forEach((r, i) => {
+      if (!r.done) return;
+      const day = toDays(r.date);
+      if (r.confidence) {
+        // simplified SM-2 replay
+        const q     = r.confidence;
+        const newEF = Math.max(1.3, curEF + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02)));
+        curEF = q < 3 ? Math.max(1.3, curEF - 0.2) : newEF;
+      }
+      const nextGap = i + 1 < intervals.length
+        ? (intervals[i + 1] - intervals[i])
+        : (intervals[intervals.length - 1]);
+      phases.push({ startDay: day, stability: Math.max(1, nextGap) * curEF });
+    });
+
+    // ── Draw grid ──────────────────────────────────────────
+    let grid = '', xLabels = '';
+    [0, 25, 50, 75, 100].forEach(pct => {
+      const y = toY(pct).toFixed(1);
+      grid += `<line class="curve-grid-line" x1="${ML}" y1="${y}" x2="${ML + PW}" y2="${y}"/>`;
+      grid += `<text class="curve-label" x="${ML - 5}" y="${(+y + 3.5).toFixed(1)}" text-anchor="end">${pct}%</text>`;
+    });
+    [0, 7, 14, 21, 30].filter(d => d <= maxDay + 1).forEach(d => {
+      const x = toX(d).toFixed(1);
+      xLabels += `<text class="curve-label" x="${x}" y="${H - 6}" text-anchor="middle">+${d}d</text>`;
+    });
+
+    // ── Draw curve segments + area fills ──────────────────
+    let paths = '', areas = '';
+    phases.forEach((phase, pi) => {
+      const endDay = pi < phases.length - 1 ? phases[pi + 1].startDay : maxDay;
+      const pts = [], areaPts = [];
+      for (let d = phase.startDay; d <= endDay + 0.1; d += 0.25) {
+        const t   = d - phase.startDay;
+        const ret = 100 * Math.exp(-t / phase.stability);
+        const x   = toX(d).toFixed(2);
+        const y   = toY(ret).toFixed(2);
+        pts.push(`${x},${y}`);
+        areaPts.push(`${x},${y}`);
+      }
+      if (pts.length < 2) return;
+      paths += `<polyline class="curve-path" points="${pts.join(' ')}"/>`;
+      const x0 = toX(phase.startDay).toFixed(2);
+      const x1 = toX(Math.min(endDay, maxDay)).toFixed(2);
+      const yBase = (MT + PH).toFixed(2);
+      areas += `<polygon class="curve-area" points="${x0},${yBase} ${areaPts.join(' ')} ${x1},${yBase}"/>`;
+    });
+
+    // ── Today line ─────────────────────────────────────────
+    let todayLine = '';
+    if (todayDay > 0.5 && todayDay <= maxDay) {
+      const tx = toX(todayDay).toFixed(1);
+      todayLine = `<line class="curve-today" x1="${tx}" y1="${MT}" x2="${tx}" y2="${MT + PH}"/>
+                   <text class="curve-today-lbl" x="${tx}" y="${MT - 4}" text-anchor="middle">today</text>`;
+    }
+
+    // ── Review dots ────────────────────────────────────────
+    const confFill = ['#ef4444','#f97316','#eab308','#22c55e','#6366f1'];
+    let dots = '', resets = '';
+
+    // Study dot at day 0
+    dots += `<circle cx="${toX(0).toFixed(1)}" cy="${toY(100).toFixed(1)}" r="5" fill="#6366f1" stroke="white" stroke-width="1.5"/>`;
+
+    session.reviews.forEach((r, i) => {
+      const day = toDays(r.date);
+      // Find phase active at this day
+      let phase = phases[0];
+      for (const p of phases) { if (p.startDay <= day) phase = p; }
+
+      const t   = day - phase.startDay;
+      const ret = Math.min(100, Math.max(0, 100 * Math.exp(-t / phase.stability)));
+      const cx  = toX(day).toFixed(1);
+      const cy  = toY(ret).toFixed(1);
+
+      if (r.done) {
+        const col = r.confidence ? confFill[r.confidence - 1] : '#6366f1';
+        // vertical reset line
+        resets += `<line x1="${cx}" y1="${cy}" x2="${cx}" y2="${toY(100).toFixed(1)}" stroke="${col}" stroke-width="1" stroke-dasharray="3 2" opacity="0.45"/>`;
+        dots   += `<circle cx="${cx}" cy="${cy}" r="5" fill="${col}" stroke="white" stroke-width="1.5"/>`;
+      } else {
+        const overdue = r.date < today;
+        const col = overdue ? '#ef4444' : '#94a3b8';
+        dots += `<circle cx="${cx}" cy="${cy}" r="5" fill="white" stroke="${col}" stroke-width="2"/>`;
+      }
+    });
+
+    // ── Axes ───────────────────────────────────────────────
+    const axes = `<line class="curve-axis" x1="${ML}" y1="${MT}" x2="${ML}" y2="${MT + PH}"/>
+                  <line class="curve-axis" x1="${ML}" y1="${MT + PH}" x2="${ML + PW}" y2="${MT + PH}"/>`;
+
+    return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+      ${grid}${xLabels}${axes}${todayLine}${areas}${paths}${resets}${dots}
+    </svg>`;
+  }
+
+  function buildCurveLegend(session) {
+    const confEmoji = ['😶','😕','😐','😊','🎯'];
+    const confColor = ['#ef4444','#f97316','#eab308','#22c55e','#6366f1'];
+    const confLabel = ['Blank','Hard','Okay','Good','Perfect'];
+
+    // Collect which confidence scores were actually used
+    const used = new Set(session.reviews.filter(r => r.done && r.confidence).map(r => r.confidence));
+
+    let html = `<div class="curve-legend-item"><div class="curve-legend-dot" style="background:#6366f1"></div>Study / reviewed</div>`;
+
+    used.forEach(c => {
+      html += `<div class="curve-legend-item">
+        <div class="curve-legend-dot" style="background:${confColor[c-1]}"></div>
+        ${confEmoji[c-1]} ${confLabel[c-1]}
+      </div>`;
+    });
+
+    const hasPending = session.reviews.some(r => !r.done);
+    if (hasPending) {
+      const hasOverdue = session.reviews.some(r => !r.done && r.date < todayStr());
+      html += `<div class="curve-legend-item"><div class="curve-legend-ring" style="border-color:${hasOverdue ? '#ef4444' : '#94a3b8'}"></div>
+        ${hasOverdue ? 'Overdue' : 'Upcoming'} review</div>`;
+    }
+
+    return html;
+  }
+
+  // ── Settings Modal ───────────────────────────────────────
+  function openSettings() {
+    renderIntervalsList(intervals);
+    document.getElementById('settingsModal').classList.add('active');
+  }
+
+  function renderIntervalsList(ivs) {
+    const list = document.getElementById('intervalsList');
+    list.innerHTML = '';
+    ivs.forEach((days, i) => {
+      const row = document.createElement('div');
+      row.className = 'interval-row';
+      const col = REVIEW_COLORS[Math.min(i, REVIEW_COLORS.length - 1)];
+      row.innerHTML =
+        `<span class="interval-label" style="color:${col}">Review ${i + 1}</span>
+         <input class="interval-input" type="number" min="1" max="365" value="${days}" data-index="${i}" />
+         <span class="interval-unit">days after</span>
+         <span class="interval-date" id="idate-${i}">${displayDate(addDays(todayStr(), days))}</span>`;
+      list.appendChild(row);
+
+      row.querySelector('.interval-input').addEventListener('input', e => {
+        const val = parseInt(e.target.value);
+        if (val > 0) document.getElementById(`idate-${i}`).textContent = displayDate(addDays(todayStr(), val));
+      });
+    });
+  }
+
+  function resetIntervals() {
+    renderIntervalsList([...DEFAULT_INTERVALS]);
+  }
+
+  async function saveSettings() {
+    const inputs = document.querySelectorAll('#intervalsList .interval-input');
+    const newIntervals = [...inputs].map(inp => parseInt(inp.value)).filter(n => n > 0);
+    if (!newIntervals.length) return;
+
+    await authFetch('/api/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ intervals: newIntervals })
+    });
+    intervals = newIntervals;
+    closeSettings();
+    renderLegend();
+    showToast('Intervals saved — applies to new sessions');
+  }
+
+  function closeSettings() { document.getElementById('settingsModal').classList.remove('active'); }
+
+  // ── Overlay click-outside ────────────────────────────────
+  function handleOverlayClick(e, id) {
+    if (e.target === document.getElementById(id)) {
+      ({ addModal: closeAddModal, dayModal: closeDayModal,
+         statsModal: closeStats, settingsModal: closeSettings })[id]?.();
+    }
+  }
+
+  // ── Keyboard ─────────────────────────────────────────────
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { clearSearch(); closeAddModal(); closeDayModal(); closeStats(); closeSettings(); closeCurveModal(); closeLinkModal(); closeGraphModal(); }
+    if (e.key === 'Enter' && document.getElementById('addModal').classList.contains('active'))
+      if (document.activeElement.tagName !== 'TEXTAREA') saveStudySession();
+    if (!document.querySelector('.modal-overlay.active')) {
+      if (e.key === 'ArrowLeft')  prevMonth();
+      if (e.key === 'ArrowRight') nextMonth();
+      const activeTag = document.activeElement.tagName;
+      if ((e.key === 'n' || e.key === 'N') && !['INPUT','TEXTAREA'].includes(activeTag))
+        openAddModal();
+      // / or Cmd+K → focus search
+      if (e.key === '/' && !['INPUT','TEXTAREA'].includes(activeTag)) {
+        e.preventDefault();
+        focusSearch();
+      }
+      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        focusSearch();
+      }
+    }
+  });
+
+  // ── Swipe gestures (month navigation) ────────────────────
+  (() => {
+    let startX = null, startY = null;
+    const cal  = document.querySelector('.calendar-container');
+
+    cal.addEventListener('touchstart', e => {
+      startX = e.changedTouches[0].clientX;
+      startY = e.changedTouches[0].clientY;
+    }, { passive: true });
+
+    cal.addEventListener('touchend', e => {
+      if (startX === null) return;
+      const dx = e.changedTouches[0].clientX - startX;
+      const dy = e.changedTouches[0].clientY - startY;
+      // Only register horizontal swipes wider than 50px that are more horizontal than vertical
+      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+        if (document.querySelector('.modal-overlay.active')) return; // ignore while modal open
+        dx < 0 ? nextMonth() : prevMonth();
+      }
+      startX = null;
+    }, { passive: true });
+  })();
+
+  // ── Nav ──────────────────────────────────────────────────
+  function prevMonth() {
+    if (currentMonth === 0) { currentMonth = 11; currentYear--; } else currentMonth--;
+    renderCalendar();
+  }
+
+  function nextMonth() {
+    if (currentMonth === 11) { currentMonth = 0; currentYear++; } else currentMonth++;
+    renderCalendar();
+  }
+
+  function goToToday() {
+    const d = new Date();
+    currentYear = d.getFullYear();
+    currentMonth = d.getMonth();
+    renderCalendar();
+  }
+
+  // ── Toast ─────────────────────────────────────────────────
+  let toastTimer;
+  function showToast(msg) {
+    clearTimeout(toastTimer);
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  // ── Init ──────────────────────────────────────────────────
+  initDark();
+
+  const now = new Date();
+  currentYear  = now.getFullYear();
+  currentMonth = now.getMonth();
+
+  Promise.all([loadSessions(), loadSettings()]).then(() => renderCalendar());
+
+  // ── Service Worker — unregister all to prevent stale cache ──
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(regs => {
+      regs.forEach(r => r.unregister());
+    });
+  }
+</script>
+</body>
+</html>
