@@ -182,14 +182,21 @@
 <script>
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 
+  // Local mode — skip login entirely
+  if (localStorage.getItem('recall_mode') === 'local') {
+    localStorage.setItem('recall_token', 'local-token');
+    localStorage.setItem('recall_user', JSON.stringify({ id: 'local', email: 'local' }));
+    window.location.href = '/';
+  }
+
   // If already logged in, go straight to app
   if (localStorage.getItem('recall_token')) {
     window.location.href = '/';
   }
 
-  // If running as installed app and no server configured, go to setup
+  // If running as installed app and no mode/server configured, go to setup
   const isApp = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-  if (isApp && !localStorage.getItem('recall_server')) {
+  if (isApp && !localStorage.getItem('recall_server') && !localStorage.getItem('recall_mode')) {
     window.location.href = '/setup.html';
   }
 

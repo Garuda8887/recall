@@ -7,6 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="manifest" href="/manifest.json">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <script src="/local-api.js"></script>
   <meta name="theme-color" content="#6366f1">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1821,6 +1822,11 @@
   });
 
   function authFetch(url, options = {}) {
+    // Local mode — route to on-device SQLite, no network needed
+    if (localStorage.getItem('recall_mode') === 'local') {
+      return LocalAPI.handle(url, options);
+    }
+    // Server mode — hit the configured (or same-origin) server
     const token     = localStorage.getItem('recall_token');
     const serverUrl = localStorage.getItem('recall_server') || '';
     return fetch(serverUrl + url, {

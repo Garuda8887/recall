@@ -31,6 +31,11 @@
       input { background: #0f172a; border-color: #334155; color: #f1f5f9; }
       input::placeholder { color: #64748b; }
       .hint { color: #64748b; }
+      .divider { color: #475569; }
+      .divider::before, .divider::after { background: #334155; }
+      .local-btn { background: #0f172a; border-color: #334155; color: #f1f5f9; }
+      .local-btn:hover { background: #1e293b; border-color: #6366f1; }
+      .local-desc { color: #64748b; }
     }
 
     .card {
@@ -58,16 +63,12 @@
       letter-spacing: -1px;
     }
 
-    h1 {
-      font-size: 22px;
-      font-weight: 700;
-      margin-bottom: 8px;
-    }
+    h1 { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
 
     .subtitle {
       font-size: 14px;
       color: #64748b;
-      margin-bottom: 32px;
+      margin-bottom: 28px;
       line-height: 1.5;
     }
 
@@ -79,9 +80,7 @@
       color: #374151;
     }
 
-    @media (prefers-color-scheme: dark) {
-      label { color: #cbd5e1; }
-    }
+    @media (prefers-color-scheme: dark) { label { color: #cbd5e1; } }
 
     input {
       width: 100%;
@@ -101,10 +100,10 @@
       font-size: 12px;
       color: #94a3b8;
       margin-top: 8px;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
     }
 
-    button {
+    .connect-btn {
       width: 100%;
       padding: 13px;
       background: #6366f1;
@@ -117,8 +116,48 @@
       transition: background 0.15s;
     }
 
-    button:hover { background: #4f46e5; }
-    button:disabled { background: #a5b4fc; cursor: not-allowed; }
+    .connect-btn:hover { background: #4f46e5; }
+    .connect-btn:disabled { background: #a5b4fc; cursor: not-allowed; }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 12px;
+      color: #94a3b8;
+      margin: 20px 0;
+    }
+
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #e2e8f0;
+    }
+
+    .local-btn {
+      width: 100%;
+      padding: 13px;
+      background: white;
+      color: #1e293b;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      text-align: center;
+    }
+
+    .local-btn:hover { border-color: #6366f1; background: #f8f7ff; }
+
+    .local-desc {
+      font-size: 12px;
+      color: #94a3b8;
+      text-align: center;
+      margin-top: 8px;
+      line-height: 1.4;
+    }
 
     .error {
       color: #ef4444;
@@ -133,10 +172,10 @@
 <body>
   <div class="card">
     <div class="logo">r.</div>
-    <h1>Connect to your server</h1>
-    <p class="subtitle">Recall is self-hosted. Enter the URL of your Recall instance to get started.</p>
+    <h1>Welcome to Recall</h1>
+    <p class="subtitle">Choose how you'd like to use Recall.</p>
 
-    <label for="serverInput">Server URL</label>
+    <label for="serverInput">Connect to your server</label>
     <input
       type="url"
       id="serverInput"
@@ -145,28 +184,39 @@
       autocapitalize="none"
       spellcheck="false"
     />
-    <p class="hint">Include https:// — no trailing slash</p>
+    <p class="hint">Your self-hosted instance — data syncs across devices</p>
 
-    <button id="connectBtn">Connect</button>
+    <button class="connect-btn" id="connectBtn">Connect</button>
     <p class="error" id="errorMsg"></p>
+
+    <div class="divider">or</div>
+
+    <button class="local-btn" id="localBtn">Use locally on this device</button>
+    <p class="local-desc">Data stays on your phone. Works completely offline. No server needed.</p>
   </div>
 
   <script>
     const input      = document.getElementById('serverInput');
     const connectBtn = document.getElementById('connectBtn');
+    const localBtn   = document.getElementById('localBtn');
     const errorMsg   = document.getElementById('errorMsg');
 
-    // Pre-fill if already set (coming back to change it)
     const existing = localStorage.getItem('recall_server');
     if (existing) input.value = existing;
 
-    input.addEventListener('keydown', e => {
-      if (e.key === 'Enter') connectBtn.click();
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') connectBtn.click(); });
+
+    // ── Local mode ────────────────────────────────────────────────────────
+    localBtn.addEventListener('click', () => {
+      localStorage.setItem('recall_mode', 'local');
+      localStorage.removeItem('recall_server');
+      window.location.href = '/auth.html';
     });
 
+    // ── Server mode ───────────────────────────────────────────────────────
     connectBtn.addEventListener('click', async () => {
       errorMsg.classList.remove('show');
-      let url = input.value.trim().replace(/\/$/, ''); // strip trailing slash
+      let url = input.value.trim().replace(/\/$/, '');
 
       if (!url) {
         errorMsg.textContent = 'Please enter your server URL.';
@@ -183,15 +233,15 @@
       connectBtn.textContent = 'Connecting…';
 
       try {
-        // Quick reachability check — ping the auth endpoint
         const res = await fetch(url + '/api/auth/me', {
           method: 'GET',
           signal: AbortSignal.timeout(8000)
         });
 
-        // 401 means the server is reachable (just not authed yet — correct)
         if (res.status === 401 || res.ok) {
           localStorage.setItem('recall_server', url);
+          localStorage.setItem('recall_mode', 'server');
+          localStorage.removeItem('recall_token');
           window.location.href = '/auth.html';
         } else {
           throw new Error(`Server responded with ${res.status}`);
@@ -199,7 +249,7 @@
       } catch (err) {
         if (err.name === 'TimeoutError' || err.name === 'AbortError') {
           errorMsg.textContent = 'Server not reachable. Check the URL and your connection.';
-        } else if (err.message.includes('fetch')) {
+        } else if (err.message.includes('fetch') || err.message.includes('Failed')) {
           errorMsg.textContent = 'Could not connect. Is your server running and accessible?';
         } else {
           errorMsg.textContent = err.message;
