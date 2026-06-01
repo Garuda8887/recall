@@ -2173,29 +2173,6 @@
       .map(c => ({ id: c.id || crypto.randomUUID(), front: c.front.trim(), back: c.back.trim() }));
   }
 
-  function parseImport() {
-    const text = document.getElementById('importTextarea').value;
-    importedParsedCards = [];
-    text.split('\n').forEach(line => {
-      line = line.trim();
-      if (!line) return;
-      const pipe = line.indexOf('|');
-      if (pipe >= 0) {
-        const front = line.slice(0, pipe).trim();
-        const back  = line.slice(pipe + 1).trim();
-        if (front || back) importedParsedCards.push({ front, back });
-      } else {
-        const comma = line.indexOf(',');
-        if (comma >= 0) {
-          const front = line.slice(0, comma).trim();
-          const back  = line.slice(comma + 1).trim();
-          if (front || back) importedParsedCards.push({ front, back });
-        }
-      }
-    });
-    renderImportPreview();
-  }
-
   function renderImportPreview() {
     const preview = document.getElementById('importPreview');
     preview.innerHTML = '';
@@ -2342,7 +2319,6 @@
     return results;
   }
 
-  // Update parseImport() to use parseCardText so paste also supports TSV
   function parseImport() {
     const text = document.getElementById('importTextarea').value;
     importedParsedCards = parseCardText(text);
