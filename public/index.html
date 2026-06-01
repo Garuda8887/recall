@@ -439,6 +439,15 @@
       <button class="btn-ghost" onclick="prevCard()" id="fcPrev">&#8592; Prev</button>
       <button class="btn-save" onclick="nextCard()" id="fcNext">Next &#8594;</button>
     </div>
+    <div class="study-complete" id="studyComplete">
+      <div class="study-complete-icon">&#10003;</div>
+      <div class="study-complete-label" id="studyCompleteLabel"></div>
+      <div class="study-complete-score" id="studyCompleteScore"></div>
+      <div class="study-complete-actions">
+        <button class="btn-ghost" onclick="restartFromComplete()">&#8635; Study again</button>
+        <button class="btn-save" onclick="closeStudyModal()">Done</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1454,6 +1463,15 @@
            <div class="due-topic">${session.topic}</div>
            <div class="due-meta">${session.subject ? session.subject + ' · ' : ''}${intervalLabel(intervals[reviewIndex] ?? reviewIndex)} review${overdueLabel}${session.reviewStreak >= 2 ? ` · <span class="streak-badge">🔥 ${session.reviewStreak}</span>` : ''}</div>
          </div>`;
+      const reviewDeck = getDeckForSession(session.id);
+      if (reviewDeck) {
+        const practiceBtn = document.createElement('button');
+        practiceBtn.className = 'practice-btn';
+        practiceBtn.textContent = 'Practice';
+        practiceBtn.title = `Practice flashcards (${reviewDeck.cards.length} cards)`;
+        practiceBtn.onclick = () => openStudyModal(reviewDeck.id);
+        item.appendChild(practiceBtn);
+      }
       const btn = document.createElement('button');
       btn.className = 'due-done-btn';
       btn.textContent = 'Mark done';
@@ -1913,6 +1931,15 @@
             badge.textContent = 'Scheduled';
             item.appendChild(badge);
           } else {
+            const reviewDeck = getDeckForSession(ev.session.id);
+            if (reviewDeck) {
+              const practiceBtn = document.createElement('button');
+              practiceBtn.className = 'practice-btn';
+              practiceBtn.textContent = 'Practice';
+              practiceBtn.title = `Practice flashcards (${reviewDeck.cards.length} cards)`;
+              practiceBtn.onclick = e => { e.stopPropagation(); openStudyModal(reviewDeck.id); };
+              item.appendChild(practiceBtn);
+            }
             const btn = document.createElement('button');
             btn.className = 'check-btn';
             btn.textContent = 'Mark done';
@@ -2395,16 +2422,51 @@
   function openStudyModal(deckId) {
     const deck = decks.find(d => d.id === deckId);
     if (!deck || !deck.cards.length) { showToast('This deck has no cards yet'); return; }
-    studyState = { deckId, cards: [...deck.cards], idx: 0, flipped: false };
+    studyState = { deckId, cards: [...deck.cards], idx: 0, flipped: false, seen: new Set() };
     document.getElementById('studyTitle').textContent = deck.name;
     document.getElementById('studySubtitle').textContent = `${deck.cards.length} card${deck.cards.length !== 1 ? 's' : ''}`;
+    document.getElementById('studyComplete').style.display = 'none';
+    document.getElementById('fcWrap').style.display = '';
+    document.getElementById('fcHint').style.display = '';
+    document.querySelector('.fc-controls').style.display = '';
     document.getElementById('studyModal').classList.add('active');
     renderStudyCard();
   }
 
   function closeStudyModal() {
     document.getElementById('studyModal').classList.remove('active');
+    document.getElementById('studyComplete').style.display = 'none';
+    document.getElementById('fcWrap').style.display = '';
+    document.getElementById('fcHint').style.display = '';
+    document.querySelector('.fc-controls').style.display = '';
     studyState = null;
+  }
+
+  function showStudyComplete() {
+    if (!studyState) return;
+    const { cards, seen } = studyState;
+    const seenCount = seen.size;
+    const total = cards.length;
+    document.getElementById('studyCompleteLabel').textContent = seenCount === total
+      ? 'All cards reviewed!' : 'Session complete';
+    document.getElementById('studyCompleteScore').textContent =
+      `${seenCount} of ${total} card${total !== 1 ? 's' : ''} practiced`;
+    document.getElementById('fcWrap').style.display = 'none';
+    document.getElementById('fcHint').style.display = 'none';
+    document.querySelector('.fc-controls').style.display = 'none';
+    document.getElementById('studyComplete').style.display = 'flex';
+  }
+
+  function restartFromComplete() {
+    if (!studyState) return;
+    studyState.idx = 0;
+    studyState.flipped = false;
+    studyState.seen = new Set();
+    document.getElementById('studyComplete').style.display = 'none';
+    document.getElementById('fcWrap').style.display = '';
+    document.getElementById('fcHint').style.display = '';
+    document.querySelector('.fc-controls').style.display = '';
+    renderStudyCard();
   }
 
   function renderStudyCard() {
@@ -2423,15 +2485,14 @@
   function flipCard() {
     if (!studyState) return;
     studyState.flipped = !studyState.flipped;
+    if (studyState.flipped) studyState.seen.add(studyState.idx);
     renderStudyCard();
   }
 
   function nextCard() {
     if (!studyState) return;
     if (studyState.idx === studyState.cards.length - 1) {
-      const deckId = studyState.deckId;
-      closeStudyModal();
-      showToast(`Finished! 🎉 ${decks.find(d => d.id === deckId)?.cards.length || 0} cards reviewed`);
+      showStudyComplete();
       return;
     }
     studyState.idx++;

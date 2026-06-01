@@ -3012,6 +3012,30 @@ body.dark .recur-option-row input[type="number"] { background: var(--surface); b
 .fc-controls { display:flex; gap:10px; justify-content:center; }
 .fc-controls .btn-ghost, .fc-controls .btn-save { min-width:100px; }
 
+/* ── Study completion screen ── */
+.study-complete {
+  display:none; flex-direction:column; align-items:center; gap:14px;
+  padding:32px 20px 20px; text-align:center;
+}
+.study-complete-icon {
+  width:52px; height:52px; border-radius:50%;
+  background:var(--accent-bg,#eef2ff); border:2px solid var(--accent);
+  display:flex; align-items:center; justify-content:center;
+  font-size:24px; color:var(--accent); font-weight:700;
+}
+.study-complete-label { font-size:1.1rem; font-weight:700; color:var(--tx); }
+.study-complete-score { font-size:0.9rem; color:var(--tx-3); }
+.study-complete-actions { display:flex; gap:10px; margin-top:6px; }
+
+/* ── Practice button (review due today) ── */
+.practice-btn {
+  padding:5px 11px; border-radius:var(--r-sm); font-size:12px; font-family:var(--ff);
+  border:1.5px solid var(--accent); background:transparent; color:var(--accent);
+  cursor:pointer; white-space:nowrap; flex-shrink:0; font-weight:500;
+  transition:background 0.14s;
+}
+.practice-btn:hover { background:var(--accent-bg,#eef2ff); }
+
 /* ── File import section ── */
 .import-file-section { margin-bottom:4px; }
 .import-file-btns { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:4px; }
