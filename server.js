@@ -52,6 +52,17 @@ db.exec(`
   )
 `);
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS decks (
+    id         TEXT PRIMARY KEY,
+    user_id    TEXT NOT NULL,
+    session_id TEXT NOT NULL,
+    name       TEXT NOT NULL,
+    cards      TEXT NOT NULL DEFAULT '[]',
+    created_at TEXT NOT NULL
+  )
+`);
+
 // Migrations
 try { db.exec(`ALTER TABLE sessions ADD COLUMN subject         TEXT DEFAULT ''`); } catch {}
 try { db.exec(`ALTER TABLE sessions ADD COLUMN user_id         TEXT NOT NULL DEFAULT ''`); } catch {}
@@ -437,6 +448,43 @@ app.post('/api/links', requireAuth, (req, res) => {
 app.delete('/api/links/:id', requireAuth, (req, res) => {
   db.prepare('DELETE FROM links WHERE id = ? AND user_id = ?')
     .run(req.params.id, req.user.id);
+  res.json({ ok: true });
+});
+
+// ── Flashcard Decks ───────────────────────────────────────────────────────────
+
+app.get('/api/decks', requireAuth, (req, res) => {
+  const rows = db.prepare('SELECT * FROM decks WHERE user_id = ?').all(req.user.id);
+  res.json({ decks: rows.map(r => ({ ...r, cards: JSON.parse(r.cards) })) });
+});
+
+app.post('/api/decks', requireAuth, (req, res) => {
+  const { id, sessionId, name, cards } = req.body;
+  if (!id || !sessionId || !name || !Array.isArray(cards)) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+  const sanitized = cards
+    .map(c => ({ id: c.id || crypto.randomUUID(), front: String(c.front || '').trim(), back: String(c.back || '').trim() }))
+    .filter(c => c.front || c.back);
+  db.prepare('INSERT INTO decks (id, user_id, session_id, name, cards, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+    .run(id, req.user.id, sessionId, name, JSON.stringify(sanitized), new Date().toISOString());
+  res.json({ ok: true });
+});
+
+app.put('/api/decks/:id', requireAuth, (req, res) => {
+  const { name, cards } = req.body;
+  if (!name || !Array.isArray(cards)) return res.status(400).json({ error: 'name and cards required' });
+  const sanitized = cards
+    .map(c => ({ id: c.id || crypto.randomUUID(), front: String(c.front || '').trim(), back: String(c.back || '').trim() }))
+    .filter(c => c.front || c.back);
+  const result = db.prepare('UPDATE decks SET name = ?, cards = ? WHERE id = ? AND user_id = ?')
+    .run(name, JSON.stringify(sanitized), req.params.id, req.user.id);
+  if (result.changes === 0) return res.status(404).json({ error: 'Not found' });
+  res.json({ ok: true });
+});
+
+app.delete('/api/decks/:id', requireAuth, (req, res) => {
+  db.prepare('DELETE FROM decks WHERE id = ? AND user_id = ?').run(req.params.id, req.user.id);
   res.json({ ok: true });
 });
 

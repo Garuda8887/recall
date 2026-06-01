@@ -13,7 +13,7 @@ const LocalAPI = (() => {
   // ── IndexedDB ──────────────────────────────────────────────────────────────
 
   const DB_NAME    = 'recall-local';
-  const DB_VERSION = 1;
+  const DB_VERSION = 2;
   let _dbPromise   = null;
 
   function openDB() {
@@ -30,6 +30,8 @@ const LocalAPI = (() => {
           db.createObjectStore('links', { keyPath: 'id' });
         if (!db.objectStoreNames.contains('settings'))
           db.createObjectStore('settings', { keyPath: 'key' });
+        if (!db.objectStoreNames.contains('decks'))
+          db.createObjectStore('decks', { keyPath: 'id' });
       };
     });
     return _dbPromise;
@@ -370,6 +372,40 @@ const LocalAPI = (() => {
       const linkMatch = path.match(/^\/api\/links\/([^/]+)$/);
       if (linkMatch && method === 'DELETE') {
         await dbDel('links', linkMatch[1]);
+        return resp({ ok: true });
+      }
+
+      // ── GET /api/decks ──
+      if (path === '/api/decks' && method === 'GET')
+        return resp({ decks: await dbGetAll('decks') });
+
+      // ── POST /api/decks ──
+      if (path === '/api/decks' && method === 'POST') {
+        const { id, sessionId, name, cards } = body;
+        if (!id || !sessionId || !name || !Array.isArray(cards))
+          return resp({ error: 'Missing required fields' }, 400);
+        const sanitized = cards
+          .map(c => ({ id: c.id || uuid(), front: String(c.front || '').trim(), back: String(c.back || '').trim() }))
+          .filter(c => c.front || c.back);
+        await dbPut('decks', { id, session_id: sessionId, name, cards: sanitized, created_at: new Date().toISOString() });
+        return resp({ ok: true });
+      }
+
+      // ── PUT/DELETE /api/decks/:id ──
+      const deckMatch = path.match(/^\/api\/decks\/([^/]+)$/);
+      if (deckMatch && method === 'PUT') {
+        const d = await dbGet('decks', deckMatch[1]);
+        if (!d) return resp({ error: 'Not found' }, 404);
+        const { name, cards } = body;
+        if (!name || !Array.isArray(cards)) return resp({ error: 'name and cards required' }, 400);
+        const sanitized = cards
+          .map(c => ({ id: c.id || uuid(), front: String(c.front || '').trim(), back: String(c.back || '').trim() }))
+          .filter(c => c.front || c.back);
+        await dbPut('decks', { ...d, name, cards: sanitized });
+        return resp({ ok: true });
+      }
+      if (deckMatch && method === 'DELETE') {
+        await dbDel('decks', deckMatch[1]);
         return resp({ ok: true });
       }
 
