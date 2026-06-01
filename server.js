@@ -4,6 +4,8 @@ const bcrypt   = require('bcrypt');
 const jwt      = require('jsonwebtoken');
 const path     = require('path');
 const crypto   = require('crypto');
+const os       = require('os');
+const fs       = require('fs');
 
 const app  = express();
 const db   = new Database(path.join(__dirname, 'recall.db'));
@@ -451,6 +453,20 @@ app.delete('/api/links/:id', requireAuth, (req, res) => {
   res.json({ ok: true });
 });
 
+// ── Anki HTML stripper ───────────────────────────────────────────────────────
+function stripAnkiHtml(html) {
+  return html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .trim();
+}
+
 // ── Flashcard Decks ───────────────────────────────────────────────────────────
 
 app.get('/api/decks', requireAuth, (req, res) => {
@@ -487,6 +503,42 @@ app.delete('/api/decks/:id', requireAuth, (req, res) => {
   db.prepare('DELETE FROM decks WHERE id = ? AND user_id = ?').run(req.params.id, req.user.id);
   res.json({ ok: true });
 });
+
+// POST /api/decks/parse-apkg — receive raw .apkg bytes, return parsed cards
+app.post('/api/decks/parse-apkg', requireAuth,
+  express.raw({ type: '*/*', limit: '100mb' }),
+  (req, res) => {
+    if (!req.body || !req.body.length) {
+      return res.status(400).json({ error: 'No file data received' });
+    }
+    const tmpPath = path.join(os.tmpdir(), `recall-anki-${Date.now()}-${Math.random().toString(36).slice(2)}.db`);
+    try {
+      const AdmZip = require('adm-zip');
+      const zip    = new AdmZip(req.body);
+      const entry  = zip.getEntry('collection.anki21') || zip.getEntry('collection.anki2');
+      if (!entry) return res.status(400).json({ error: 'Not a valid .apkg file — no collection database found' });
+
+      fs.writeFileSync(tmpPath, entry.getData());
+      const ankiDb = new Database(tmpPath, { readonly: true, fileMustExist: true });
+      const notes  = ankiDb.prepare('SELECT flds FROM notes').all();
+      ankiDb.close();
+
+      const SEP   = '\x1f';
+      const cards = notes
+        .map(n => {
+          const fields = n.flds.split(SEP);
+          return { front: stripAnkiHtml(fields[0] || ''), back: stripAnkiHtml(fields[1] || '') };
+        })
+        .filter(c => c.front || c.back);
+
+      res.json({ cards });
+    } catch (err) {
+      res.status(400).json({ error: 'Failed to parse .apkg: ' + (err.message || 'unknown error') });
+    } finally {
+      try { fs.unlinkSync(tmpPath); } catch {}
+    }
+  }
+);
 
 // ── Start ─────────────────────────────────────────────────────────────────────
 

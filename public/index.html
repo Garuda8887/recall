@@ -382,13 +382,29 @@
       <button class="btn-ghost deck-add-card" onclick="addCardRow()">+ Add card</button>
     </div>
     <div id="deckImportPane" style="display:none">
-      <p class="import-hint">One card per line: <code>Question | Answer</code></p>
+      <div class="import-file-section">
+        <p class="import-hint" style="margin-bottom:8px">Import from file:</p>
+        <div class="import-file-btns">
+          <label class="btn-ghost import-file-label">
+            &#128230; Anki Package (.apkg)
+            <input type="file" id="apkgFileInput" accept=".apkg" style="display:none" onchange="handleApkgFile(event)">
+          </label>
+          <label class="btn-ghost import-file-label">
+            &#128196; Text / TSV (.txt)
+            <input type="file" id="txtFileInput" accept=".txt,.tsv,.csv" style="display:none" onchange="handleTxtFile(event)">
+          </label>
+        </div>
+        <div id="fileImportStatus" class="file-import-status"></div>
+      </div>
+      <div class="import-divider"><span>— or paste text —</span></div>
+      <p class="import-hint"><code>Question | Answer</code> or tab-separated — one per line</p>
       <textarea class="import-textarea" id="importTextarea" placeholder="What is osmosis? | Movement of water across a semipermeable membrane&#10;What is mitosis? | Cell division producing two identical daughter cells"></textarea>
       <button class="btn-ghost" onclick="parseImport()" style="margin-top:8px">Preview cards</button>
       <div id="importPreview" class="import-preview"></div>
     </div>
     <div class="modal-actions" style="margin-top:20px">
       <span class="deck-card-count" id="deckCardCount"></span>
+      <button class="btn-ghost" id="exportDeckBtn" onclick="exportEditorDeck()" style="display:none">&#8595; Export .txt</button>
       <button class="btn-cancel" onclick="closeDeckModal()">Cancel</button>
       <button class="btn-save" id="saveDeckBtn" onclick="saveDeck()">Save Deck</button>
     </div>
@@ -410,6 +426,7 @@
       <button class="fc-mini-btn" onclick="shuffleDeck()">&#8644; Shuffle</button>
       <button class="fc-mini-btn" onclick="restartDeck()">&#8635; Restart</button>
       <button class="fc-mini-btn" onclick="editCurrentDeck()">&#9998; Edit</button>
+      <button class="fc-mini-btn" onclick="exportStudyDeck()">&#8595; Export</button>
     </div>
     <div class="fc-wrap" id="fcWrap" onclick="flipCard()">
       <div class="fc-card" id="fcCard">
@@ -623,6 +640,13 @@
   function authFetch(url, options = {}) {
     // Local mode — route to on-device SQLite, no network needed
     if (localStorage.getItem('recall_mode') === 'local') {
+      // Binary uploads can't go through the local JSON-based API
+      if (url.includes('/parse-apkg')) {
+        return Promise.resolve({
+          ok: false, status: 400,
+          json: () => Promise.resolve({ error: 'Anki .apkg import requires a server connection. You are currently in local-only mode.' })
+        });
+      }
       return LocalAPI.handle(url, options);
     }
     // Server mode — hit the configured (or same-origin) server
@@ -2043,6 +2067,8 @@
     importedParsedCards = [];
     document.getElementById('importPreview').innerHTML = '';
     document.getElementById('importTextarea').value = '';
+    document.getElementById('fileImportStatus').textContent = '';
+    document.getElementById('exportDeckBtn').style.display = deckId ? '' : 'none';
     switchDeckTab(tab || 'create');
     renderCardList();
     document.getElementById('deckModal').classList.add('active');
@@ -2236,6 +2262,117 @@
     document.getElementById('importPreview').innerHTML = '';
     const list = document.getElementById('cardList');
     list.scrollTop = list.scrollHeight;
+  }
+
+  // ── File import ──────────────────────────────────────────
+
+  function setFileImportStatus(msg, isError = false) {
+    const el = document.getElementById('fileImportStatus');
+    if (!el) return;
+    el.textContent = msg;
+    el.style.color = isError ? '#ef4444' : 'var(--tx-3)';
+  }
+
+  async function handleApkgFile(event) {
+    const file = event.target.files[0];
+    event.target.value = '';
+    if (!file) return;
+
+    setFileImportStatus(`Uploading "${file.name}"…`);
+    try {
+      const arrayBuf = await file.arrayBuffer();
+      const res  = await authFetch('/api/decks/parse-apkg', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/octet-stream' },
+        body: arrayBuf
+      });
+      const data = await res.json();
+      if (!res.ok) { setFileImportStatus(data.error || 'Failed to parse .apkg', true); return; }
+      importedParsedCards = data.cards;
+      setFileImportStatus(`Parsed "${file.name}" — ${data.cards.length} card${data.cards.length !== 1 ? 's' : ''} found`);
+      renderImportPreview();
+    } catch {
+      setFileImportStatus('Error reading file — check console', true);
+    }
+  }
+
+  async function handleTxtFile(event) {
+    const file = event.target.files[0];
+    event.target.value = '';
+    if (!file) return;
+
+    setFileImportStatus(`Reading "${file.name}"…`);
+    try {
+      const text = await file.text();
+      importedParsedCards = parseCardText(text);
+      setFileImportStatus(`Parsed "${file.name}" — ${importedParsedCards.length} card${importedParsedCards.length !== 1 ? 's' : ''} found`);
+      renderImportPreview();
+    } catch {
+      setFileImportStatus('Error reading file', true);
+    }
+  }
+
+  function parseCardText(text) {
+    const results = [];
+    text.split('\n').forEach(line => {
+      line = line.trim();
+      if (!line || line.startsWith('#')) return;
+      // Tab-separated (Anki export format)
+      const tab = line.indexOf('\t');
+      if (tab >= 0) {
+        const front = line.slice(0, tab).trim();
+        const back  = line.slice(tab + 1).trim();
+        if (front || back) { results.push({ front, back }); return; }
+      }
+      // Pipe-separated
+      const pipe = line.indexOf('|');
+      if (pipe >= 0) {
+        const front = line.slice(0, pipe).trim();
+        const back  = line.slice(pipe + 1).trim();
+        if (front || back) { results.push({ front, back }); return; }
+      }
+      // Comma-separated (simple CSV — no quoted fields)
+      const comma = line.indexOf(',');
+      if (comma >= 0) {
+        const front = line.slice(0, comma).trim();
+        const back  = line.slice(comma + 1).trim();
+        if (front || back) results.push({ front, back });
+      }
+    });
+    return results;
+  }
+
+  // Update parseImport() to use parseCardText so paste also supports TSV
+  function parseImport() {
+    const text = document.getElementById('importTextarea').value;
+    importedParsedCards = parseCardText(text);
+    renderImportPreview();
+  }
+
+  // ── Deck export ──────────────────────────────────────────
+
+  function exportDeck(deckId) {
+    const deck = decks.find(d => d.id === deckId);
+    if (!deck || !deck.cards.length) { showToast('No cards to export'); return; }
+    const tsv  = deck.cards.map(c => `${c.front}\t${c.back}`).join('\n');
+    const blob = new Blob([tsv], { type: 'text/plain;charset=utf-8' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = deck.name.replace(/[^a-z0-9\-_ ]/gi, '_') + '.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast(`Exported "${deck.name}" — ${deck.cards.length} cards (Anki-compatible .txt)`);
+  }
+
+  function exportEditorDeck() {
+    if (editingDeckId) exportDeck(editingDeckId);
+  }
+
+  function exportStudyDeck() {
+    if (studyState) exportDeck(studyState.deckId);
   }
 
   async function saveDeck() {
