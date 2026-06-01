@@ -34,6 +34,8 @@ If Recall is useful to you, consider giving it a ⭐ — it helps others find it
 | **Dark Mode** | Toggle dark mode — the calendar, modals, and knowledge graph all adapt. |
 | **Custom Intervals** | Set your own review intervals (e.g. 1 / 7 / 21 / 60 / 120 days). Changes apply to new sessions going forward. |
 | **JWT Auth** | Full registration and login; all data is isolated per user. |
+| **Flashcard Decks** | Attach a flashcard deck to any study session — create cards manually, import from Anki (`.apkg`) or tab/pipe-separated `.txt` files, or export decks back to Anki-compatible format. |
+| **Active Recall Practice** | Practice your deck directly from the due-today panel or day modal — no extra navigation. Flip cards with a click or Space, navigate with arrow keys, and see a score screen at the end. |
 | **PWA** | Installable as a native-feeling app on iOS and Android — works offline, home screen icon, no app store required. |
 
 ---
@@ -145,6 +147,20 @@ Once installed it launches fullscreen with its own icon, just like a native app.
 
 After each review you rate your recall from 1 (blank) to 5 (perfect). SM-2 uses that score to grow or shrink the next interval — ace it repeatedly and reviews get pushed further out; struggle and it resets to the next day. The default schedule after a new session is **+1 · +3 · +7 · +14 · +30 days**, fully customisable in Settings.
 
+### Flashcard decks
+
+After logging a session you're prompted to attach a flashcard deck — create cards manually or import from an existing file. Three import paths are supported:
+
+| Format | How |
+|---|---|
+| **Anki `.apkg`** | Choose the file in the import dialog; the server extracts the SQLite database from the ZIP and parses all notes automatically. HTML formatting is stripped. |
+| **Text `.txt`** | Tab-separated, pipe-separated, or comma-separated `front / back` pairs — one card per line. Lines starting with `#` are treated as comments. |
+| **Manual** | Type cards directly in the deck editor; Tab from the last field adds a new row. |
+
+Decks can be exported back to a tab-separated `.txt` compatible with Anki's plain-text import.
+
+Once a deck is attached, a **Practice** button appears next to "Mark done" wherever that review surfaces — in the due-today banner on the main calendar and inside the day modal. Clicking Practice opens the study modal on top of whatever you're looking at so you never lose your place. After going through the last card a score screen shows how many cards you actually flipped (cards skipped without revealing the answer don't count). You can study again or close and mark the review done.
+
 ### Recurring sessions
 
 Set a session to recur *every Tuesday* or *every N days*. Any missed instances since the last login are auto-created (capped at 14 catch-ups per series).
@@ -248,6 +264,11 @@ All session routes require `Authorization: Bearer <token>`.
 | `DELETE` | `/api/links/:id` | Remove a link |
 | `GET` | `/api/settings` | Get custom intervals |
 | `PUT` | `/api/settings` | Save custom intervals |
+| `GET` | `/api/decks` | List all decks for the user |
+| `POST` | `/api/decks` | Create a deck `{ session_id, name, cards }` |
+| `PUT` | `/api/decks/:id` | Update deck name or cards |
+| `DELETE` | `/api/decks/:id` | Delete a deck |
+| `POST` | `/api/decks/parse-apkg` | Parse an Anki `.apkg` file (binary body) → returns `{ cards }` |
 
 ---
 
