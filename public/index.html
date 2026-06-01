@@ -49,6 +49,16 @@
       </svg>
     </button>
     <button class="icon-btn" id="darkToggle" title="Toggle dark mode" onclick="toggleDark()"></button>
+    <button class="icon-btn" id="themeToggleBtn" title="Themes" onclick="openSettings()">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="7.5" cy="7.5" r="6" stroke="currentColor" stroke-width="1.4"/>
+        <circle cx="4.5" cy="6" r="1.3" fill="currentColor"/>
+        <circle cx="7.5" cy="4" r="1.3" fill="currentColor"/>
+        <circle cx="10.5" cy="6" r="1.3" fill="currentColor"/>
+        <circle cx="9.5" cy="9.5" r="1.3" fill="currentColor"/>
+        <circle cx="5.5" cy="9.5" r="1.3" fill="currentColor"/>
+      </svg>
+    </button>
     <button class="icon-btn" title="Settings" onclick="openSettings()">
       <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">
         <circle cx="7.5" cy="7.5" r="2"/>
@@ -226,11 +236,16 @@
 <div class="modal-overlay" id="settingsModal" onclick="handleOverlayClick(event,'settingsModal')">
   <div class="modal">
     <div class="modal-header">
-      <h3>Review Intervals</h3>
+      <h3>Settings</h3>
       <button class="modal-close" onclick="closeSettings()">&#215;</button>
     </div>
 
-    <p class="subtitle">Customize when reviews are scheduled after a study session.</p>
+    <p class="subtitle">Appearance and review preferences.</p>
+
+    <div class="theme-section-label">Theme</div>
+    <div class="theme-grid" id="themeGrid"></div>
+
+    <div class="theme-section-label">Review Intervals</div>
     <div class="settings-note">
       ⚠️ Changes only apply to new sessions logged after saving.
     </div>
@@ -331,6 +346,73 @@
 <div class="toast" id="toast"></div>
 
 <script>
+  // ── Themes ───────────────────────────────────────────────
+  const THEMES = [
+    {
+      id: 'default',
+      name: 'Professional',
+      desc: 'Warm minimal',
+      swatches: ['#edeae4','#6366f1','#f59e0b','#1a1917'],
+    },
+    {
+      id: 'pixel',
+      name: 'Pixel Game',
+      desc: '8-bit arcade',
+      swatches: ['#4A90D9','#FEFCE8','#E8220A','#FFD700'],
+    },
+    {
+      id: 'wabi',
+      name: 'Wabi-Sabi',
+      desc: 'Earthy & quiet',
+      swatches: ['#EDE8DF','#7C6347','#C4955A','#2A2118'],
+    },
+    {
+      id: 'brutalist',
+      name: 'Brutalist',
+      desc: 'Raw & unapologetic',
+      swatches: ['#C8C4BC','#000000','#E8000A','#FFFF00'],
+    },
+    {
+      id: 'synthwave',
+      name: 'Synthwave',
+      desc: 'Neon & midnight',
+      swatches: ['#0B0821','#FF0090','#00FFFF','#9B00FF'],
+    },
+  ];
+
+  function applyTheme(id) {
+    const el = document.documentElement;
+    // remove all known theme data attrs
+    THEMES.forEach(t => { if (t.id !== 'default') document.body.removeAttribute('data-theme'); });
+    if (id !== 'default') document.body.setAttribute('data-theme', id);
+    localStorage.setItem('recall_theme', id);
+    renderThemeGrid();
+  }
+
+  function renderThemeGrid() {
+    const grid = document.getElementById('themeGrid');
+    if (!grid) return;
+    const current = localStorage.getItem('recall_theme') || 'default';
+    grid.innerHTML = '';
+    THEMES.forEach(t => {
+      const card = document.createElement('div');
+      card.className = 'theme-card' + (current === t.id ? ' active' : '');
+      card.innerHTML =
+        `<div class="theme-swatches">${t.swatches.map(c =>
+          `<div class="theme-swatch" style="background:${c}"></div>`).join('')}</div>` +
+        `<div class="theme-card-name">${t.name}</div>` +
+        `<div class="theme-card-desc">${t.desc}</div>`;
+      card.onclick = () => applyTheme(t.id);
+      grid.appendChild(card);
+    });
+  }
+
+  // init theme on load
+  (function initTheme() {
+    const saved = localStorage.getItem('recall_theme') || 'default';
+    if (saved !== 'default') document.body.setAttribute('data-theme', saved);
+  })();
+
   // ── Constants ────────────────────────────────────────────
   const MONTH_NAMES  = ['January','February','March','April','May','June',
                         'July','August','September','October','November','December'];
@@ -2325,6 +2407,7 @@
 
   // ── Settings Modal ───────────────────────────────────────
   function openSettings() {
+    renderThemeGrid();
     renderIntervalsList(intervals);
     document.getElementById('settingsModal').classList.add('active');
   }

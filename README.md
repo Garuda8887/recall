@@ -163,6 +163,72 @@ Set a session to recur *every Tuesday* or *every N days*. Any missed instances s
 
 ---
 
+## Theming
+
+Recall ships with five built-in themes — **Professional**, **Pixel Game**, **Wabi-Sabi**, **Brutalist**, and **Dark Synthwave** — switchable from the palette icon (⬤) in the header. Themes persist across reloads via `localStorage`.
+
+### How the system works
+
+- Themes are driven by a `data-theme` attribute on `<body>` (e.g. `data-theme="pixel"`).
+- Each theme is a self-contained CSS block in `public/style.css` scoped to `[data-theme="yourtheme"]` — the default styles are never touched.
+- The JS `THEMES` array in `public/index.html` registers each theme for the picker UI.
+
+### Adding a new theme
+
+**1. Register it in the picker** — find the `THEMES` array near the top of the `<script>` block in `public/index.html` and add an entry:
+
+```js
+{
+  id: 'mytheme',           // matches data-theme value
+  name: 'My Theme',        // shown in the picker
+  desc: 'One-line mood',   // shown below the name
+  swatches: ['#bg','#accent','#secondary','#text'], // four preview dots
+},
+```
+
+**2. Write the CSS block** — append to the bottom of `public/style.css`:
+
+```css
+/* ── My Theme ── */
+[data-theme="mytheme"] {
+  /* Design tokens — override as many or as few as you need */
+  --ff:          'Your Font', sans-serif;
+  --ff-heading:  'Your Font', sans-serif;
+  --bg:          #…;   /* page background */
+  --surface:     #…;   /* card / modal background */
+  --surface-2:   #…;   /* secondary surfaces */
+  --border:      #…;   /* primary border colour */
+  --border-soft: #…;   /* subtle borders */
+  --tx:          #…;   /* primary text */
+  --tx-2:        #…;   /* secondary text */
+  --tx-3:        #…;   /* muted / placeholder text */
+  --accent:      #…;   /* buttons, highlights, today badge */
+  --accent-dk:   #…;   /* darker accent for hover states */
+  --accent-bg:   #…;   /* light accent tint (badges, chips) */
+  --accent-glow: rgba(…, 0.18); /* active-card glow in the picker */
+  --sh-xs: …;  --sh-sm: …;  --sh-md: …;  --sh-lg: …; /* shadows */
+  --r-xs: …;   --r-sm: …;   --r-md: …;   --r-lg: …;  --r-xl: …; /* radii */
+}
+
+/* Structural overrides — only what the token system can't handle */
+[data-theme="mytheme"] header { … }
+[data-theme="mytheme"] .logo  { … }
+/* … etc */
+
+/* Optional dark variant */
+[data-theme="mytheme"].dark { … }
+```
+
+**3. Add the font** (if needed) — extend the single `@import` at the top of `style.css`:
+
+```css
+@import url('https://fonts.googleapis.com/css2?…&family=YourFont&display=swap');
+```
+
+That's it — the picker renders automatically, selection is saved to `localStorage`, and the `data-theme` attribute is applied on page load before first paint.
+
+---
+
 ## API reference
 
 All session routes require `Authorization: Bearer <token>`.
