@@ -525,6 +525,11 @@ header {
 .event.done     { opacity: 0.38; text-decoration: line-through; }
 .event.overdue  { background: #fef2f2; color: #dc2626; border-left: 2.5px solid #ef4444; font-weight: 700; }
 
+@keyframes deck-pulse {
+  0%, 100% { box-shadow: 0 0 4px 1px rgba(255, 45, 85, 0.6); }
+  50%       { box-shadow: 0 0 10px 4px rgba(255, 45, 85, 0.95); }
+}
+
 .deck-chip-dot {
   display: inline-block;
   width: 5px;
@@ -536,6 +541,7 @@ header {
   vertical-align: middle;
   flex-shrink: 0;
   pointer-events: none;
+  animation: deck-pulse 1.8s ease-in-out infinite;
 }
 
 .event.draggable-review { cursor: grab; transition: transform 0.1s, box-shadow 0.1s; }
