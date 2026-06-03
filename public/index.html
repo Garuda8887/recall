@@ -1701,6 +1701,14 @@
     }
 
     cell.appendChild(evWrap);
+
+    if (evs.some(ev => getDeckForSession(ev.session.id) !== null)) {
+      const dot = document.createElement('div');
+      dot.className = 'deck-dot';
+      dot.title = 'Has flashcard deck';
+      cell.appendChild(dot);
+    }
+
     return cell;
   }
 

@@ -525,6 +525,17 @@ header {
 .event.done     { opacity: 0.38; text-decoration: line-through; }
 .event.overdue  { background: #fef2f2; color: #dc2626; border-left: 2.5px solid #ef4444; font-weight: 700; }
 
+.deck-dot {
+  position: absolute;
+  top: 8px;
+  right: 7px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  pointer-events: none;
+}
+
 .event.draggable-review { cursor: grab; transition: transform 0.1s, box-shadow 0.1s; }
 .event.draggable-review:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.10); }
 .event.dragging { opacity: 0.25; pointer-events: none; }
@@ -1380,6 +1391,7 @@ body.dark .event.review-3 { background: #08122f; color: #60a5fa; }
 body.dark .event.review-4 { background: #170e2c; color: #a78bfa; }
 body.dark .event.overdue  { background: #2a0808; color: #f87171; }
 body.dark .day-cell.drag-over { background: rgba(99,102,241,0.08) !important; outline-color: #6366f1; }
+body.dark .deck-dot { background: #34d399; }
 
 body.dark .tag-input-wrap { border-color: var(--border); }
 body.dark .tag-chip-input { color: var(--tx); }
