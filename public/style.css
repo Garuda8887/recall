@@ -532,8 +532,8 @@ header {
 
 .deck-chip-dot {
   display: inline-block;
-  width: 5px;
-  height: 5px;
+  width: 4px;
+  height: 4px;
   border-radius: 50%;
   background: #ff2d55;
   box-shadow: 0 0 6px 2px rgba(255, 45, 85, 0.8);
