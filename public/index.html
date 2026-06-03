@@ -1668,7 +1668,12 @@
       e.style.animationDelay = `${i * 30}ms`;
       const isRecurring = !!ev.session.recurrenceRule;
       if (isRecurring) e.classList.add('recurring');
-      e.textContent = ev.type === 'study' ? ev.session.topic : `↻ ${ev.session.topic}`;
+      const topicLabel = ev.type === 'study' ? ev.session.topic : `↻ ${ev.session.topic}`;
+      if (getDeckForSession(ev.session.id)) {
+        e.innerHTML = `${topicLabel}<span class="deck-chip-dot" title="Has flashcards"></span>`;
+      } else {
+        e.textContent = topicLabel;
+      }
 
       // ── Draggable review chips (undone only) ─────────────
       if (ev.type === 'review' && !ev.done) {
@@ -1701,14 +1706,6 @@
     }
 
     cell.appendChild(evWrap);
-
-    if (evs.some(ev => getDeckForSession(ev.session.id) !== null)) {
-      const dot = document.createElement('div');
-      dot.className = 'deck-dot';
-      dot.title = 'Has flashcard deck';
-      cell.appendChild(dot);
-    }
-
     return cell;
   }
 
