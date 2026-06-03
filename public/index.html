@@ -2677,14 +2677,10 @@
     const { cards, idx } = studyState;
     const card = cards[idx];
 
-    // Persist score onto the card in both studyState and the main deck
+    // studyState.cards is a shallow-copy of deck.cards — same object references,
+    // so mutating card here automatically updates deck.cards too.
     if (!card.scores) card.scores = [];
     card.scores.push(score);
-    const deck = decks.find(d => d.id === studyState.deckId);
-    if (deck) {
-      const dc = deck.cards.find(c => c.id === card.id);
-      if (dc) { if (!dc.scores) dc.scores = []; dc.scores.push(score); }
-    }
     studyState.seen.add(idx);
     studyState.sessionScores.set(card.id, score);
     studyState.dirty = true;
