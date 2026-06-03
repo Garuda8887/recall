@@ -530,7 +530,8 @@ header {
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: #10b981;
+  background: #ff2d55;
+  box-shadow: 0 0 6px 2px rgba(255, 45, 85, 0.8);
   margin-left: 4px;
   vertical-align: middle;
   flex-shrink: 0;
@@ -1392,7 +1393,7 @@ body.dark .event.review-3 { background: #08122f; color: #60a5fa; }
 body.dark .event.review-4 { background: #170e2c; color: #a78bfa; }
 body.dark .event.overdue  { background: #2a0808; color: #f87171; }
 body.dark .day-cell.drag-over { background: rgba(99,102,241,0.08) !important; outline-color: #6366f1; }
-body.dark .deck-chip-dot { background: #34d399; }
+body.dark .deck-chip-dot { background: #ff2d55; box-shadow: 0 0 8px 3px rgba(255, 45, 85, 0.9); }
 
 body.dark .tag-input-wrap { border-color: var(--border); }
 body.dark .tag-chip-input { color: var(--tx); }
