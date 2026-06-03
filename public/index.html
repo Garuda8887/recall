@@ -1745,7 +1745,8 @@
       if (isRecurring) e.classList.add('recurring');
       const topicLabel = ev.type === 'study' ? ev.session.topic : `↻ ${ev.session.topic}`;
       if (getDeckForSession(ev.session.id)) {
-        e.innerHTML = `${topicLabel}<span class="deck-chip-dot" title="Has flashcards"></span>`;
+        e.classList.add('has-deck');
+        e.innerHTML = `<span class="chip-text">${topicLabel}</span><span class="deck-chip-dot" title="Has flashcards"></span>`;
       } else {
         e.textContent = topicLabel;
       }

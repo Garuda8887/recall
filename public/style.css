@@ -530,6 +530,18 @@ header {
   50%       { box-shadow: 0 0 10px 4px rgba(255, 45, 85, 0.95); }
 }
 
+.event.has-deck {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+.chip-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .deck-chip-dot {
   display: inline-block;
   width: 4px;
@@ -538,7 +550,6 @@ header {
   background: #ff2d55;
   box-shadow: 0 0 6px 2px rgba(255, 45, 85, 0.8);
   margin-left: 4px;
-  vertical-align: middle;
   flex-shrink: 0;
   pointer-events: none;
   animation: deck-pulse 1.8s ease-in-out infinite;
