@@ -423,10 +423,13 @@
     </div>
     <div class="fc-progress-row">
       <span class="fc-progress" id="fcProgress"></span>
+      <span class="fc-diff-dot" id="fcDiffDot" style="display:none"></span>
+      <button class="fc-mini-btn" id="fcWeakBtn" onclick="toggleWeakFilter()" title="Study only weak cards (avg &lt; 3)">&#9888; Weak</button>
       <button class="fc-mini-btn" onclick="shuffleDeck()">&#8644; Shuffle</button>
       <button class="fc-mini-btn" onclick="restartDeck()">&#8635; Restart</button>
       <button class="fc-mini-btn" onclick="editCurrentDeck()">&#9998; Edit</button>
       <button class="fc-mini-btn" onclick="exportStudyDeck()">&#8595; Export</button>
+      <button class="fc-mini-btn" onclick="openCardSearch()" title="Search cards (F)">&#128269; Search</button>
     </div>
     <div class="fc-wrap" id="fcWrap" onclick="flipCard()">
       <div class="fc-card" id="fcCard">
@@ -437,17 +440,31 @@
     <div class="fc-hint" id="fcHint">Click to reveal answer</div>
     <div class="fc-controls">
       <button class="btn-ghost" onclick="prevCard()" id="fcPrev">&#8592; Prev</button>
-      <button class="btn-save" onclick="nextCard()" id="fcNext">Next &#8594;</button>
+      <button class="btn-save" onclick="flipCard()" id="fcReveal">Reveal &#8594;</button>
     </div>
+    <div class="fc-rating" id="fcRating"></div>
     <div class="study-complete" id="studyComplete">
       <div class="study-complete-icon">&#10003;</div>
       <div class="study-complete-label" id="studyCompleteLabel"></div>
       <div class="study-complete-score" id="studyCompleteScore"></div>
+      <div class="study-complete-breakdown" id="studyCompleteBreakdown"></div>
       <div class="study-complete-actions">
         <button class="btn-ghost" onclick="restartFromComplete()">&#8635; Study again</button>
         <button class="btn-save" onclick="closeStudyModal()">Done</button>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- ── Card Search Modal ── -->
+<div class="modal-overlay" id="cardSearchModal" onclick="handleOverlayClick(event,'cardSearchModal')">
+  <div class="modal card-search-modal">
+    <div class="modal-header">
+      <h3>Search Cards</h3>
+      <button class="modal-close" onclick="closeCardSearch()">&#215;</button>
+    </div>
+    <input class="card-search-input" id="cardSearchInput" placeholder="Search across all decks…" autocomplete="off" spellcheck="false" oninput="searchCards()">
+    <div class="card-search-results" id="cardSearchResults"></div>
   </div>
 </div>
 
@@ -628,6 +645,27 @@
     { score: 4, emoji: '😊', label: 'Good',    color: '#22c55e', bg: '#f0fdf4' },
     { score: 5, emoji: '🎯', label: 'Perfect', color: '#6366f1', bg: '#eef2ff' },
   ];
+
+  // ── Card score helpers ────────────────────────────────────
+  function getCardAvg(card) {
+    if (!card.scores || !card.scores.length) return null;
+    return card.scores.reduce((a, b) => a + b, 0) / card.scores.length;
+  }
+
+  function cardDifficultyColor(avg) {
+    if (avg === null) return 'var(--tx-3)';
+    if (avg < 2)  return '#ef4444';
+    if (avg < 3)  return '#f97316';
+    if (avg < 4)  return '#eab308';
+    return '#22c55e';
+  }
+
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
 
   // ── Date helpers ─────────────────────────────────────────
   function todayStr() {
@@ -2461,42 +2499,73 @@
 
   // ── Flashcard Study Mode ─────────────────────────────────
 
-  function openStudyModal(deckId) {
+  function openStudyModal(deckId, opts = {}) {
     const deck = decks.find(d => d.id === deckId);
     if (!deck || !deck.cards.length) { showToast('This deck has no cards yet'); return; }
-    studyState = { deckId, cards: [...deck.cards], idx: 0, flipped: false, seen: new Set() };
+    const weakOnly = !!opts.weakOnly;
+    let cards = [...deck.cards];
+    if (weakOnly) {
+      cards = cards.filter(c => { const a = getCardAvg(c); return a === null || a < 3; });
+      if (!cards.length) { showToast('No weak cards yet — great job!'); return; }
+    }
+    studyState = { deckId, cards, idx: 0, flipped: false, seen: new Set(), sessionScores: new Map(), dirty: false, weakOnly };
     document.getElementById('studyTitle').textContent = deck.name;
-    document.getElementById('studySubtitle').textContent = `${deck.cards.length} card${deck.cards.length !== 1 ? 's' : ''}`;
+    const label = weakOnly ? `${cards.length} weak card${cards.length !== 1 ? 's' : ''}` : `${deck.cards.length} card${deck.cards.length !== 1 ? 's' : ''}`;
+    document.getElementById('studySubtitle').textContent = label;
     document.getElementById('studyComplete').style.display = 'none';
     document.getElementById('fcWrap').style.display = '';
     document.getElementById('fcHint').style.display = '';
     document.querySelector('.fc-controls').style.display = '';
+    document.getElementById('fcReveal').style.display = '';
+    document.getElementById('fcRating').style.display = 'none';
+    document.getElementById('studyCompleteBreakdown').innerHTML = '';
+    const weakBtn = document.getElementById('fcWeakBtn');
+    if (weakBtn) weakBtn.classList.toggle('active', weakOnly);
     document.getElementById('studyModal').classList.add('active');
     renderStudyCard();
   }
 
   function closeStudyModal() {
+    if (studyState && studyState.dirty) saveCardScores();
     document.getElementById('studyModal').classList.remove('active');
     document.getElementById('studyComplete').style.display = 'none';
     document.getElementById('fcWrap').style.display = '';
     document.getElementById('fcHint').style.display = '';
     document.querySelector('.fc-controls').style.display = '';
+    document.getElementById('fcReveal').style.display = '';
+    document.getElementById('fcRating').style.display = 'none';
+    const weakBtn = document.getElementById('fcWeakBtn');
+    if (weakBtn) weakBtn.classList.remove('active');
     studyState = null;
   }
 
   function showStudyComplete() {
     if (!studyState) return;
-    const { cards, seen } = studyState;
-    const seenCount = seen.size;
+    const { cards, seen, sessionScores } = studyState;
+    const ratedCount = sessionScores.size;
     const total = cards.length;
-    document.getElementById('studyCompleteLabel').textContent = seenCount === total
+    document.getElementById('studyCompleteLabel').textContent = ratedCount === total
       ? 'All cards reviewed!' : 'Session complete';
     document.getElementById('studyCompleteScore').textContent =
-      `${seenCount} of ${total} card${total !== 1 ? 's' : ''} practiced`;
+      `${ratedCount} of ${total} card${total !== 1 ? 's' : ''} rated`;
+
+    // Breakdown pills
+    if (ratedCount > 0) {
+      const counts = [0,0,0,0,0];
+      sessionScores.forEach(s => counts[s-1]++);
+      document.getElementById('studyCompleteBreakdown').innerHTML =
+        RATINGS.map((r, i) => counts[i]
+          ? `<span class="complete-rating-pill" style="--rc:${r.color};--rbg:${r.bg}">${r.emoji} ${counts[i]}</span>`
+          : ''
+        ).join('');
+    }
+
     document.getElementById('fcWrap').style.display = 'none';
     document.getElementById('fcHint').style.display = 'none';
     document.querySelector('.fc-controls').style.display = 'none';
+    document.getElementById('fcRating').style.display = 'none';
     document.getElementById('studyComplete').style.display = 'flex';
+    if (studyState.dirty) saveCardScores();
   }
 
   function restartFromComplete() {
@@ -2504,10 +2573,14 @@
     studyState.idx = 0;
     studyState.flipped = false;
     studyState.seen = new Set();
+    studyState.sessionScores = new Map();
     document.getElementById('studyComplete').style.display = 'none';
+    document.getElementById('studyCompleteBreakdown').innerHTML = '';
     document.getElementById('fcWrap').style.display = '';
     document.getElementById('fcHint').style.display = '';
     document.querySelector('.fc-controls').style.display = '';
+    document.getElementById('fcReveal').style.display = '';
+    document.getElementById('fcRating').style.display = 'none';
     renderStudyCard();
   }
 
@@ -2515,13 +2588,43 @@
     if (!studyState) return;
     const { cards, idx, flipped } = studyState;
     const card = cards[idx];
+
     document.getElementById('fcProgress').textContent = `${idx + 1} / ${cards.length}`;
     document.getElementById('fcFront').textContent = card.front;
     document.getElementById('fcBack').textContent = card.back;
-    document.getElementById('fcHint').textContent = flipped ? '' : 'Click card to reveal answer';
     document.getElementById('fcCard').classList.toggle('flipped', flipped);
     document.getElementById('fcPrev').disabled = idx === 0;
-    document.getElementById('fcNext').textContent = idx === cards.length - 1 ? 'Done ✓' : 'Next →';
+
+    // Difficulty dot
+    const avg = getCardAvg(card);
+    const dotEl = document.getElementById('fcDiffDot');
+    if (avg !== null) {
+      dotEl.style.cssText = `background:${cardDifficultyColor(avg)};display:inline-block`;
+      dotEl.title = `Avg score: ${avg.toFixed(1)}`;
+    } else {
+      dotEl.style.display = 'none';
+    }
+
+    const revealBtn = document.getElementById('fcReveal');
+    const ratingEl  = document.getElementById('fcRating');
+    const hintEl    = document.getElementById('fcHint');
+
+    if (flipped) {
+      revealBtn.style.display = 'none';
+      hintEl.textContent = 'How well did you know this? (keys 1–5)';
+      ratingEl.style.display = 'flex';
+      ratingEl.innerHTML = RATINGS.map(r =>
+        `<button class="fc-rating-btn" style="--rc:${r.color};--rbg:${r.bg}" onclick="rateCard(${r.score})" title="${r.label} (${r.score})">
+          <span class="fc-rating-emoji">${r.emoji}</span>
+          <span class="fc-rating-label">${r.label}</span>
+        </button>`
+      ).join('');
+    } else {
+      revealBtn.style.display = '';
+      hintEl.textContent = 'Click card to reveal answer';
+      ratingEl.style.display = 'none';
+      ratingEl.innerHTML = '';
+    }
   }
 
   function flipCard() {
@@ -2566,6 +2669,120 @@
     studyState.idx = 0;
     studyState.flipped = false;
     renderStudyCard();
+  }
+
+  // ── Per-card rating ──────────────────────────────────────
+  function rateCard(score) {
+    if (!studyState) return;
+    const { cards, idx } = studyState;
+    const card = cards[idx];
+
+    // Persist score onto the card in both studyState and the main deck
+    if (!card.scores) card.scores = [];
+    card.scores.push(score);
+    const deck = decks.find(d => d.id === studyState.deckId);
+    if (deck) {
+      const dc = deck.cards.find(c => c.id === card.id);
+      if (dc) { if (!dc.scores) dc.scores = []; dc.scores.push(score); }
+    }
+    studyState.seen.add(idx);
+    studyState.sessionScores.set(card.id, score);
+    studyState.dirty = true;
+
+    if (idx === cards.length - 1) {
+      showStudyComplete();
+    } else {
+      studyState.idx++;
+      studyState.flipped = false;
+      renderStudyCard();
+    }
+  }
+
+  async function saveCardScores() {
+    if (!studyState) return;
+    const deck = decks.find(d => d.id === studyState.deckId);
+    if (!deck) return;
+    studyState.dirty = false;
+    try {
+      await authFetch(`/api/decks/${deck.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: deck.name, cards: deck.cards })
+      });
+    } catch { /* scores stay in memory even if save fails */ }
+  }
+
+  function toggleWeakFilter() {
+    if (!studyState) return;
+    const { deckId, weakOnly, dirty } = studyState;
+    if (dirty) saveCardScores();
+    closeStudyModal();
+    openStudyModal(deckId, { weakOnly: !weakOnly });
+  }
+
+  // ── Card Search ──────────────────────────────────────────
+  function openCardSearch() {
+    document.getElementById('cardSearchModal').classList.add('active');
+    const inp = document.getElementById('cardSearchInput');
+    inp.value = '';
+    inp.focus();
+    document.getElementById('cardSearchResults').innerHTML = '';
+  }
+
+  function closeCardSearch() {
+    document.getElementById('cardSearchModal').classList.remove('active');
+  }
+
+  function searchCards() {
+    const q = document.getElementById('cardSearchInput').value.toLowerCase().trim();
+    const el = document.getElementById('cardSearchResults');
+    if (!q) { el.innerHTML = ''; return; }
+
+    const hits = [];
+    decks.forEach(deck => {
+      deck.cards.forEach(card => {
+        if (card.front.toLowerCase().includes(q) || card.back.toLowerCase().includes(q)) {
+          hits.push({ deck, card });
+        }
+      });
+    });
+
+    if (!hits.length) {
+      el.innerHTML = '<div class="card-search-empty">No cards found</div>';
+      return;
+    }
+
+    el.innerHTML = hits.slice(0, 60).map(({ deck, card }) => {
+      const avg = getCardAvg(card);
+      const dc  = cardDifficultyColor(avg);
+      const dotTitle = avg !== null ? `Avg: ${avg.toFixed(1)}` : 'Unrated';
+      return `<div class="card-search-result" onclick="jumpToCard('${deck.id}','${card.id}')">
+        <div class="csr-header">
+          <span class="csr-deck">${escHtml(deck.name)}</span>
+          <span class="csr-dot" style="background:${dc}" title="${dotTitle}"></span>
+        </div>
+        <div class="csr-front">${hlMatch(card.front, q)}</div>
+        <div class="csr-back">${hlMatch(card.back, q)}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function hlMatch(text, q) {
+    const i = text.toLowerCase().indexOf(q);
+    if (i < 0) return escHtml(text);
+    return escHtml(text.slice(0, i))
+      + `<mark>${escHtml(text.slice(i, i + q.length))}</mark>`
+      + escHtml(text.slice(i + q.length));
+  }
+
+  function jumpToCard(deckId, cardId) {
+    closeCardSearch();
+    openStudyModal(deckId);
+    requestAnimationFrame(() => {
+      if (!studyState) return;
+      const idx = studyState.cards.findIndex(c => c.id === cardId);
+      if (idx >= 0) { studyState.idx = idx; studyState.flipped = false; renderStudyCard(); }
+    });
   }
 
   // ── Confidence Rating Modal ──────────────────────────────
@@ -3160,7 +3377,8 @@
   function handleOverlayClick(e, id) {
     if (e.target === document.getElementById(id)) {
       ({ addModal: closeAddModal, dayModal: closeDayModal,
-         statsModal: closeStats, settingsModal: closeSettings })[id]?.();
+         statsModal: closeStats, settingsModal: closeSettings,
+         cardSearchModal: closeCardSearch })[id]?.();
     }
   }
 
@@ -3169,14 +3387,21 @@
     if (e.key === 'Escape') {
       clearSearch(); closeAddModal(); closeDayModal(); closeStats(); closeSettings();
       closeCurveModal(); closeLinkModal(); closeGraphModal();
-      closeDeckPrompt(); closeDeckModal(); closeStudyModal();
+      closeDeckPrompt(); closeDeckModal(); closeStudyModal(); closeCardSearch();
     }
     // Study modal keyboard navigation
     if (studyState) {
-      if (e.key === ' ' || (e.key === 'Enter' && document.activeElement.tagName !== 'BUTTON')) {
-        e.preventDefault(); flipCard(); return;
+      // 1-5 to rate current card when flipped
+      if (studyState.flipped && !e.metaKey && !e.ctrlKey) {
+        const n = parseInt(e.key);
+        if (n >= 1 && n <= 5) { e.preventDefault(); rateCard(n); return; }
       }
-      if (e.key === 'ArrowRight') { e.preventDefault(); nextCard(); return; }
+      if (e.key === ' ' || (e.key === 'Enter' && document.activeElement.tagName !== 'BUTTON')) {
+        e.preventDefault();
+        if (!studyState.flipped) flipCard();
+        return;
+      }
+      if (e.key === 'ArrowRight') { e.preventDefault(); if (!studyState.flipped) flipCard(); else nextCard(); return; }
       if (e.key === 'ArrowLeft')  { e.preventDefault(); prevCard(); return; }
     }
     if (e.key === 'Enter' && document.getElementById('addModal').classList.contains('active'))
@@ -3187,6 +3412,9 @@
       const activeTag = document.activeElement.tagName;
       if ((e.key === 'n' || e.key === 'N') && !['INPUT','TEXTAREA'].includes(activeTag))
         openAddModal();
+      if ((e.key === 'f' || e.key === 'F') && !['INPUT','TEXTAREA'].includes(activeTag)) {
+        e.preventDefault(); openCardSearch(); return;
+      }
       // / or Cmd+K → focus search
       if (e.key === '/' && !['INPUT','TEXTAREA'].includes(activeTag)) {
         e.preventDefault();
@@ -3196,6 +3424,11 @@
         e.preventDefault();
         focusSearch();
       }
+    }
+    // Card search input live search
+    if (document.getElementById('cardSearchModal').classList.contains('active') &&
+        document.activeElement === document.getElementById('cardSearchInput')) {
+      requestAnimationFrame(searchCards);
     }
   });
 

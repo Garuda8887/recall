@@ -5064,6 +5064,28 @@ body.dark .recur-option-row input[type="number"] { background: var(--surface); b
 .fc-controls { display:flex; gap:10px; justify-content:center; }
 .fc-controls .btn-ghost, .fc-controls .btn-save { min-width:100px; }
 
+/* ── Rating row ── */
+.fc-rating { gap:6px; justify-content:center; flex-wrap:wrap; margin-top:6px; }
+.fc-rating-btn {
+  display:flex; flex-direction:column; align-items:center; gap:3px;
+  padding:8px 10px; border-radius:var(--r-sm);
+  border:1.5px solid var(--rc, var(--border));
+  background:var(--rbg, var(--surface));
+  color:var(--rc, var(--tx)); cursor:pointer;
+  font-family:var(--ff); transition:transform 0.12s, box-shadow 0.12s;
+  min-width:54px; flex:1; max-width:90px;
+}
+.fc-rating-btn:hover { transform:translateY(-3px); box-shadow:0 6px 16px rgba(0,0,0,0.13); }
+.fc-rating-btn:active { transform:translateY(-1px); }
+.fc-rating-emoji { font-size:20px; line-height:1; }
+.fc-rating-label { font-size:10px; font-weight:700; letter-spacing:0.4px; white-space:nowrap; text-transform:uppercase; }
+
+/* ── Difficulty dot in progress row ── */
+.fc-diff-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; transition:background 0.2s; }
+
+/* ── Weak filter active state ── */
+.fc-mini-btn.active { color:var(--accent); border-color:var(--accent); background:var(--accent-bg,#eef2ff); }
+
 /* ── Study completion screen ── */
 .study-complete {
   display:none; flex-direction:column; align-items:center; gap:14px;
@@ -5077,7 +5099,41 @@ body.dark .recur-option-row input[type="number"] { background: var(--surface); b
 }
 .study-complete-label { font-size:1.1rem; font-weight:700; color:var(--tx); }
 .study-complete-score { font-size:0.9rem; color:var(--tx-3); }
+.study-complete-breakdown { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; }
+.complete-rating-pill {
+  padding:4px 10px; border-radius:20px;
+  background:var(--rbg, var(--surface-2)); color:var(--rc, var(--tx));
+  font-size:13px; font-weight:600; border:1px solid var(--rc, var(--border));
+}
 .study-complete-actions { display:flex; gap:10px; margin-top:6px; }
+
+/* ── Card search modal ── */
+.card-search-modal { max-width:520px; padding:20px; }
+.card-search-input {
+  width:100%; padding:10px 14px; border-radius:var(--r-sm);
+  border:1.5px solid var(--border); background:var(--surface);
+  color:var(--tx); font-size:15px; font-family:var(--ff);
+  outline:none; margin-bottom:12px; box-sizing:border-box;
+  transition:border-color 0.15s;
+}
+.card-search-input:focus { border-color:var(--accent); }
+.card-search-results { max-height:360px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; }
+.card-search-result {
+  padding:12px 14px; border-radius:var(--r-sm);
+  border:1px solid var(--border-soft); background:var(--surface);
+  cursor:pointer; transition:border-color 0.14s, background 0.14s;
+}
+.card-search-result:hover { border-color:var(--accent); background:var(--accent-bg,#eef2ff); }
+.csr-header { display:flex; align-items:center; gap:6px; margin-bottom:6px; }
+.csr-deck { font-size:11px; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:0.5px; }
+.csr-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.csr-front { font-size:13px; font-weight:600; color:var(--tx); margin-bottom:3px; }
+.csr-back { font-size:12px; color:var(--tx-3); }
+.csr-front mark, .csr-back mark {
+  background:var(--accent-bg,#eef2ff); color:var(--accent);
+  border-radius:2px; padding:0 2px; font-style:normal;
+}
+.card-search-empty { text-align:center; padding:32px 20px; color:var(--tx-3); font-size:13px; }
 
 /* ── Practice button (review due today) ── */
 .practice-btn {
