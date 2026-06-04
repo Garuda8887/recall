@@ -22,20 +22,24 @@ If Recall is useful to you, consider giving it a ⭐ — it helps others find it
 | **SM-2 Spaced Repetition** | Reviews are scheduled at scientifically-optimal intervals (default: +1, +3, +7, +14, +30 days). Confidence ratings adapt future intervals via ease-factor. |
 | **Calendar View** | Month-view calendar with colour-coded chips: studied sessions, review 1–5, overdue indicators. |
 | **Confidence Ratings** | Mark reviews with Blank / Hard / Okay / Good / Perfect — the SM-2 algorithm reschedules the next review accordingly. |
-| **Forgetting Curve** | Per-session exponential decay chart showing memory retention over time with study and upcoming review markers. |
+| **Forgetting Curve** | Per-session exponential decay chart with a full review history table (Done / Upcoming / Overdue) below the chart. |
 | **Recurring Sessions** | Schedule a topic to auto-recur weekly or at a fixed interval — catch-up instances are created automatically on login. |
 | **Drag-and-Drop Reschedule** | Drag undone review chips to any other calendar day to reschedule them. |
 | **Subject Filter** | Filter the calendar by subject (Biology, Languages, Maths…) with one click. |
+| **Custom Subject Colors** | Pick any color for each subject from Settings → Subject Colors. Overrides the default auto-assigned palette; Reset link shown when a custom color exists. |
 | **Tags** | Add free-form tags to sessions; filter the calendar by tag from the tag bar. |
 | **Full-Text Search** | Instant search across topic, notes, subject and tags with match count. |
+| **Exam Countdown** | Track upcoming exams (name, date, optional subject) in the sidebar. Counts down in days; highlights Tomorrow in amber and Today in red. Past exams collapse under a disclosure row. |
 | **Second Brain Links** | Connect sessions with typed relations — *Builds on*, *Prerequisite of*, *Related to*, *See also* — displayed inline in the day modal. |
 | **Knowledge Graph** | Obsidian-style force-directed graph of all linked sessions with pan, zoom, draggable nodes, and per-subject dimming. |
 | **Stats & Heatmap** | Activity heatmap (last 13 weeks), per-subject retention bars with overdue count, and per-topic retention list. |
 | **Dark Mode** | Toggle dark mode — the calendar, modals, and knowledge graph all adapt. |
+| **14 Themes** | Built-in theme picker with 14 themes (Professional, Pixel Game, Wabi-Sabi, Brutalist, Synthwave, and more). Fully extensible via CSS custom properties. |
 | **Custom Intervals** | Set your own review intervals (e.g. 1 / 7 / 21 / 60 / 120 days). Changes apply to new sessions going forward. |
 | **JWT Auth** | Full registration and login; all data is isolated per user. |
-| **Flashcard Decks** | Attach a flashcard deck to any study session — create cards manually, import from Anki (`.apkg`) or tab/pipe-separated `.txt` files, or export decks back to Anki-compatible format. |
-| **Active Recall Practice** | Practice your deck directly from the due-today panel or day modal — no extra navigation. Flip cards with a click or Space, navigate with arrow keys, and see a score screen at the end. |
+| **Flashcard Decks** | Create cards manually, import from Anki (`.apkg`) or `.txt`, or export back to Anki. Card faces support `**bold**` and `` `inline code` `` markdown. Image cards: paste from clipboard or pick a file — stored as base64 in the card JSON, no server upload needed. |
+| **Active Recall Practice** | Full-screen study modal: flip with click or Space, rate 1–5 (keyboard shortcuts), 🔊 text-to-speech on every card face, per-card difficulty dot, and a wrong-answer re-queue button to repeat cards rated 1–2 immediately after the session. |
+| **Card Difficulty Sort** | "↓ Hardest first" button in the deck editor sorts cards by historical average score — unrated and struggling cards surface to the top. |
 | **PWA** | Installable as a native-feeling app on iOS and Android — works offline, home screen icon, no app store required. |
 
 ---
@@ -159,7 +163,15 @@ After logging a session you're prompted to attach a flashcard deck — create ca
 
 Decks can be exported back to a tab-separated `.txt` compatible with Anki's plain-text import.
 
-Once a deck is attached, a **Practice** button appears next to "Mark done" wherever that review surfaces — in the due-today banner on the main calendar and inside the day modal. Clicking Practice opens the study modal on top of whatever you're looking at so you never lose your place. After going through the last card a score screen shows how many cards you actually flipped (cards skipped without revealing the answer don't count). You can study again or close and mark the review done.
+**Card content** — each card face can be:
+- **Text with markdown** — `**bold**`, `` `inline code` ``, and newlines are rendered during study. The deck editor stays plain text for easy editing.
+- **An image** — paste an image from your clipboard directly into a card field, or click 📷 to pick a file. The image is stored as a base64 data URL inside the card JSON — no server upload, no external URLs.
+
+The deck editor also has a **"↓ Hardest first"** button that sorts your cards by historical average score, putting the ones you've been getting wrong at the top so you can focus on weak spots.
+
+Once a deck is attached, a **Practice** button appears next to "Mark done" wherever that review surfaces — in the due-today banner on the main calendar and inside the day modal. Clicking Practice opens the study modal so you never lose your place. After going through the last card a score screen shows your results; if any cards were rated 1–2, an **↻ Re-study N weak cards** button lets you repeat just those cards immediately. You can also study again in full or close and mark the review done.
+
+Each card face has a 🔊 text-to-speech button (browser-native `speechSynthesis`, no API key needed) — useful for language learning or studying with eyes closed.
 
 ### Recurring sessions
 
@@ -181,7 +193,7 @@ Set a session to recur *every Tuesday* or *every N days*. Any missed instances s
 
 ## Theming
 
-Recall ships with five built-in themes — **Professional**, **Pixel Game**, **Wabi-Sabi**, **Brutalist**, and **Dark Synthwave** — switchable from the palette icon (⬤) in the header. Themes persist across reloads via `localStorage`.
+Recall ships with 14 built-in themes — including **Professional**, **Pixel Game**, **Wabi-Sabi**, **Brutalist**, **Dark Synthwave**, and more — switchable from the sidebar (☰ → Settings → Theme). Themes persist across reloads via `localStorage`.
 
 ### How the system works
 
