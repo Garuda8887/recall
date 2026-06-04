@@ -5958,3 +5958,156 @@ body.dark .recur-option-row input[type="number"] { background: var(--surface); b
   background: #fff7ed;
 }
 .requeue-btn:hover { background: #ffedd5; border-color: #f97316; color: #ea580c; }
+
+/* ─── Markdown in card faces ─────────────────────────────── */
+.md-code {
+  font-family: ui-monospace, 'Cascadia Code', 'SF Mono', monospace;
+  font-size: 0.88em;
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+
+/* ─── Image cards — study mode ───────────────────────────── */
+.fc-card-image {
+  max-width: 100%;
+  max-height: 220px;
+  object-fit: contain;
+  border-radius: var(--r-sm);
+  display: block;
+  margin: 0 auto;
+}
+
+/* ─── Image cards — deck editor ──────────────────────────── */
+.card-side-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  position: relative;
+}
+.card-side-wrap .card-front,
+.card-side-wrap .card-back {
+  flex: 1;
+  min-width: 0;
+}
+.card-img-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--r-xs);
+  font-size: 14px;
+  cursor: pointer;
+  opacity: 0.45;
+  transition: opacity 0.13s, background 0.13s;
+  line-height: 1;
+}
+.card-img-btn:hover { opacity: 0.9; background: var(--surface-2); }
+.card-img-thumb {
+  width: 52px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: var(--r-xs);
+  border: 1px solid var(--border-soft);
+  flex-shrink: 0;
+}
+.card-img-remove {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  font-size: 15px;
+  color: var(--tx-3);
+  cursor: pointer;
+  padding: 0 3px;
+  line-height: 1;
+  transition: color 0.12s;
+}
+.card-img-remove:hover { color: #ef4444; }
+
+/* ─── Deck editor toolbar (add + sort row) ───────────────── */
+.deck-add-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+.deck-sort-btn {
+  font-size: 12px;
+  padding: 6px 12px;
+  color: var(--tx-2);
+}
+
+/* ─── Review history table in forgetting curve ───────────── */
+.curve-history {
+  margin-top: 16px;
+}
+.curve-history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.curve-history-table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--tx-3);
+  padding: 0 8px 6px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.curve-history-table td {
+  padding: 7px 8px;
+  border-bottom: 1px solid var(--border-soft);
+  color: var(--tx-2);
+}
+.curve-history-table tbody tr:last-child td { border-bottom: none; }
+.curve-history-table .hist-done { color: var(--tx); }
+.curve-history-table .hist-upcoming { color: var(--tx-3); }
+.curve-history-table .hist-overdue { color: #ef4444; font-weight: 600; }
+
+/* ─── Subject Colors in Settings ─────────────────────────── */
+.subject-color-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border-soft);
+}
+.subject-color-row:last-child { border-bottom: none; }
+.subject-color-name {
+  flex: 1;
+  font-size: 13px;
+  color: var(--tx);
+  font-weight: 500;
+}
+.subject-color-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid rgba(0,0,0,0.08);
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.subject-color-swatch:hover { transform: scale(1.15); box-shadow: 0 0 0 3px var(--accent-soft, rgba(99,102,241,0.15)); }
+.subject-color-reset {
+  background: none;
+  border: none;
+  font-size: 12px;
+  color: var(--tx-3);
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 0.12s;
+}
+.subject-color-reset:hover { color: var(--tx); }
