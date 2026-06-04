@@ -33,3 +33,6 @@ android/app/build/
 android/.gradle/
 android/local.properties
 future.md
+
+# Local design specs / planning docs
+docs/
