@@ -522,6 +522,24 @@
       swatches: ['#FFF5F8','#D4607A','#F0C8D8','#1C0F14'],
     },
     {
+      id: 'wisteria',
+      name: 'Wisteria',
+      desc: 'Cascading blooms',
+      swatches: ['#F8F5FF','#8B5CF6','#D8CCF0','#1A1228'],
+    },
+    {
+      id: 'peach',
+      name: 'Peach Blossom',
+      desc: 'Sun-warmed petals',
+      swatches: ['#FFF8F3','#E8704A','#F0CFBA','#1F120A'],
+    },
+    {
+      id: 'moonlit',
+      name: 'Moonlit Sakura',
+      desc: 'Night-blooming',
+      swatches: ['#130A0E','#F472B6','#3D1E30','#FFE8F0'],
+    },
+    {
       id: 'aurora',
       name: 'Aurora',
       desc: 'Northern lights',
@@ -3533,10 +3551,65 @@
       }
     };
 
+    const WISTERIA = {
+      count:30,
+      spawn:()=>({x:R(0,W),y:R(-H,-10),vx:R(-0.2,0.6),vy:R(0.5,1.3),
+        sz:R(4,9),rot:R(0,Math.PI*2),rotV:R(-0.035,0.035),
+        sw:R(0,Math.PI*2),swV:R(0.012,0.028),
+        a:R(0.3,0.70),h:R(262,286),s:R(62,80),l:R(78,92)}),
+      update(p){p.sw+=p.swV;p.x+=p.vx+Math.sin(p.sw)*.5;p.y+=p.vy;p.rot+=p.rotV;if(p.y>H+20){p.y=R(-100,-10);p.x=R(0,W);}},
+      draw(p){
+        cx.save();cx.translate(p.x,p.y);cx.rotate(p.rot);cx.globalAlpha=p.a;
+        cx.fillStyle=`hsl(${p.h},${p.s}%,${p.l}%)`;
+        cx.beginPath();
+        cx.moveTo(0,-p.sz*1.1);
+        cx.bezierCurveTo(p.sz*.7,-p.sz*.4, p.sz*.7,p.sz*.7, 0,p.sz*1.1);
+        cx.bezierCurveTo(-p.sz*.7,p.sz*.7,-p.sz*.7,-p.sz*.4, 0,-p.sz*1.1);
+        cx.fill();cx.restore();
+      }
+    };
+
+    const PEACH = {
+      count:26,
+      spawn:()=>({x:R(0,W),y:R(-H,-10),vx:R(0.15,0.80),vy:R(0.6,1.5),
+        sz:R(5,11),rot:R(0,Math.PI*2),rotV:R(-0.045,0.045),
+        sw:R(0,Math.PI*2),swV:R(0.018,0.034),
+        a:R(0.35,0.80),h:R(16,36),s:R(70,88),l:R(78,92)}),
+      update(p){p.sw+=p.swV;p.x+=p.vx+Math.sin(p.sw)*.65;p.y+=p.vy;p.rot+=p.rotV;if(p.y>H+20){p.y=R(-100,-10);p.x=R(0,W);}},
+      draw(p){
+        cx.save();cx.translate(p.x,p.y);cx.rotate(p.rot);cx.globalAlpha=p.a;
+        cx.fillStyle=`hsl(${p.h},${p.s}%,${p.l}%)`;
+        cx.beginPath();
+        cx.moveTo(0,-p.sz);
+        cx.bezierCurveTo(p.sz*1.0,-p.sz*.3, p.sz*1.0,p.sz*.3, 0,p.sz);
+        cx.bezierCurveTo(-p.sz*1.0,p.sz*.3,-p.sz*1.0,-p.sz*.3, 0,-p.sz);
+        cx.fill();cx.restore();
+      }
+    };
+
+    const MOONLIT = {
+      count:24,
+      spawn:()=>({x:R(0,W),y:R(-H,-10),vx:R(0.15,0.65),vy:R(0.55,1.4),
+        sz:R(5,11),rot:R(0,Math.PI*2),rotV:R(-0.040,0.040),
+        sw:R(0,Math.PI*2),swV:R(0.014,0.032),
+        a:R(0.35,0.80),h:R(316,346),s:R(72,92),l:R(62,80)}),
+      update(p){p.sw+=p.swV;p.x+=p.vx+Math.sin(p.sw)*.7;p.y+=p.vy;p.rot+=p.rotV;if(p.y>H+20){p.y=R(-100,-10);p.x=R(0,W);}},
+      draw(p){
+        cx.save();cx.translate(p.x,p.y);cx.rotate(p.rot);cx.globalAlpha=p.a;
+        cx.shadowBlur=8;cx.shadowColor=`hsl(${p.h},${p.s}%,${p.l}%)`;
+        cx.fillStyle=`hsl(${p.h},${p.s}%,${p.l}%)`;
+        cx.beginPath();
+        cx.moveTo(0,-p.sz);
+        cx.bezierCurveTo(p.sz*.9,-p.sz*.4, p.sz*.9,p.sz*.4, 0,p.sz);
+        cx.bezierCurveTo(-p.sz*.9,p.sz*.4,-p.sz*.9,-p.sz*.4, 0,-p.sz);
+        cx.fill();cx.restore();
+      }
+    };
+
     function spawnAll() {
       pts = [];
-      for (let i=0; i<SAKURA.count; i++) {
-        const p = SAKURA.spawn();
+      for (let i=0; i<activeCfg.count; i++) {
+        const p = activeCfg.spawn();
         p.y = R(-20, H);
         pts.push(p);
       }
@@ -3544,12 +3617,13 @@
 
     function loop() {
       cx.clearRect(0,0,W,H);
-      if (activeCfg) pts.forEach(p => { SAKURA.update(p); SAKURA.draw(p); });
+      if (activeCfg) pts.forEach(p => { activeCfg.update(p); activeCfg.draw(p); });
       raf = requestAnimationFrame(loop);
     }
 
     window._setThemeParticles = function(id) {
-      activeCfg = id === 'sakura' ? SAKURA : null;
+      const CONFIGS = {sakura:SAKURA, wisteria:WISTERIA, peach:PEACH, moonlit:MOONLIT};
+      activeCfg = CONFIGS[id] || null;
       cx.clearRect(0,0,W,H);
       pts = [];
       if (activeCfg) spawnAll();

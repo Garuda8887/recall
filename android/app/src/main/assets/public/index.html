@@ -49,6 +49,16 @@
       </svg>
     </button>
     <button class="icon-btn" id="darkToggle" title="Toggle dark mode" onclick="toggleDark()"></button>
+    <button class="icon-btn" id="themeToggleBtn" title="Themes" onclick="openSettings()">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="7.5" cy="7.5" r="6" stroke="currentColor" stroke-width="1.4"/>
+        <circle cx="4.5" cy="6" r="1.3" fill="currentColor"/>
+        <circle cx="7.5" cy="4" r="1.3" fill="currentColor"/>
+        <circle cx="10.5" cy="6" r="1.3" fill="currentColor"/>
+        <circle cx="9.5" cy="9.5" r="1.3" fill="currentColor"/>
+        <circle cx="5.5" cy="9.5" r="1.3" fill="currentColor"/>
+      </svg>
+    </button>
     <button class="icon-btn" title="Settings" onclick="openSettings()">
       <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">
         <circle cx="7.5" cy="7.5" r="2"/>
@@ -226,11 +236,16 @@
 <div class="modal-overlay" id="settingsModal" onclick="handleOverlayClick(event,'settingsModal')">
   <div class="modal">
     <div class="modal-header">
-      <h3>Review Intervals</h3>
+      <h3>Settings</h3>
       <button class="modal-close" onclick="closeSettings()">&#215;</button>
     </div>
 
-    <p class="subtitle">Customize when reviews are scheduled after a study session.</p>
+    <p class="subtitle">Appearance and review preferences.</p>
+
+    <div class="theme-section-label">Theme</div>
+    <div class="theme-grid" id="themeGrid"></div>
+
+    <div class="theme-section-label">Review Intervals</div>
     <div class="settings-note">
       ⚠️ Changes only apply to new sessions logged after saving.
     </div>
@@ -328,9 +343,256 @@
   </div>
 </div>
 
+<!-- ── Deck Prompt Modal ── -->
+<div class="modal-overlay" id="deckPromptModal" onclick="handleOverlayClick(event,'deckPromptModal')">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <h3>Session saved ✓</h3>
+      <button class="modal-close" onclick="closeDeckPrompt()">&#215;</button>
+    </div>
+    <p class="subtitle">Add flashcards for active recall during reviews?</p>
+    <p class="deck-prompt-topic" id="deckPromptTopic"></p>
+    <div class="deck-prompt-btns">
+      <button class="btn-save" onclick="openDeckEditorNew()">🃏 Create cards</button>
+      <button class="btn-ghost" onclick="openDeckImportNew()">&#8679; Import text</button>
+      <button class="btn-cancel" onclick="closeDeckPrompt()">Skip</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Deck Editor Modal ── -->
+<div class="modal-overlay" id="deckModal" onclick="handleOverlayClick(event,'deckModal')">
+  <div class="modal wide">
+    <div class="modal-header">
+      <div>
+        <h3 id="deckModalTitle">Create Flashcard Deck</h3>
+        <p class="subtitle" id="deckModalSubtitle" style="margin-bottom:0"></p>
+      </div>
+      <button class="modal-close" onclick="closeDeckModal()">&#215;</button>
+    </div>
+    <div class="deck-tabs">
+      <button class="deck-tab active" id="tabCreate" onclick="switchDeckTab('create')">Create</button>
+      <button class="deck-tab" id="tabImport" onclick="switchDeckTab('import')">Import</button>
+    </div>
+    <div id="deckCreatePane">
+      <div class="deck-name-row">
+        <input type="text" id="deckNameInput" placeholder="Deck name (e.g. Calculus Ch.3)">
+      </div>
+      <div class="card-list" id="cardList"></div>
+      <button class="btn-ghost deck-add-card" onclick="addCardRow()">+ Add card</button>
+    </div>
+    <div id="deckImportPane" style="display:none">
+      <div class="import-file-section">
+        <p class="import-hint" style="margin-bottom:8px">Import from file:</p>
+        <div class="import-file-btns">
+          <label class="btn-ghost import-file-label">
+            &#128230; Anki Package (.apkg)
+            <input type="file" id="apkgFileInput" accept=".apkg" style="display:none" onchange="handleApkgFile(event)">
+          </label>
+          <label class="btn-ghost import-file-label">
+            &#128196; Text / TSV (.txt)
+            <input type="file" id="txtFileInput" accept=".txt,.tsv,.csv" style="display:none" onchange="handleTxtFile(event)">
+          </label>
+        </div>
+        <div id="fileImportStatus" class="file-import-status"></div>
+      </div>
+      <div class="import-divider"><span>— or paste text —</span></div>
+      <p class="import-hint"><code>Question | Answer</code> or tab-separated — one per line</p>
+      <textarea class="import-textarea" id="importTextarea" placeholder="What is osmosis? | Movement of water across a semipermeable membrane&#10;What is mitosis? | Cell division producing two identical daughter cells"></textarea>
+      <button class="btn-ghost" onclick="parseImport()" style="margin-top:8px">Preview cards</button>
+      <div id="importPreview" class="import-preview"></div>
+    </div>
+    <div class="modal-actions" style="margin-top:20px">
+      <span class="deck-card-count" id="deckCardCount"></span>
+      <button class="btn-ghost" id="exportDeckBtn" onclick="exportEditorDeck()" style="display:none">&#8595; Export .txt</button>
+      <button class="btn-cancel" onclick="closeDeckModal()">Cancel</button>
+      <button class="btn-save" id="saveDeckBtn" onclick="saveDeck()">Save Deck</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Flashcard Study Modal ── -->
+<div class="modal-overlay" id="studyModal" onclick="handleOverlayClick(event,'studyModal')">
+  <div class="modal wide study-modal">
+    <div class="modal-header">
+      <div>
+        <h3 id="studyTitle">Flashcards</h3>
+        <p class="subtitle" id="studySubtitle" style="margin-bottom:0"></p>
+      </div>
+      <button class="modal-close" onclick="closeStudyModal()">&#215;</button>
+    </div>
+    <div class="fc-progress-row">
+      <span class="fc-progress" id="fcProgress"></span>
+      <span class="fc-diff-dot" id="fcDiffDot" style="display:none"></span>
+      <button class="fc-mini-btn" id="fcWeakBtn" onclick="toggleWeakFilter()" title="Study only weak cards (avg &lt; 3)">&#9888; Weak</button>
+      <button class="fc-mini-btn" onclick="shuffleDeck()">&#8644; Shuffle</button>
+      <button class="fc-mini-btn" onclick="restartDeck()">&#8635; Restart</button>
+      <button class="fc-mini-btn" onclick="editCurrentDeck()">&#9998; Edit</button>
+      <button class="fc-mini-btn" onclick="exportStudyDeck()">&#8595; Export</button>
+      <button class="fc-mini-btn" onclick="openCardSearch()" title="Search cards (F)">&#128269; Search</button>
+    </div>
+    <div class="fc-wrap" id="fcWrap" onclick="flipCard()">
+      <div class="fc-card" id="fcCard">
+        <div class="fc-face fc-front" id="fcFront"></div>
+        <div class="fc-face fc-back" id="fcBack"></div>
+      </div>
+    </div>
+    <div class="fc-hint" id="fcHint">Click to reveal answer</div>
+    <div class="fc-controls">
+      <button class="btn-ghost" onclick="prevCard()" id="fcPrev">&#8592; Prev</button>
+      <button class="btn-save" onclick="flipCard()" id="fcReveal">Reveal &#8594;</button>
+    </div>
+    <div class="fc-rating" id="fcRating"></div>
+    <div class="study-complete" id="studyComplete">
+      <div class="study-complete-icon">&#10003;</div>
+      <div class="study-complete-label" id="studyCompleteLabel"></div>
+      <div class="study-complete-score" id="studyCompleteScore"></div>
+      <div class="study-complete-breakdown" id="studyCompleteBreakdown"></div>
+      <div class="study-complete-actions">
+        <button class="btn-ghost" onclick="restartFromComplete()">&#8635; Study again</button>
+        <button class="btn-save" onclick="closeStudyModal()">Done</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Card Search Modal ── -->
+<div class="modal-overlay" id="cardSearchModal" onclick="handleOverlayClick(event,'cardSearchModal')">
+  <div class="modal card-search-modal">
+    <div class="modal-header">
+      <h3>Search Cards</h3>
+      <button class="modal-close" onclick="closeCardSearch()">&#215;</button>
+    </div>
+    <input class="card-search-input" id="cardSearchInput" placeholder="Search across all decks…" autocomplete="off" spellcheck="false" oninput="searchCards()">
+    <div class="card-search-results" id="cardSearchResults"></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
+  // ── Themes ───────────────────────────────────────────────
+  const THEMES = [
+    {
+      id: 'default',
+      name: 'Professional',
+      desc: 'Warm minimal',
+      swatches: ['#edeae4','#6366f1','#f59e0b','#1a1917'],
+    },
+    {
+      id: 'pixel',
+      name: 'Pixel Game',
+      desc: '8-bit arcade',
+      swatches: ['#4A90D9','#FEFCE8','#E8220A','#FFD700'],
+    },
+    {
+      id: 'wabi',
+      name: 'Wabi-Sabi',
+      desc: 'Earthy & quiet',
+      swatches: ['#EDE8DF','#7C6347','#C4955A','#2A2118'],
+    },
+    {
+      id: 'brutalist',
+      name: 'Brutalist',
+      desc: 'Raw & unapologetic',
+      swatches: ['#C8C4BC','#000000','#E8000A','#FFFF00'],
+    },
+    {
+      id: 'synthwave',
+      name: 'Synthwave',
+      desc: 'Neon & midnight',
+      swatches: ['#0B0821','#FF0090','#00FFFF','#9B00FF'],
+    },
+    {
+      id: 'terminal',
+      name: 'Terminal',
+      desc: 'Hacker green',
+      swatches: ['#0A0E0A','#00FF41','#FFFF00','#0D120D'],
+    },
+    {
+      id: 'y2k',
+      name: 'Y2K',
+      desc: 'Chrome & gloss',
+      swatches: ['#DDE8F8','#0055FF','#FF6600','#F0F6FF'],
+    },
+    {
+      id: 'sakura',
+      name: 'Sakura',
+      desc: 'Cherry blossom',
+      swatches: ['#FFF5F8','#D4607A','#F0C8D8','#1C0F14'],
+    },
+    {
+      id: 'wisteria',
+      name: 'Wisteria',
+      desc: 'Cascading blooms',
+      swatches: ['#F8F5FF','#8B5CF6','#D8CCF0','#1A1228'],
+    },
+    {
+      id: 'peach',
+      name: 'Peach Blossom',
+      desc: 'Sun-warmed petals',
+      swatches: ['#FFF8F3','#E8704A','#F0CFBA','#1F120A'],
+    },
+    {
+      id: 'moonlit',
+      name: 'Moonlit Sakura',
+      desc: 'Night-blooming',
+      swatches: ['#130A0E','#F472B6','#3D1E30','#FFE8F0'],
+    },
+    {
+      id: 'aurora',
+      name: 'Aurora',
+      desc: 'Northern lights',
+      swatches: ['#050D1A','#00E5A0','#7B5FFF','#0B1928'],
+    },
+    {
+      id: 'noir',
+      name: 'Noir',
+      desc: 'Film detective',
+      swatches: ['#0E0C0B','#D4A84B','#F2E8D4','#1A1714'],
+    },
+    {
+      id: 'candy',
+      name: 'Candy',
+      desc: 'Bubbly & sweet',
+      swatches: ['#F0E8FF','#FF4DA6','#9B5FFF','#3BEBA0'],
+    },
+  ];
+
+  function applyTheme(id) {
+    const el = document.documentElement;
+    // remove all known theme data attrs
+    THEMES.forEach(t => { if (t.id !== 'default') document.body.removeAttribute('data-theme'); });
+    if (id !== 'default') document.body.setAttribute('data-theme', id);
+    localStorage.setItem('recall_theme', id);
+    renderThemeGrid();
+    if (window._setThemeParticles) window._setThemeParticles(id);
+  }
+
+  function renderThemeGrid() {
+    const grid = document.getElementById('themeGrid');
+    if (!grid) return;
+    const current = localStorage.getItem('recall_theme') || 'default';
+    grid.innerHTML = '';
+    THEMES.forEach(t => {
+      const card = document.createElement('div');
+      card.className = 'theme-card' + (current === t.id ? ' active' : '');
+      card.innerHTML =
+        `<div class="theme-swatches">${t.swatches.map(c =>
+          `<div class="theme-swatch" style="background:${c}"></div>`).join('')}</div>` +
+        `<div class="theme-card-name">${t.name}</div>` +
+        `<div class="theme-card-desc">${t.desc}</div>`;
+      card.onclick = () => applyTheme(t.id);
+      grid.appendChild(card);
+    });
+  }
+
+  // init theme on load
+  (function initTheme() {
+    const saved = localStorage.getItem('recall_theme') || 'default';
+    if (saved !== 'default') document.body.setAttribute('data-theme', saved);
+  })();
+
   // ── Constants ────────────────────────────────────────────
   const MONTH_NAMES  = ['January','February','March','April','May','June',
                         'July','August','September','October','November','December'];
@@ -367,7 +629,13 @@
   let searchQuery           = '';
   let editingSessionId      = null; // null = create, string = edit
   let sessions              = [];
+  let decks                 = [];
   let links                 = [];   // all link objects for the user
+  let deckEditorCards       = [];
+  let deckEditorSession     = null;
+  let editingDeckId         = null;
+  let studyState            = null;
+  let importedParsedCards   = [];
   let intervals             = [...DEFAULT_INTERVALS];
   let dragReview            = null; // { sessionId, reviewIndex, fromDate } while dragging
   let linkingSessionId      = null; // session being linked in the link modal
@@ -395,6 +663,27 @@
     { score: 4, emoji: '😊', label: 'Good',    color: '#22c55e', bg: '#f0fdf4' },
     { score: 5, emoji: '🎯', label: 'Perfect', color: '#6366f1', bg: '#eef2ff' },
   ];
+
+  // ── Card score helpers ────────────────────────────────────
+  function getCardAvg(card) {
+    if (!card.scores || !card.scores.length) return null;
+    return card.scores.reduce((a, b) => a + b, 0) / card.scores.length;
+  }
+
+  function cardDifficultyColor(avg) {
+    if (avg === null) return 'var(--tx-3)';
+    if (avg < 2)  return '#ef4444';
+    if (avg < 3)  return '#f97316';
+    if (avg < 4)  return '#eab308';
+    return '#22c55e';
+  }
+
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
 
   // ── Date helpers ─────────────────────────────────────────
   function todayStr() {
@@ -453,6 +742,13 @@
   function authFetch(url, options = {}) {
     // Local mode — route to on-device SQLite, no network needed
     if (localStorage.getItem('recall_mode') === 'local') {
+      // Binary uploads can't go through the local JSON-based API
+      if (url.includes('/parse-apkg')) {
+        return Promise.resolve({
+          ok: false, status: 400,
+          json: () => Promise.resolve({ error: 'Anki .apkg import requires a server connection. You are currently in local-only mode.' })
+        });
+      }
       return LocalAPI.handle(url, options);
     }
     // Server mode — hit the configured (or same-origin) server
@@ -514,6 +810,18 @@
     const res = await authFetch('/api/settings');
     const data = await res.json();
     intervals = data.intervals;
+  }
+
+  async function loadDecks() {
+    try {
+      const res  = await authFetch('/api/decks');
+      const data = await res.json();
+      decks = data.decks || [];
+    } catch { decks = []; }
+  }
+
+  function getDeckForSession(sessionId) {
+    return decks.find(d => d.session_id === sessionId) || null;
   }
 
   // ── Search ───────────────────────────────────────────────
@@ -1248,6 +1556,15 @@
            <div class="due-topic">${session.topic}</div>
            <div class="due-meta">${session.subject ? session.subject + ' · ' : ''}${intervalLabel(intervals[reviewIndex] ?? reviewIndex)} review${overdueLabel}${session.reviewStreak >= 2 ? ` · <span class="streak-badge">🔥 ${session.reviewStreak}</span>` : ''}</div>
          </div>`;
+      const reviewDeck = getDeckForSession(session.id);
+      if (reviewDeck) {
+        const practiceBtn = document.createElement('button');
+        practiceBtn.className = 'practice-btn';
+        practiceBtn.textContent = 'Practice';
+        practiceBtn.title = `Practice flashcards (${reviewDeck.cards.length} cards)`;
+        practiceBtn.onclick = () => openStudyModal(reviewDeck.id);
+        item.appendChild(practiceBtn);
+      }
       const btn = document.createElement('button');
       btn.className = 'due-done-btn';
       btn.textContent = 'Mark done';
@@ -1444,7 +1761,13 @@
       e.style.animationDelay = `${i * 30}ms`;
       const isRecurring = !!ev.session.recurrenceRule;
       if (isRecurring) e.classList.add('recurring');
-      e.textContent = ev.type === 'study' ? ev.session.topic : `↻ ${ev.session.topic}`;
+      const topicLabel = ev.type === 'study' ? ev.session.topic : `↻ ${ev.session.topic}`;
+      if (getDeckForSession(ev.session.id)) {
+        e.classList.add('has-deck');
+        e.innerHTML = `<span class="chip-text">${topicLabel}</span><span class="deck-chip-dot" title="Has flashcards"></span>`;
+      } else {
+        e.textContent = topicLabel;
+      }
 
       // ── Draggable review chips (undone only) ─────────────
       if (ev.type === 'review' && !ev.done) {
@@ -1639,6 +1962,10 @@
         sessions.push(session);
         const recurSuffix = recurrenceRule ? ` · 🔁 ${recurRuleLabel(recurrenceRule)}` : '';
         showToast(`"${topic}" saved — ${intervals.length} reviews scheduled${recurSuffix}`);
+        closeAddModal();
+        renderCalendar();
+        openDeckPrompt(session.id, topic);
+        return;
       }
       closeAddModal();
       renderCalendar();
@@ -1703,6 +2030,15 @@
             badge.textContent = 'Scheduled';
             item.appendChild(badge);
           } else {
+            const reviewDeck = getDeckForSession(ev.session.id);
+            if (reviewDeck) {
+              const practiceBtn = document.createElement('button');
+              practiceBtn.className = 'practice-btn';
+              practiceBtn.textContent = 'Practice';
+              practiceBtn.title = `Practice flashcards (${reviewDeck.cards.length} cards)`;
+              practiceBtn.onclick = e => { e.stopPropagation(); openStudyModal(reviewDeck.id); };
+              item.appendChild(practiceBtn);
+            }
             const btn = document.createElement('button');
             btn.className = 'check-btn';
             btn.textContent = 'Mark done';
@@ -1714,6 +2050,20 @@
         if (ev.type === 'study') {
           // Links section — renders below info, before action buttons
           renderSessionLinks(info, ev.session.id);
+
+          const sessionDeck = getDeckForSession(ev.session.id);
+          const deckBtn = document.createElement('button');
+          deckBtn.className = 'edit-btn';
+          if (sessionDeck) {
+            deckBtn.title = `Study flashcards (${sessionDeck.cards.length} cards)`;
+            deckBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="9" height="7" rx="1"/><rect x="3" y="2" width="9" height="7" rx="1" fill="var(--surface)"/></svg>';
+            deckBtn.onclick = e => { e.stopPropagation(); closeDayModal(); openStudyModal(sessionDeck.id); };
+          } else {
+            deckBtn.title = 'Add flashcards';
+            deckBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="1" y="4" width="9" height="7" rx="1"/><line x1="10" y1="0.5" x2="10" y2="6.5"/><line x1="7" y1="3.5" x2="13" y2="3.5"/></svg>';
+            deckBtn.onclick = e => { e.stopPropagation(); closeDayModal(); openDeckEditorForSession(ev.session.id, ev.session.topic); };
+          }
+          item.appendChild(deckBtn);
 
           const curveBtn = document.createElement('button');
           curveBtn.className = 'edit-btn';
@@ -1783,6 +2133,671 @@
     ));
     renderCalendar();
     showToast(`${items.length} reviews marked complete!`);
+  }
+
+  // ── Flashcard Deck System ────────────────────────────────
+
+  function openDeckPrompt(sessionId, topic) {
+    document.getElementById('deckPromptTopic').textContent = `"${topic}"`;
+    document.getElementById('deckPromptModal')._pendingSession = { id: sessionId, topic };
+    document.getElementById('deckPromptModal').classList.add('active');
+  }
+
+  function closeDeckPrompt() {
+    document.getElementById('deckPromptModal').classList.remove('active');
+  }
+
+  function _pendingDeckSession() {
+    return document.getElementById('deckPromptModal')._pendingSession || null;
+  }
+
+  function openDeckEditorNew() {
+    const pending = _pendingDeckSession();
+    if (!pending) return;
+    closeDeckPrompt();
+    _initDeckEditor(null, pending.id, pending.topic, 'create');
+  }
+
+  function openDeckImportNew() {
+    const pending = _pendingDeckSession();
+    if (!pending) return;
+    closeDeckPrompt();
+    _initDeckEditor(null, pending.id, pending.topic, 'import');
+  }
+
+  function openDeckEditorForSession(sessionId, topic) {
+    _initDeckEditor(null, sessionId, topic, 'create');
+  }
+
+  function _initDeckEditor(deckId, sessionId, topic, tab) {
+    if (deckId) {
+      const deck = decks.find(d => d.id === deckId);
+      if (!deck) return;
+      editingDeckId = deckId;
+      deckEditorSession = { id: deck.session_id, topic: deck.name };
+      deckEditorCards = deck.cards.map(c => ({
+        _tempId: Date.now() + '-' + Math.floor(Math.random() * 9999),
+        id: c.id, front: c.front, back: c.back
+      }));
+      document.getElementById('deckNameInput').value = deck.name;
+      document.getElementById('deckModalTitle').textContent = 'Edit Flashcard Deck';
+      document.getElementById('deckModalSubtitle').textContent = '';
+    } else {
+      editingDeckId = null;
+      deckEditorSession = { id: sessionId, topic };
+      deckEditorCards = [];
+      document.getElementById('deckNameInput').value = topic;
+      document.getElementById('deckModalTitle').textContent = deckId ? 'Edit Flashcard Deck' : 'Create Flashcard Deck';
+      document.getElementById('deckModalSubtitle').textContent = '';
+    }
+    importedParsedCards = [];
+    document.getElementById('importPreview').innerHTML = '';
+    document.getElementById('importTextarea').value = '';
+    document.getElementById('fileImportStatus').textContent = '';
+    document.getElementById('exportDeckBtn').style.display = deckId ? '' : 'none';
+    switchDeckTab(tab || 'create');
+    renderCardList();
+    document.getElementById('deckModal').classList.add('active');
+    if (!deckId && tab !== 'import') {
+      setTimeout(() => { if (!deckEditorCards.length) addCardRow(); }, 150);
+    }
+  }
+
+  function closeDeckModal() {
+    document.getElementById('deckModal').classList.remove('active');
+    editingDeckId = null;
+    deckEditorSession = null;
+    deckEditorCards = [];
+    importedParsedCards = [];
+  }
+
+  function editCurrentDeck() {
+    if (!studyState) return;
+    const deckId = studyState.deckId;
+    closeStudyModal();
+    _initDeckEditor(deckId, null, null, 'create');
+  }
+
+  function switchDeckTab(tab) {
+    const isCreate = tab === 'create';
+    document.getElementById('deckCreatePane').style.display = isCreate ? '' : 'none';
+    document.getElementById('deckImportPane').style.display = isCreate ? 'none' : '';
+    document.getElementById('tabCreate').classList.toggle('active', isCreate);
+    document.getElementById('tabImport').classList.toggle('active', !isCreate);
+  }
+
+  function addCardRow(front = '', back = '') {
+    deckEditorCards.push({
+      _tempId: Date.now() + '-' + Math.floor(Math.random() * 9999),
+      id: crypto.randomUUID(),
+      front, back
+    });
+    renderCardList();
+    const list = document.getElementById('cardList');
+    list.scrollTop = list.scrollHeight;
+    setTimeout(() => {
+      const inputs = document.querySelectorAll('#cardList .card-front');
+      inputs[inputs.length - 1]?.focus();
+    }, 20);
+  }
+
+  function renderCardList() {
+    const list = document.getElementById('cardList');
+    list.innerHTML = '';
+    deckEditorCards.forEach((card, i) => {
+      const row = document.createElement('div');
+      row.className = 'card-row';
+
+      const num = document.createElement('span');
+      num.className = 'card-num';
+      num.textContent = i + 1;
+
+      const frontInput = document.createElement('input');
+      frontInput.className = 'card-front';
+      frontInput.type = 'text';
+      frontInput.placeholder = 'Front — question';
+      frontInput.value = card.front;
+      frontInput.oninput = () => { card.front = frontInput.value; updateDeckCardCount(); };
+
+      const backInput = document.createElement('input');
+      backInput.className = 'card-back';
+      backInput.type = 'text';
+      backInput.placeholder = 'Back — answer';
+      backInput.value = card.back;
+      backInput.oninput = () => { card.back = backInput.value; updateDeckCardCount(); };
+      backInput.onkeydown = e => {
+        if (e.key === 'Tab' && !e.shiftKey && i === deckEditorCards.length - 1) {
+          e.preventDefault();
+          addCardRow();
+        }
+      };
+
+      const del = document.createElement('button');
+      del.className = 'card-del';
+      del.title = 'Remove card';
+      del.textContent = '×';
+      del.onclick = () => {
+        deckEditorCards = deckEditorCards.filter(c => c._tempId !== card._tempId);
+        renderCardList();
+      };
+
+      row.append(num, frontInput, backInput, del);
+      list.appendChild(row);
+    });
+    updateDeckCardCount();
+  }
+
+  function updateDeckCardCount() {
+    const valid = collectDeckCards().length;
+    const el = document.getElementById('deckCardCount');
+    if (el) el.textContent = valid ? `${valid} card${valid !== 1 ? 's' : ''}` : '';
+  }
+
+  function collectDeckCards() {
+    return deckEditorCards
+      .filter(c => c.front.trim() || c.back.trim())
+      .map(c => ({ id: c.id || crypto.randomUUID(), front: c.front.trim(), back: c.back.trim() }));
+  }
+
+  function renderImportPreview() {
+    const preview = document.getElementById('importPreview');
+    preview.innerHTML = '';
+    if (!importedParsedCards.length) {
+      const msg = document.createElement('p');
+      msg.style.cssText = 'font-size:13px;color:var(--tx-3);margin:8px 0';
+      msg.textContent = 'No cards found. Use "Question | Answer" format, one per line.';
+      preview.appendChild(msg);
+      return;
+    }
+    const shown = importedParsedCards.slice(0, 5);
+    const more  = importedParsedCards.length - shown.length;
+
+    const count = document.createElement('p');
+    count.style.cssText = 'font-size:13px;font-weight:500;color:var(--accent);margin:8px 0';
+    count.textContent = `${importedParsedCards.length} card${importedParsedCards.length !== 1 ? 's' : ''} found`;
+
+    const listEl = document.createElement('div');
+    listEl.style.cssText = 'font-size:12px;background:var(--surface-2);border-radius:var(--r-sm);padding:8px;margin-bottom:10px';
+    shown.forEach(c => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;gap:8px;padding:3px 0;border-bottom:1px solid var(--border-soft)';
+      const f = document.createElement('span');
+      f.style.cssText = 'flex:1;font-weight:500;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+      f.textContent = c.front;
+      const sep = document.createElement('span');
+      sep.style.cssText = 'color:var(--tx-3)';
+      sep.textContent = '→';
+      const b = document.createElement('span');
+      b.style.cssText = 'flex:1;color:var(--tx-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+      b.textContent = c.back;
+      row.append(f, sep, b);
+      listEl.appendChild(row);
+    });
+    if (more > 0) {
+      const moreEl = document.createElement('div');
+      moreEl.style.cssText = 'font-size:11px;color:var(--tx-3);padding-top:4px';
+      moreEl.textContent = `+${more} more…`;
+      listEl.appendChild(moreEl);
+    }
+
+    const addBtn = document.createElement('button');
+    addBtn.className = 'btn-save';
+    addBtn.style.width = '100%';
+    addBtn.textContent = `Add ${importedParsedCards.length} card${importedParsedCards.length !== 1 ? 's' : ''} to deck`;
+    addBtn.onclick = addImportedCards;
+
+    preview.append(count, listEl, addBtn);
+  }
+
+  function addImportedCards() {
+    if (!importedParsedCards.length) return;
+    importedParsedCards.forEach(c => {
+      deckEditorCards.push({
+        _tempId: Date.now() + '-' + Math.floor(Math.random() * 9999),
+        id: crypto.randomUUID(),
+        front: c.front, back: c.back
+      });
+    });
+    importedParsedCards = [];
+    switchDeckTab('create');
+    renderCardList();
+    document.getElementById('importTextarea').value = '';
+    document.getElementById('importPreview').innerHTML = '';
+    const list = document.getElementById('cardList');
+    list.scrollTop = list.scrollHeight;
+  }
+
+  // ── File import ──────────────────────────────────────────
+
+  function setFileImportStatus(msg, isError = false) {
+    const el = document.getElementById('fileImportStatus');
+    if (!el) return;
+    el.textContent = msg;
+    el.style.color = isError ? '#ef4444' : 'var(--tx-3)';
+  }
+
+  async function handleApkgFile(event) {
+    const file = event.target.files[0];
+    event.target.value = '';
+    if (!file) return;
+
+    setFileImportStatus(`Uploading "${file.name}"…`);
+    try {
+      const arrayBuf = await file.arrayBuffer();
+      const res  = await authFetch('/api/decks/parse-apkg', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/octet-stream' },
+        body: arrayBuf
+      });
+      const data = await res.json();
+      if (!res.ok) { setFileImportStatus(data.error || 'Failed to parse .apkg', true); return; }
+      importedParsedCards = data.cards;
+      setFileImportStatus(`Parsed "${file.name}" — ${data.cards.length} card${data.cards.length !== 1 ? 's' : ''} found`);
+      renderImportPreview();
+    } catch {
+      setFileImportStatus('Error reading file — check console', true);
+    }
+  }
+
+  async function handleTxtFile(event) {
+    const file = event.target.files[0];
+    event.target.value = '';
+    if (!file) return;
+
+    setFileImportStatus(`Reading "${file.name}"…`);
+    try {
+      const text = await file.text();
+      importedParsedCards = parseCardText(text);
+      setFileImportStatus(`Parsed "${file.name}" — ${importedParsedCards.length} card${importedParsedCards.length !== 1 ? 's' : ''} found`);
+      renderImportPreview();
+    } catch {
+      setFileImportStatus('Error reading file', true);
+    }
+  }
+
+  function parseCardText(text) {
+    const results = [];
+    text.split('\n').forEach(line => {
+      line = line.trim();
+      if (!line || line.startsWith('#')) return;
+      // Tab-separated (Anki export format)
+      const tab = line.indexOf('\t');
+      if (tab >= 0) {
+        const front = line.slice(0, tab).trim();
+        const back  = line.slice(tab + 1).trim();
+        if (front || back) { results.push({ front, back }); return; }
+      }
+      // Pipe-separated
+      const pipe = line.indexOf('|');
+      if (pipe >= 0) {
+        const front = line.slice(0, pipe).trim();
+        const back  = line.slice(pipe + 1).trim();
+        if (front || back) { results.push({ front, back }); return; }
+      }
+      // Comma-separated (simple CSV — no quoted fields)
+      const comma = line.indexOf(',');
+      if (comma >= 0) {
+        const front = line.slice(0, comma).trim();
+        const back  = line.slice(comma + 1).trim();
+        if (front || back) results.push({ front, back });
+      }
+    });
+    return results;
+  }
+
+  function parseImport() {
+    const text = document.getElementById('importTextarea').value;
+    importedParsedCards = parseCardText(text);
+    renderImportPreview();
+  }
+
+  // ── Deck export ──────────────────────────────────────────
+
+  function exportDeck(deckId) {
+    const deck = decks.find(d => d.id === deckId);
+    if (!deck || !deck.cards.length) { showToast('No cards to export'); return; }
+    const tsv  = deck.cards.map(c => `${c.front}\t${c.back}`).join('\n');
+    const blob = new Blob([tsv], { type: 'text/plain;charset=utf-8' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = deck.name.replace(/[^a-z0-9\-_ ]/gi, '_') + '.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast(`Exported "${deck.name}" — ${deck.cards.length} cards (Anki-compatible .txt)`);
+  }
+
+  function exportEditorDeck() {
+    if (editingDeckId) exportDeck(editingDeckId);
+  }
+
+  function exportStudyDeck() {
+    if (studyState) exportDeck(studyState.deckId);
+  }
+
+  async function saveDeck() {
+    const name  = document.getElementById('deckNameInput').value.trim();
+    if (!name) { document.getElementById('deckNameInput').focus(); return; }
+    const cards = collectDeckCards();
+    if (!cards.length) { showToast('Add at least one card'); return; }
+
+    const btn = document.getElementById('saveDeckBtn');
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+
+    try {
+      if (editingDeckId) {
+        await authFetch(`/api/decks/${editingDeckId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, cards })
+        });
+        const d = decks.find(x => x.id === editingDeckId);
+        if (d) { d.name = name; d.cards = cards; }
+        showToast(`Deck updated — ${cards.length} card${cards.length !== 1 ? 's' : ''}`);
+      } else {
+        const id = crypto.randomUUID();
+        await authFetch('/api/decks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, sessionId: deckEditorSession.id, name, cards })
+        });
+        decks.push({ id, session_id: deckEditorSession.id, name, cards, created_at: new Date().toISOString() });
+        showToast(`Deck saved — ${cards.length} card${cards.length !== 1 ? 's' : ''}`);
+      }
+      closeDeckModal();
+    } catch {
+      showToast('Error saving deck — is the server running?');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Save Deck';
+    }
+  }
+
+  // ── Flashcard Study Mode ─────────────────────────────────
+
+  function openStudyModal(deckId, opts = {}) {
+    const deck = decks.find(d => d.id === deckId);
+    if (!deck || !deck.cards.length) { showToast('This deck has no cards yet'); return; }
+    const weakOnly = !!opts.weakOnly;
+    let cards = [...deck.cards];
+    if (weakOnly) {
+      cards = cards.filter(c => { const a = getCardAvg(c); return a === null || a < 3; });
+      if (!cards.length) { showToast('No weak cards yet — great job!'); return; }
+    }
+    studyState = { deckId, cards, idx: 0, flipped: false, seen: new Set(), sessionScores: new Map(), dirty: false, weakOnly };
+    document.getElementById('studyTitle').textContent = deck.name;
+    const label = weakOnly ? `${cards.length} weak card${cards.length !== 1 ? 's' : ''}` : `${deck.cards.length} card${deck.cards.length !== 1 ? 's' : ''}`;
+    document.getElementById('studySubtitle').textContent = label;
+    document.getElementById('studyComplete').style.display = 'none';
+    document.getElementById('fcWrap').style.display = '';
+    document.getElementById('fcHint').style.display = '';
+    document.querySelector('.fc-controls').style.display = '';
+    document.getElementById('fcReveal').style.display = '';
+    document.getElementById('fcRating').style.display = 'none';
+    document.getElementById('studyCompleteBreakdown').innerHTML = '';
+    const weakBtn = document.getElementById('fcWeakBtn');
+    if (weakBtn) weakBtn.classList.toggle('active', weakOnly);
+    document.getElementById('studyModal').classList.add('active');
+    renderStudyCard();
+  }
+
+  function closeStudyModal() {
+    if (studyState && studyState.dirty) saveCardScores();
+    document.getElementById('studyModal').classList.remove('active');
+    document.getElementById('studyComplete').style.display = 'none';
+    document.getElementById('fcWrap').style.display = '';
+    document.getElementById('fcHint').style.display = '';
+    document.querySelector('.fc-controls').style.display = '';
+    document.getElementById('fcReveal').style.display = '';
+    document.getElementById('fcRating').style.display = 'none';
+    const weakBtn = document.getElementById('fcWeakBtn');
+    if (weakBtn) weakBtn.classList.remove('active');
+    studyState = null;
+  }
+
+  function showStudyComplete() {
+    if (!studyState) return;
+    const { cards, seen, sessionScores } = studyState;
+    const ratedCount = sessionScores.size;
+    const total = cards.length;
+    document.getElementById('studyCompleteLabel').textContent = ratedCount === total
+      ? 'All cards reviewed!' : 'Session complete';
+    document.getElementById('studyCompleteScore').textContent =
+      `${ratedCount} of ${total} card${total !== 1 ? 's' : ''} rated`;
+
+    // Breakdown pills
+    if (ratedCount > 0) {
+      const counts = [0,0,0,0,0];
+      sessionScores.forEach(s => counts[s-1]++);
+      document.getElementById('studyCompleteBreakdown').innerHTML =
+        RATINGS.map((r, i) => counts[i]
+          ? `<span class="complete-rating-pill" style="--rc:${r.color};--rbg:${r.bg}">${r.emoji} ${counts[i]}</span>`
+          : ''
+        ).join('');
+    }
+
+    document.getElementById('fcWrap').style.display = 'none';
+    document.getElementById('fcHint').style.display = 'none';
+    document.querySelector('.fc-controls').style.display = 'none';
+    document.getElementById('fcRating').style.display = 'none';
+    document.getElementById('studyComplete').style.display = 'flex';
+    if (studyState.dirty) saveCardScores();
+  }
+
+  function restartFromComplete() {
+    if (!studyState) return;
+    studyState.idx = 0;
+    studyState.flipped = false;
+    studyState.seen = new Set();
+    studyState.sessionScores = new Map();
+    document.getElementById('studyComplete').style.display = 'none';
+    document.getElementById('studyCompleteBreakdown').innerHTML = '';
+    document.getElementById('fcWrap').style.display = '';
+    document.getElementById('fcHint').style.display = '';
+    document.querySelector('.fc-controls').style.display = '';
+    document.getElementById('fcReveal').style.display = '';
+    document.getElementById('fcRating').style.display = 'none';
+    renderStudyCard();
+  }
+
+  function renderStudyCard() {
+    if (!studyState) return;
+    const { cards, idx, flipped } = studyState;
+    const card = cards[idx];
+
+    document.getElementById('fcProgress').textContent = `${idx + 1} / ${cards.length}`;
+    document.getElementById('fcFront').textContent = card.front;
+    document.getElementById('fcBack').textContent = card.back;
+    document.getElementById('fcCard').classList.toggle('flipped', flipped);
+    document.getElementById('fcPrev').disabled = idx === 0;
+
+    // Difficulty dot
+    const avg = getCardAvg(card);
+    const dotEl = document.getElementById('fcDiffDot');
+    if (avg !== null) {
+      dotEl.style.cssText = `background:${cardDifficultyColor(avg)};display:inline-block`;
+      dotEl.title = `Avg score: ${avg.toFixed(1)}`;
+    } else {
+      dotEl.style.display = 'none';
+    }
+
+    const revealBtn = document.getElementById('fcReveal');
+    const ratingEl  = document.getElementById('fcRating');
+    const hintEl    = document.getElementById('fcHint');
+
+    if (flipped) {
+      revealBtn.style.display = 'none';
+      hintEl.textContent = 'How well did you know this? (keys 1–5)';
+      ratingEl.style.display = 'flex';
+      ratingEl.innerHTML = RATINGS.map(r =>
+        `<button class="fc-rating-btn" style="--rc:${r.color};--rbg:${r.bg}" onclick="rateCard(${r.score})" title="${r.label} (${r.score})">
+          <span class="fc-rating-emoji">${r.emoji}</span>
+          <span class="fc-rating-label">${r.label}</span>
+        </button>`
+      ).join('');
+    } else {
+      revealBtn.style.display = '';
+      hintEl.textContent = 'Click card to reveal answer';
+      ratingEl.style.display = 'none';
+      ratingEl.innerHTML = '';
+    }
+  }
+
+  function flipCard() {
+    if (!studyState) return;
+    studyState.flipped = !studyState.flipped;
+    if (studyState.flipped) studyState.seen.add(studyState.idx);
+    renderStudyCard();
+  }
+
+  function nextCard() {
+    if (!studyState) return;
+    if (studyState.idx === studyState.cards.length - 1) {
+      showStudyComplete();
+      return;
+    }
+    studyState.idx++;
+    studyState.flipped = false;
+    renderStudyCard();
+  }
+
+  function prevCard() {
+    if (!studyState || studyState.idx === 0) return;
+    studyState.idx--;
+    studyState.flipped = false;
+    renderStudyCard();
+  }
+
+  function shuffleDeck() {
+    if (!studyState) return;
+    for (let i = studyState.cards.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [studyState.cards[i], studyState.cards[j]] = [studyState.cards[j], studyState.cards[i]];
+    }
+    studyState.idx = 0;
+    studyState.flipped = false;
+    renderStudyCard();
+    showToast('Cards shuffled');
+  }
+
+  function restartDeck() {
+    if (!studyState) return;
+    studyState.idx = 0;
+    studyState.flipped = false;
+    renderStudyCard();
+  }
+
+  // ── Per-card rating ──────────────────────────────────────
+  function rateCard(score) {
+    if (!studyState) return;
+    const { cards, idx } = studyState;
+    const card = cards[idx];
+
+    // studyState.cards is a shallow-copy of deck.cards — same object references,
+    // so mutating card here automatically updates deck.cards too.
+    if (!card.scores) card.scores = [];
+    card.scores.push(score);
+    studyState.seen.add(idx);
+    studyState.sessionScores.set(card.id, score);
+    studyState.dirty = true;
+
+    if (idx === cards.length - 1) {
+      showStudyComplete();
+    } else {
+      studyState.idx++;
+      studyState.flipped = false;
+      renderStudyCard();
+    }
+  }
+
+  async function saveCardScores() {
+    if (!studyState) return;
+    const deck = decks.find(d => d.id === studyState.deckId);
+    if (!deck) return;
+    studyState.dirty = false;
+    try {
+      await authFetch(`/api/decks/${deck.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: deck.name, cards: deck.cards })
+      });
+    } catch { /* scores stay in memory even if save fails */ }
+  }
+
+  function toggleWeakFilter() {
+    if (!studyState) return;
+    const { deckId, weakOnly, dirty } = studyState;
+    if (dirty) saveCardScores();
+    closeStudyModal();
+    openStudyModal(deckId, { weakOnly: !weakOnly });
+  }
+
+  // ── Card Search ──────────────────────────────────────────
+  function openCardSearch() {
+    document.getElementById('cardSearchModal').classList.add('active');
+    const inp = document.getElementById('cardSearchInput');
+    inp.value = '';
+    inp.focus();
+    document.getElementById('cardSearchResults').innerHTML = '';
+  }
+
+  function closeCardSearch() {
+    document.getElementById('cardSearchModal').classList.remove('active');
+  }
+
+  function searchCards() {
+    const q = document.getElementById('cardSearchInput').value.toLowerCase().trim();
+    const el = document.getElementById('cardSearchResults');
+    if (!q) { el.innerHTML = ''; return; }
+
+    const hits = [];
+    decks.forEach(deck => {
+      deck.cards.forEach(card => {
+        if (card.front.toLowerCase().includes(q) || card.back.toLowerCase().includes(q)) {
+          hits.push({ deck, card });
+        }
+      });
+    });
+
+    if (!hits.length) {
+      el.innerHTML = '<div class="card-search-empty">No cards found</div>';
+      return;
+    }
+
+    el.innerHTML = hits.slice(0, 60).map(({ deck, card }) => {
+      const avg = getCardAvg(card);
+      const dc  = cardDifficultyColor(avg);
+      const dotTitle = avg !== null ? `Avg: ${avg.toFixed(1)}` : 'Unrated';
+      return `<div class="card-search-result" onclick="jumpToCard('${deck.id}','${card.id}')">
+        <div class="csr-header">
+          <span class="csr-deck">${escHtml(deck.name)}</span>
+          <span class="csr-dot" style="background:${dc}" title="${dotTitle}"></span>
+        </div>
+        <div class="csr-front">${hlMatch(card.front, q)}</div>
+        <div class="csr-back">${hlMatch(card.back, q)}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function hlMatch(text, q) {
+    const i = text.toLowerCase().indexOf(q);
+    if (i < 0) return escHtml(text);
+    return escHtml(text.slice(0, i))
+      + `<mark>${escHtml(text.slice(i, i + q.length))}</mark>`
+      + escHtml(text.slice(i + q.length));
+  }
+
+  function jumpToCard(deckId, cardId) {
+    closeCardSearch();
+    openStudyModal(deckId);
+    requestAnimationFrame(() => {
+      if (!studyState) return;
+      const idx = studyState.cards.findIndex(c => c.id === cardId);
+      if (idx >= 0) { studyState.idx = idx; studyState.flipped = false; renderStudyCard(); }
+    });
   }
 
   // ── Confidence Rating Modal ──────────────────────────────
@@ -2325,6 +3340,7 @@
 
   // ── Settings Modal ───────────────────────────────────────
   function openSettings() {
+    renderThemeGrid();
     renderIntervalsList(intervals);
     document.getElementById('settingsModal').classList.add('active');
   }
@@ -2376,13 +3392,33 @@
   function handleOverlayClick(e, id) {
     if (e.target === document.getElementById(id)) {
       ({ addModal: closeAddModal, dayModal: closeDayModal,
-         statsModal: closeStats, settingsModal: closeSettings })[id]?.();
+         statsModal: closeStats, settingsModal: closeSettings,
+         cardSearchModal: closeCardSearch })[id]?.();
     }
   }
 
   // ── Keyboard ─────────────────────────────────────────────
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { clearSearch(); closeAddModal(); closeDayModal(); closeStats(); closeSettings(); closeCurveModal(); closeLinkModal(); closeGraphModal(); }
+    if (e.key === 'Escape') {
+      clearSearch(); closeAddModal(); closeDayModal(); closeStats(); closeSettings();
+      closeCurveModal(); closeLinkModal(); closeGraphModal();
+      closeDeckPrompt(); closeDeckModal(); closeStudyModal(); closeCardSearch();
+    }
+    // Study modal keyboard navigation
+    if (studyState) {
+      // 1-5 to rate current card when flipped
+      if (studyState.flipped && !e.metaKey && !e.ctrlKey) {
+        const n = parseInt(e.key);
+        if (n >= 1 && n <= 5) { e.preventDefault(); rateCard(n); return; }
+      }
+      if (e.key === ' ' || (e.key === 'Enter' && document.activeElement.tagName !== 'BUTTON')) {
+        e.preventDefault();
+        if (!studyState.flipped) flipCard();
+        return;
+      }
+      if (e.key === 'ArrowRight') { e.preventDefault(); if (!studyState.flipped) flipCard(); else nextCard(); return; }
+      if (e.key === 'ArrowLeft')  { e.preventDefault(); prevCard(); return; }
+    }
     if (e.key === 'Enter' && document.getElementById('addModal').classList.contains('active'))
       if (document.activeElement.tagName !== 'TEXTAREA') saveStudySession();
     if (!document.querySelector('.modal-overlay.active')) {
@@ -2391,6 +3427,9 @@
       const activeTag = document.activeElement.tagName;
       if ((e.key === 'n' || e.key === 'N') && !['INPUT','TEXTAREA'].includes(activeTag))
         openAddModal();
+      if ((e.key === 'f' || e.key === 'F') && !['INPUT','TEXTAREA'].includes(activeTag)) {
+        e.preventDefault(); openCardSearch(); return;
+      }
       // / or Cmd+K → focus search
       if (e.key === '/' && !['INPUT','TEXTAREA'].includes(activeTag)) {
         e.preventDefault();
@@ -2400,6 +3439,11 @@
         e.preventDefault();
         focusSearch();
       }
+    }
+    // Card search input live search
+    if (document.getElementById('cardSearchModal').classList.contains('active') &&
+        document.activeElement === document.getElementById('cardSearchInput')) {
+      requestAnimationFrame(searchCards);
     }
   });
 
@@ -2461,7 +3505,7 @@
   currentYear  = now.getFullYear();
   currentMonth = now.getMonth();
 
-  Promise.all([loadSessions(), loadSettings()]).then(() => renderCalendar());
+  Promise.all([loadSessions(), loadSettings(), loadDecks()]).then(() => renderCalendar());
 
   // ── Service Worker — unregister all to prevent stale cache ──
   if ('serviceWorker' in navigator) {
@@ -2469,6 +3513,127 @@
       regs.forEach(r => r.unregister());
     });
   }
+
+  // ── Sakura Particle Engine ────────────────────────────────
+  (function() {
+    const cnv = document.createElement('canvas');
+    Object.assign(cnv.style, {
+      position:'fixed', top:'0', left:'0', width:'100%', height:'100%',
+      pointerEvents:'none', zIndex:'1'
+    });
+    document.body.appendChild(cnv);
+    const cx = cnv.getContext('2d');
+
+    let W, H;
+    const resize = () => { W = cnv.width = innerWidth; H = cnv.height = innerHeight; };
+    window.addEventListener('resize', resize);
+    resize();
+
+    const R  = (a,b) => a + Math.random()*(b-a);
+    const Ri = (a,b) => Math.floor(R(a,b));
+    let raf = null, pts = [], activeCfg = null, activeCfgId = null;
+
+    const SAKURA = {
+      count:28,
+      spawn:()=>({x:R(0,W),y:R(-H,-10),vx:R(0.25,0.85),vy:R(0.7,1.7),
+        sz:R(5,12),rot:R(0,Math.PI*2),rotV:R(-0.055,0.055),
+        sw:R(0,Math.PI*2),swV:R(0.016,0.038),
+        a:R(0.4,0.85),h:R(336,356),s:R(55,75),l:R(72,89)}),
+      update(p){p.sw+=p.swV;p.x+=p.vx+Math.sin(p.sw)*.7;p.y+=p.vy;p.rot+=p.rotV;if(p.y>H+20){p.y=R(-100,-10);p.x=R(0,W);}},
+      draw(p){
+        cx.save();cx.translate(p.x,p.y);cx.rotate(p.rot);cx.globalAlpha=p.a;
+        cx.fillStyle=`hsl(${p.h},${p.s}%,${p.l}%)`;
+        cx.beginPath();
+        cx.moveTo(0,-p.sz);
+        cx.bezierCurveTo( p.sz*.9,-p.sz*.4, p.sz*.9, p.sz*.4,0, p.sz);
+        cx.bezierCurveTo(-p.sz*.9, p.sz*.4,-p.sz*.9,-p.sz*.4,0,-p.sz);
+        cx.fill();cx.restore();
+      }
+    };
+
+    const WISTERIA = {
+      count:30,
+      spawn:()=>({x:R(0,W),y:R(-H,-10),vx:R(-0.2,0.6),vy:R(0.5,1.3),
+        sz:R(4,9),rot:R(0,Math.PI*2),rotV:R(-0.035,0.035),
+        sw:R(0,Math.PI*2),swV:R(0.012,0.028),
+        a:R(0.3,0.70),h:R(262,286),s:R(62,80),l:R(78,92)}),
+      update(p){p.sw+=p.swV;p.x+=p.vx+Math.sin(p.sw)*.5;p.y+=p.vy;p.rot+=p.rotV;if(p.y>H+20){p.y=R(-100,-10);p.x=R(0,W);}},
+      draw(p){
+        cx.save();cx.translate(p.x,p.y);cx.rotate(p.rot);cx.globalAlpha=p.a;
+        cx.fillStyle=`hsl(${p.h},${p.s}%,${p.l}%)`;
+        cx.beginPath();
+        cx.moveTo(0,-p.sz*1.1);
+        cx.bezierCurveTo(p.sz*.7,-p.sz*.4, p.sz*.7,p.sz*.7, 0,p.sz*1.1);
+        cx.bezierCurveTo(-p.sz*.7,p.sz*.7,-p.sz*.7,-p.sz*.4, 0,-p.sz*1.1);
+        cx.fill();cx.restore();
+      }
+    };
+
+    const PEACH = {
+      count:26,
+      spawn:()=>({x:R(0,W),y:R(-H,-10),vx:R(0.15,0.80),vy:R(0.6,1.5),
+        sz:R(5,11),rot:R(0,Math.PI*2),rotV:R(-0.045,0.045),
+        sw:R(0,Math.PI*2),swV:R(0.018,0.034),
+        a:R(0.35,0.80),h:R(16,36),s:R(70,88),l:R(78,92)}),
+      update(p){p.sw+=p.swV;p.x+=p.vx+Math.sin(p.sw)*.65;p.y+=p.vy;p.rot+=p.rotV;if(p.y>H+20){p.y=R(-100,-10);p.x=R(0,W);}},
+      draw(p){
+        cx.save();cx.translate(p.x,p.y);cx.rotate(p.rot);cx.globalAlpha=p.a;
+        cx.fillStyle=`hsl(${p.h},${p.s}%,${p.l}%)`;
+        cx.beginPath();
+        cx.moveTo(0,-p.sz);
+        cx.bezierCurveTo(p.sz*1.0,-p.sz*.3, p.sz*1.0,p.sz*.3, 0,p.sz);
+        cx.bezierCurveTo(-p.sz*1.0,p.sz*.3,-p.sz*1.0,-p.sz*.3, 0,-p.sz);
+        cx.fill();cx.restore();
+      }
+    };
+
+    const MOONLIT = {
+      count:24,
+      spawn:()=>({x:R(0,W),y:R(-H,-10),vx:R(0.15,0.65),vy:R(0.55,1.4),
+        sz:R(5,11),rot:R(0,Math.PI*2),rotV:R(-0.040,0.040),
+        sw:R(0,Math.PI*2),swV:R(0.014,0.032),
+        a:R(0.35,0.80),h:R(316,346),s:R(72,92),l:R(62,80)}),
+      update(p){p.sw+=p.swV;p.x+=p.vx+Math.sin(p.sw)*.7;p.y+=p.vy;p.rot+=p.rotV;if(p.y>H+20){p.y=R(-100,-10);p.x=R(0,W);}},
+      draw(p){
+        cx.save();cx.translate(p.x,p.y);cx.rotate(p.rot);cx.globalAlpha=p.a;
+        cx.shadowBlur=8;cx.shadowColor=`hsl(${p.h},${p.s}%,${p.l}%)`;
+        cx.fillStyle=`hsl(${p.h},${p.s}%,${p.l}%)`;
+        cx.beginPath();
+        cx.moveTo(0,-p.sz);
+        cx.bezierCurveTo(p.sz*.9,-p.sz*.4, p.sz*.9,p.sz*.4, 0,p.sz);
+        cx.bezierCurveTo(-p.sz*.9,p.sz*.4,-p.sz*.9,-p.sz*.4, 0,-p.sz);
+        cx.fill();cx.restore();
+      }
+    };
+
+    function spawnAll() {
+      pts = [];
+      for (let i=0; i<activeCfg.count; i++) {
+        const p = activeCfg.spawn();
+        p.y = R(-20, H);
+        pts.push(p);
+      }
+    }
+
+    function loop() {
+      cx.clearRect(0,0,W,H);
+      if (activeCfg) pts.forEach(p => { activeCfg.update(p); activeCfg.draw(p); });
+      raf = requestAnimationFrame(loop);
+    }
+
+    window._setThemeParticles = function(id) {
+      const CONFIGS = {sakura:SAKURA, wisteria:WISTERIA, peach:PEACH, moonlit:MOONLIT};
+      activeCfg = CONFIGS[id] || null;
+      cx.clearRect(0,0,W,H);
+      pts = [];
+      if (activeCfg) spawnAll();
+    };
+
+    // Boot with saved theme
+    window._setThemeParticles(localStorage.getItem('recall_theme') || 'default');
+    loop();
+  })();
+
 </script>
 </body>
 </html>
