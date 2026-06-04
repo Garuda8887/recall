@@ -31,46 +31,20 @@
     </div>
     <span class="search-count" id="searchCount"></span>
     <div class="streak" id="streakBadge"></div>
-    <button class="icon-btn" title="Stats" onclick="openStats()">
-      <svg width="15" height="15" viewBox="0 0 15 15" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-        <rect x="1" y="8" width="3" height="6" rx="1"/>
-        <rect x="6" y="4.5" width="3" height="9.5" rx="1"/>
-        <rect x="11" y="1" width="3" height="13" rx="1"/>
-      </svg>
-    </button>
-    <button class="icon-btn" title="Knowledge graph" onclick="openGraphModal()">
-      <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="7.5" cy="2.5" r="1.5" fill="currentColor" stroke="none"/>
-        <circle cx="2" cy="11.5" r="1.5" fill="currentColor" stroke="none"/>
-        <circle cx="13" cy="11.5" r="1.5" fill="currentColor" stroke="none"/>
-        <line x1="7.5" y1="4" x2="3.2" y2="10.2"/>
-        <line x1="7.5" y1="4" x2="11.8" y2="10.2"/>
-        <line x1="3.7" y1="11.5" x2="11.3" y2="11.5"/>
-      </svg>
-    </button>
     <button class="icon-btn" id="darkToggle" title="Toggle dark mode" onclick="toggleDark()"></button>
-    <button class="icon-btn" id="themeToggleBtn" title="Themes" onclick="openSettings()">
-      <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="7.5" cy="7.5" r="6" stroke="currentColor" stroke-width="1.4"/>
-        <circle cx="4.5" cy="6" r="1.3" fill="currentColor"/>
-        <circle cx="7.5" cy="4" r="1.3" fill="currentColor"/>
-        <circle cx="10.5" cy="6" r="1.3" fill="currentColor"/>
-        <circle cx="9.5" cy="9.5" r="1.3" fill="currentColor"/>
-        <circle cx="5.5" cy="9.5" r="1.3" fill="currentColor"/>
-      </svg>
-    </button>
-    <button class="icon-btn" title="Settings" onclick="openSettings()">
-      <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="7.5" cy="7.5" r="2"/>
-        <path d="M7.5 1.5v1M7.5 12.5v1M1.5 7.5h1M12.5 7.5h1M3.4 3.4l.7.7M10.9 10.9l.7.7M3.4 11.6l.7-.7M10.9 4.1l.7-.7"/>
-      </svg>
-    </button>
     <button class="add-btn" onclick="openAddModal()" title="Log a study session (N)">&#43;<span class="add-btn-text"> Log Study Session</span></button>
     <div class="user-avatar" id="userAvatar" title="" onclick="toggleUserMenu()"></div>
     <div class="user-menu" id="userMenu">
       <div class="user-menu-email" id="userMenuEmail"></div>
       <button class="user-menu-item logout-item" onclick="logout()">Sign out</button>
     </div>
+    <button class="icon-btn" id="menuBtn" title="Menu" onclick="openSidebar()">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">
+        <line x1="2" y1="4" x2="13" y2="4"/>
+        <line x1="2" y1="7.5" x2="13" y2="7.5"/>
+        <line x1="2" y1="11" x2="13" y2="11"/>
+      </svg>
+    </button>
   </div>
 </header>
 
@@ -465,6 +439,56 @@
     </div>
     <input class="card-search-input" id="cardSearchInput" placeholder="Search across all decks…" autocomplete="off" spellcheck="false" oninput="searchCards()">
     <div class="card-search-results" id="cardSearchResults"></div>
+  </div>
+</div>
+
+<!-- ── Sidebar overlay ── -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<!-- ── Right Sidebar ── -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-hd">
+    <span class="sidebar-title">Menu</span>
+    <button class="modal-close" onclick="closeSidebar()">&#215;</button>
+  </div>
+
+  <!-- Exams -->
+  <div class="sidebar-section">
+    <div class="sidebar-section-hd">
+      <span class="sidebar-section-label">🎓 Exams</span>
+      <button class="sidebar-add-exam-btn" id="examAddBtn" onclick="toggleExamForm()">+ Add</button>
+    </div>
+    <div class="exam-form" id="examForm" style="display:none">
+      <input type="text" id="examNameInput" placeholder="Exam name" maxlength="60" oninput="validateExamForm()">
+      <input type="date" id="examDateInput" oninput="validateExamForm()">
+      <select id="examSubjectSelect">
+        <option value="">No subject</option>
+      </select>
+      <div class="exam-form-actions">
+        <button class="btn-save exam-save-btn" id="examSaveBtn" onclick="saveExam()" disabled>Add Exam</button>
+        <button class="btn-cancel exam-cancel-btn" onclick="toggleExamForm()">Cancel</button>
+      </div>
+    </div>
+    <div id="examList"></div>
+  </div>
+
+  <!-- Nav links -->
+  <div class="sidebar-section sidebar-nav-section">
+    <button class="sidebar-nav-btn" onclick="closeSidebar();openStats()">
+      <svg width="14" height="14" viewBox="0 0 15 15" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="8" width="3" height="6" rx="1"/><rect x="6" y="4.5" width="3" height="9.5" rx="1"/><rect x="11" y="1" width="3" height="13" rx="1"/></svg>
+      Stats
+      <span class="sidebar-nav-arrow">›</span>
+    </button>
+    <button class="sidebar-nav-btn" onclick="closeSidebar();openGraphModal()">
+      <svg width="14" height="14" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg"><circle cx="7.5" cy="2.5" r="1.5" fill="currentColor" stroke="none"/><circle cx="2" cy="11.5" r="1.5" fill="currentColor" stroke="none"/><circle cx="13" cy="11.5" r="1.5" fill="currentColor" stroke="none"/><line x1="7.5" y1="4" x2="3.2" y2="10.2"/><line x1="7.5" y1="4" x2="11.8" y2="10.2"/><line x1="3.7" y1="11.5" x2="11.3" y2="11.5"/></svg>
+      Knowledge Graph
+      <span class="sidebar-nav-arrow">›</span>
+    </button>
+    <button class="sidebar-nav-btn" onclick="closeSidebar();openSettings()">
+      <svg width="14" height="14" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg"><circle cx="7.5" cy="7.5" r="2"/><path d="M7.5 1.5v1M7.5 12.5v1M1.5 7.5h1M12.5 7.5h1M3.4 3.4l.7.7M10.9 10.9l.7.7M3.4 11.6l.7-.7M10.9 4.1l.7-.7"/></svg>
+      Settings
+      <span class="sidebar-nav-arrow">›</span>
+    </button>
   </div>
 </div>
 
@@ -2523,7 +2547,11 @@
     if (!deck || !deck.cards.length) { showToast('This deck has no cards yet'); return; }
     const weakOnly = !!opts.weakOnly;
     let cards = [...deck.cards];
-    if (weakOnly) {
+    if (opts.requeueIds && opts.requeueIds.length) {
+      const idSet = new Set(opts.requeueIds);
+      cards = cards.filter(c => idSet.has(c.id));
+      if (!cards.length) { showToast('No cards to re-study'); return; }
+    } else if (weakOnly) {
       cards = cards.filter(c => { const a = getCardAvg(c); return a === null || a < 3; });
       if (!cards.length) { showToast('No weak cards yet — great job!'); return; }
     }
@@ -2545,6 +2573,7 @@
   }
 
   function closeStudyModal() {
+    if (window.speechSynthesis) speechSynthesis.cancel();
     if (studyState && studyState.dirty) saveCardScores();
     document.getElementById('studyModal').classList.remove('active');
     document.getElementById('studyComplete').style.display = 'none';
@@ -2560,7 +2589,7 @@
 
   function showStudyComplete() {
     if (!studyState) return;
-    const { cards, seen, sessionScores } = studyState;
+    const { cards, seen, sessionScores, deckId } = studyState;
     const ratedCount = sessionScores.size;
     const total = cards.length;
     document.getElementById('studyCompleteLabel').textContent = ratedCount === total
@@ -2579,6 +2608,23 @@
         ).join('');
     }
 
+    // Re-queue weak cards button
+    const prevRequeue = document.getElementById('requeueBtn');
+    if (prevRequeue) prevRequeue.remove();
+    const weakIds = [];
+    sessionScores.forEach((score, cardId) => { if (score < 3) weakIds.push(cardId); });
+    if (weakIds.length > 0) {
+      const actions = document.querySelector('#studyComplete .study-complete-actions');
+      const reqBtn = document.createElement('button');
+      reqBtn.id = 'requeueBtn';
+      reqBtn.className = 'btn-ghost requeue-btn';
+      reqBtn.textContent = `↻ Re-study ${weakIds.length} weak card${weakIds.length !== 1 ? 's' : ''}`;
+      const capturedDeckId = deckId;
+      const capturedIds = [...weakIds];
+      reqBtn.onclick = () => { closeStudyModal(); openStudyModal(capturedDeckId, { requeueIds: capturedIds }); };
+      actions.insertBefore(reqBtn, actions.firstChild);
+    }
+
     document.getElementById('fcWrap').style.display = 'none';
     document.getElementById('fcHint').style.display = 'none';
     document.querySelector('.fc-controls').style.display = 'none';
@@ -2589,6 +2635,8 @@
 
   function restartFromComplete() {
     if (!studyState) return;
+    const prevRequeue = document.getElementById('requeueBtn');
+    if (prevRequeue) prevRequeue.remove();
     studyState.idx = 0;
     studyState.flipped = false;
     studyState.seen = new Set();
@@ -2609,8 +2657,22 @@
     const card = cards[idx];
 
     document.getElementById('fcProgress').textContent = `${idx + 1} / ${cards.length}`;
-    document.getElementById('fcFront').textContent = card.front;
-    document.getElementById('fcBack').textContent = card.back;
+
+    // Card faces with TTS buttons
+    const buildFace = (el, text) => {
+      el.textContent = '';
+      el.appendChild(document.createTextNode(text));
+      if (window.speechSynthesis) {
+        const btn = document.createElement('button');
+        btn.className = 'tts-btn';
+        btn.title = 'Read aloud';
+        btn.innerHTML = '🔊';
+        btn.onclick = e => { e.stopPropagation(); speakText(text); };
+        el.appendChild(btn);
+      }
+    };
+    buildFace(document.getElementById('fcFront'), card.front);
+    buildFace(document.getElementById('fcBack'), card.back);
     document.getElementById('fcCard').classList.toggle('flipped', flipped);
     document.getElementById('fcPrev').disabled = idx === 0;
 
@@ -2648,6 +2710,7 @@
 
   function flipCard() {
     if (!studyState) return;
+    if (window.speechSynthesis) speechSynthesis.cancel();
     studyState.flipped = !studyState.flipped;
     if (studyState.flipped) studyState.seen.add(studyState.idx);
     renderStudyCard();
@@ -3403,6 +3466,7 @@
       clearSearch(); closeAddModal(); closeDayModal(); closeStats(); closeSettings();
       closeCurveModal(); closeLinkModal(); closeGraphModal();
       closeDeckPrompt(); closeDeckModal(); closeStudyModal(); closeCardSearch();
+      closeSidebar();
     }
     // Study modal keyboard navigation
     if (studyState) {
@@ -3498,6 +3562,155 @@
     toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
   }
 
+  // ── Sidebar ──────────────────────────────────────────────
+  function openSidebar() {
+    document.getElementById('sidebar').classList.add('open');
+    document.getElementById('sidebarOverlay').classList.add('open');
+    // Populate subject dropdown from live sessions
+    const sel = document.getElementById('examSubjectSelect');
+    const prev = sel.value;
+    sel.innerHTML = '<option value="">No subject</option>';
+    [...new Set(sessions.map(s => s.subject).filter(Boolean))].sort().forEach(subj => {
+      const opt = document.createElement('option');
+      opt.value = subj; opt.textContent = subj;
+      if (subj === prev) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    renderExams();
+  }
+
+  function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebarOverlay').classList.remove('open');
+    // Reset form state
+    document.getElementById('examForm').style.display = 'none';
+    document.getElementById('examAddBtn').textContent = '+ Add';
+  }
+
+  // ── Exams ────────────────────────────────────────────────
+  let exams = [];
+
+  function loadExams() {
+    try { exams = JSON.parse(localStorage.getItem('recall_exams') || '[]'); }
+    catch { exams = []; }
+  }
+
+  function persistExams() {
+    localStorage.setItem('recall_exams', JSON.stringify(exams));
+  }
+
+  function toggleExamForm() {
+    const form   = document.getElementById('examForm');
+    const addBtn = document.getElementById('examAddBtn');
+    const isOpen = form.style.display !== 'none';
+    form.style.display = isOpen ? 'none' : '';
+    addBtn.textContent  = isOpen ? '+ Add' : 'Cancel';
+    if (!isOpen) {
+      document.getElementById('examNameInput').value = '';
+      document.getElementById('examDateInput').value = '';
+      document.getElementById('examSubjectSelect').value = '';
+      document.getElementById('examSaveBtn').disabled = true;
+      setTimeout(() => document.getElementById('examNameInput').focus(), 50);
+    }
+  }
+
+  function validateExamForm() {
+    const name = document.getElementById('examNameInput').value.trim();
+    const date = document.getElementById('examDateInput').value;
+    document.getElementById('examSaveBtn').disabled = !(name && date);
+  }
+
+  function saveExam() {
+    const name    = document.getElementById('examNameInput').value.trim();
+    const date    = document.getElementById('examDateInput').value;
+    const subject = document.getElementById('examSubjectSelect').value || null;
+    if (!name || !date) return;
+    exams.push({ id: crypto.randomUUID(), name, date, subject });
+    exams.sort((a, b) => a.date.localeCompare(b.date));
+    persistExams();
+    toggleExamForm();
+    renderExams();
+  }
+
+  function deleteExam(id) {
+    exams = exams.filter(e => e.id !== id);
+    persistExams();
+    renderExams();
+  }
+
+  function examCountdown(dateStr) {
+    const today = todayStr();
+    const diff  = Math.round((new Date(dateStr + 'T00:00:00') - new Date(today + 'T00:00:00')) / 86400000);
+    if (diff === 0) return { label: 'Today!',    cls: 'exam-today' };
+    if (diff === 1) return { label: 'Tomorrow',  cls: 'exam-soon'  };
+    if (diff  >  1) return { label: `${diff} days`, cls: diff <= 7 ? 'exam-soon' : '' };
+    return { label: `${Math.abs(diff)}d ago`, cls: 'exam-past' };
+  }
+
+  function makeExamCard(exam) {
+    const { label, cls } = examCountdown(exam.date);
+    const col = exam.subject ? getSubjectColor(exam.subject) : null;
+    const card = document.createElement('div');
+    card.className = 'exam-card';
+    const subjHtml = col
+      ? `<span class="exam-subject-badge" style="background:${col.bg};color:${col.text};border-color:${col.border}">${exam.subject}</span>`
+      : '';
+    card.innerHTML =
+      `<div class="exam-card-top">
+         <span class="exam-card-name">${escHtml(exam.name)}</span>
+         <button class="exam-del-btn" title="Delete" onclick="deleteExam('${exam.id}')">×</button>
+       </div>
+       <div class="exam-card-bottom">
+         ${subjHtml}
+         <span class="exam-countdown ${cls}">${label}</span>
+       </div>`;
+    return card;
+  }
+
+  function renderExams() {
+    const list = document.getElementById('examList');
+    if (!list) return;
+    const today    = todayStr();
+    const upcoming = exams.filter(e => e.date >= today);
+    const past     = exams.filter(e => e.date <  today);
+
+    list.innerHTML = '';
+
+    if (!upcoming.length && !past.length) {
+      list.innerHTML = '<div class="exam-empty">No exams added yet</div>';
+      return;
+    }
+
+    upcoming.forEach(e => list.appendChild(makeExamCard(e)));
+
+    if (past.length) {
+      const toggle = document.createElement('div');
+      toggle.className = 'exam-past-toggle';
+      toggle.innerHTML = `Past (${past.length}) ▼`;
+      list.appendChild(toggle);
+      const pastWrap = document.createElement('div');
+      pastWrap.style.display = 'none';
+      past.slice().reverse().forEach(e => {
+        const c = makeExamCard(e);
+        c.classList.add('exam-card-past');
+        pastWrap.appendChild(c);
+      });
+      list.appendChild(pastWrap);
+      toggle.onclick = () => {
+        const open = pastWrap.style.display !== 'none';
+        pastWrap.style.display = open ? 'none' : '';
+        toggle.innerHTML = `Past (${past.length}) ${open ? '▼' : '▲'}`;
+      };
+    }
+  }
+
+  // ── Text-to-speech ───────────────────────────────────────
+  function speakText(text) {
+    if (!window.speechSynthesis) return;
+    speechSynthesis.cancel();
+    speechSynthesis.speak(new SpeechSynthesisUtterance(text));
+  }
+
   // ── Init ──────────────────────────────────────────────────
   initDark();
 
@@ -3505,6 +3718,7 @@
   currentYear  = now.getFullYear();
   currentMonth = now.getMonth();
 
+  loadExams();
   Promise.all([loadSessions(), loadSettings(), loadDecks()]).then(() => renderCalendar());
 
   // ── Service Worker — unregister all to prevent stale cache ──
