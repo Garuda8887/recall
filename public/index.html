@@ -13,6 +13,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Recall">
   <link rel="stylesheet" href="/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@200;300&display=swap" rel="stylesheet">
 </head>
 <body>
 
@@ -274,7 +276,7 @@
       <div id="graphSubjBar" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"></div>
     </div>
     <div class="graph-container" id="graphContainer"></div>
-    <div class="graph-hint">Drag nodes · Scroll to zoom · Click a node to open session · Filter by subject →</div>
+    <div class="graph-hint">Drag to rotate · Hover to explore · Click to open session · Filter by subject →</div>
   </div>
 </div>
 
@@ -695,17 +697,35 @@
   let selectedLinkRelation  = 'related';
 
   // Graph state
-  let graphNodes     = [];
-  let graphEdges     = [];
-  let graphAnimId    = null;
-  let graphDragNode  = null;   // { node, x0, y0, ox, oy }
-  let graphPanState  = null;   // { sx, sy, tx, ty }
-  let graphTransform = { x: 0, y: 0, k: 1 };
-  let graphSubjFocus = null;   // subject being highlighted (null = all)
-  let graphSvgEl     = null;
-  let graphRootEl    = null;
-  let _graphMoveFn   = null;
-  let _graphUpFn     = null;
+  let graphNodes      = [];
+  let graphEdges      = [];
+  let graphAnimId     = null;
+  let graphSubjFocus  = null;
+  // 3D rotation
+  let graphRotX       = 12, graphRotY      = 0;
+  let graphTargetRotX = 12, graphTargetRotY = 0;
+  let graphIsDragging = false;
+  let graphLastMX     = 0,  graphLastMY    = 0;
+  let graphAutoRotate = true;
+  let graphAutoTimer  = null;
+  // Hover
+  let graphHoveredId  = null;
+  // Pulse progress per edge index
+  let graphPulseT     = {};
+  // DOM maps
+  let graphNodeMap    = {};   // nodeId → .graph-nw div
+  let graphVisualMap  = {};   // nodeId → .graph-nv div
+  let graphLabelMap   = {};   // nodeId → .graph-label div
+  // Elements
+  let graphPivotEl    = null; // the preserve-3d pivot div
+  let graphConnCtx    = null; // canvas 2d ctx for connections
+  let graphPartCtx    = null; // canvas 2d ctx for particles
+  let graphLastTs     = 0;
+  // Particle data
+  let graphStars      = [];
+  let graphMotes      = [];
+  let _graphMoveFn    = null;
+  let _graphUpFn      = null;
   let pendingRating      = null; // { sessionId, reviewIdx, dateStr }
 
   const RATINGS = [
