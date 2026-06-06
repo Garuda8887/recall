@@ -1260,7 +1260,7 @@ header {
 .graph-edge-legend { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .graph-leg-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--tx-3); white-space: nowrap; font-weight: 500; }
 .graph-leg-line { width: 18px; height: 2.5px; border-radius: 2px; }
-.graph-container { flex: 1; position: relative; overflow: hidden; background: #f0f4ff; }
+.graph-container { flex: 1; position: relative; overflow: hidden; background: #000007; }
 .graph-hint {
   padding: 7px 22px 10px;
   font-size: 11px;
@@ -1270,6 +1270,119 @@ header {
   background: var(--surface);
   border-top: 1px solid var(--border-soft);
   font-weight: 500;
+}
+
+/* ─── 3D Graph: node wrapper (3D position only) ── */
+.graph-nw {
+  position: absolute;
+  transform-style: preserve-3d;
+}
+
+/* ─── 3D Graph: node visual (glowing orb) ── */
+.graph-nv {
+  position: absolute;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  transition: filter 0.3s;
+}
+
+/* Soft outer halo */
+.graph-nv::before {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  inset: -120%;
+  background: radial-gradient(circle, var(--glow) 0%, transparent 65%);
+  filter: blur(18px);
+  opacity: 0.25;
+  animation: graph-halo var(--period) ease-in-out var(--delay) infinite;
+  pointer-events: none;
+}
+
+/* Inner specular highlight */
+.graph-nv::after {
+  content: '';
+  position: absolute;
+  inset: 14%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 28%, rgba(255,255,255,0.45) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+/* Signal flash when excited */
+.graph-nv-excited {
+  animation: graph-signal 0.6s ease-out forwards !important;
+}
+
+/* ─── Label layer ── */
+.graph-label {
+  position: absolute;
+  text-align: center;
+  pointer-events: none;
+  transition: opacity 0.3s;
+  transform-origin: top center;
+}
+.graph-label-name {
+  font-size: 11px;
+  font-weight: 300;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.82);
+  text-shadow: 0 0 8px rgba(255,255,255,0.28);
+  font-family: 'Exo 2', system-ui, sans-serif;
+}
+.graph-label-sub {
+  font-size: 9px;
+  font-weight: 200;
+  letter-spacing: 1px;
+  color: rgba(255,255,255,0.32);
+  font-family: 'Exo 2', system-ui, sans-serif;
+  margin-top: 2px;
+}
+.graph-label-links {
+  font-size: 8px;
+  font-weight: 200;
+  letter-spacing: 1px;
+  font-family: 'Exo 2', system-ui, sans-serif;
+  margin-top: 1px;
+}
+
+/* ─── Info panel ── */
+#graphPanel {
+  position: absolute;
+  bottom: 20px; right: 20px;
+  width: 210px;
+  background: rgba(6,6,20,0.88);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 10px;
+  padding: 14px 16px;
+  z-index: 5;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.25s, transform 0.25s;
+  pointer-events: none;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+#graphPanel.graph-panel-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ─── Keyframes ── */
+@keyframes graph-breathe {
+  0%, 100% { transform: translate(-50%,-50%) scale(1); }
+  50%       { transform: translate(-50%,-50%) scale(1.12); }
+}
+@keyframes graph-halo {
+  0%, 100% { opacity: 0.20; }
+  50%       { opacity: 0.45; }
+}
+@keyframes graph-signal {
+  0%   { transform: translate(-50%,-50%) scale(1);    filter: brightness(1); }
+  20%  { transform: translate(-50%,-50%) scale(1.38); filter: brightness(2.4); }
+  100% { transform: translate(-50%,-50%) scale(1);    filter: brightness(1); }
 }
 
 /* ─── Responsive ─────────────────────────────────────────── */
