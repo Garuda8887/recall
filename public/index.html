@@ -1038,8 +1038,27 @@
 
   function openGraphModal() {
     document.getElementById('graphModal').classList.add('active');
-    _graphMoveFn = e => onGraphMouseMove(e);
-    _graphUpFn   = e => onGraphMouseUp(e);
+    _graphMoveFn = e => {
+      if (!graphIsDragging) return;
+      const dx = e.clientX - graphLastMX;
+      const dy = e.clientY - graphLastMY;
+      graphTargetRotY += dx * 0.35;
+      graphTargetRotX -= dy * 0.25;
+      graphTargetRotX  = Math.max(-40, Math.min(40, graphTargetRotX));
+      graphLastMX = e.clientX;
+      graphLastMY = e.clientY;
+    };
+    _graphUpFn = () => {
+      if (!graphIsDragging) return;
+      graphIsDragging = false;
+      const container = document.getElementById('graphContainer');
+      if (container) {
+        const scene = container.querySelector('div');
+        if (scene) scene.style.cursor = 'grab';
+      }
+      clearTimeout(graphAutoTimer);
+      graphAutoTimer = setTimeout(() => { graphAutoRotate = true; }, 2200);
+    };
     window.addEventListener('mousemove', _graphMoveFn);
     window.addEventListener('mouseup',   _graphUpFn);
     setTimeout(() => initGraph(null), 60);
@@ -1050,6 +1069,10 @@
     if (graphAnimId) { cancelAnimationFrame(graphAnimId); graphAnimId = null; }
     if (_graphMoveFn) { window.removeEventListener('mousemove', _graphMoveFn); _graphMoveFn = null; }
     if (_graphUpFn)   { window.removeEventListener('mouseup',   _graphUpFn);   _graphUpFn   = null; }
+    graphHoveredId  = null;
+    graphIsDragging = false;
+    graphAutoRotate = true;
+    clearTimeout(graphAutoTimer);
   }
 
   function handleGraphOverlayClick(e) {
@@ -1058,16 +1081,18 @@
 
   function initGraph(subjFocus) {
     if (graphAnimId) { cancelAnimationFrame(graphAnimId); graphAnimId = null; }
-    graphSubjFocus = subjFocus;
-    graphDragNode  = null;
-    graphPanState  = null;
-    graphTransform = { x: 0, y: 0, k: 1 };
+    graphSubjFocus  = subjFocus || null;
+    graphRotX       = 12; graphRotY       = 0;
+    graphTargetRotX = 12; graphTargetRotY = 0;
+    graphAutoRotate = true;
+    graphHoveredId  = null;
+    graphIsDragging = false;
+    graphPulseT     = {};
 
     const container = document.getElementById('graphContainer');
-    const W = container.clientWidth  || 800;
-    const H = container.clientHeight || 500;
+    const W = container.clientWidth  || 900;
+    const H = container.clientHeight || 600;
 
-    // All sessions as nodes (subject focus = dim others, not hide)
     graphNodes = sessions.map((s, i) => {
       const angle = (i / sessions.length) * Math.PI * 2 - Math.PI / 2;
       const r     = Math.min(W, H) * 0.27 + (Math.random() - 0.5) * 50;
@@ -1075,219 +1100,286 @@
         id: s.id, session: s,
         x: W/2 + r * Math.cos(angle),
         y: H/2 + r * Math.sin(angle),
-        vx: 0, vy: 0, degree: 0, pinned: false,
-        el: null, circleEl: null, r: 14,
+        vx: 0, vy: 0, fx: 0, fy: 0,
+        degree: 0, r: 14, z: 0,
       };
     });
 
-    const nodeMap = new Map(graphNodes.map(n => [n.id, n]));
+    const nodeMap2 = new Map(graphNodes.map(n => [n.id, n]));
     graphEdges = links
-      .filter(l => nodeMap.has(l.from_id) && nodeMap.has(l.to_id))
+      .filter(l => nodeMap2.has(l.from_id) && nodeMap2.has(l.to_id))
       .map(l => ({
-        source: nodeMap.get(l.from_id),
-        target: nodeMap.get(l.to_id),
-        relation: l.relation, id: l.id, el: null,
+        source:   nodeMap2.get(l.from_id),
+        target:   nodeMap2.get(l.to_id),
+        relation: l.relation,
+        id:       l.id,
       }));
     graphEdges.forEach(e => { e.source.degree++; e.target.degree++; });
 
-    buildGraphSVG(W, H);
-    renderGraphSubjBar();
-    if (subjFocus) applySubjFocus(subjFocus);
-    runGraphSim();
-  }
-
-  function buildGraphSVG(W, H) {
-    const container = document.getElementById('graphContainer');
-    container.innerHTML = '';
-
-    // Floating tooltip
-    const tip = document.createElement('div');
-    tip.id = 'graphTip';
-    tip.style.cssText = 'position:absolute;background:#1e293b;color:#f1f5f9;padding:7px 11px;border-radius:9px;font-size:12px;pointer-events:none;opacity:0;transition:opacity 0.12s;max-width:190px;z-index:10;line-height:1.6;box-shadow:0 4px 16px rgba(0,0,0,0.3)';
-    container.appendChild(tip);
-
-    graphSvgEl = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    graphSvgEl.style.cssText = 'width:100%;height:100%;display:block;';
-    container.appendChild(graphSvgEl);
-
-    graphRootEl = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    graphSvgEl.appendChild(graphRootEl);
-
-    const edgeG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    const nodeG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    graphRootEl.appendChild(edgeG);
-    graphRootEl.appendChild(nodeG);
-
-    // Draw edges
-    graphEdges.forEach(e => {
-      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      line.setAttribute('stroke', GRAPH_EDGE_COLORS[e.relation] || GRAPH_EDGE_COLORS.related);
-      line.setAttribute('stroke-width', '2');
-      line.setAttribute('stroke-linecap', 'round');
-      line.setAttribute('opacity', '0.75');
-      edgeG.appendChild(line);
-      e.el = line;
+    graphNodes.forEach(n => {
+      n.r = Math.min(32, Math.max(12, 14 + n.degree * 3));
+      const jitter = (Math.random() - 0.5) * 60;
+      n.z = Math.min(120, Math.max(-150, 80 - n.degree * 25 + jitter));
     });
 
-    // Draw nodes
+    graphEdges.forEach((_, i) => { graphPulseT[i] = Math.random(); });
+
+    buildGraph3D(container);
+    initGraphParticles(W, H);
+    renderGraphSubjBar();
+    if (subjFocus) applySubjFocus(subjFocus);
+    startGraphLoop();
+  }
+
+  function buildGraph3D(container) {
+    container.innerHTML = '';
+    const W = container.clientWidth  || 900;
+    const H = container.clientHeight || 600;
+
+    // Particle canvas (z-index 1, below scene)
+    const partCanvas = document.createElement('canvas');
+    partCanvas.width = W; partCanvas.height = H;
+    partCanvas.style.cssText = 'position:absolute;inset:0;z-index:1;pointer-events:none';
+    container.appendChild(partCanvas);
+    graphPartCtx = partCanvas.getContext('2d');
+
+    // 3D scene (perspective container, z-index 2)
+    const scene = document.createElement('div');
+    scene.style.cssText = 'position:absolute;inset:0;z-index:2;perspective:1000px;perspective-origin:50% 48%;overflow:hidden;cursor:grab';
+    container.appendChild(scene);
+
+    // Graph pivot (preserve-3d, rotated by JS each frame)
+    const pivot = document.createElement('div');
+    pivot.style.cssText = 'position:absolute;left:50%;top:50%;transform-style:preserve-3d';
+    scene.appendChild(pivot);
+    graphPivotEl = pivot;
+
+    // Build node wrappers + visuals
+    graphNodeMap   = {};
+    graphVisualMap = {};
     graphNodes.forEach(n => {
-      n.r = 14 + Math.min(n.degree * 3, 10);
-      const col = getSubjectColor(n.session.subject);
+      const size   = n.r * 2;
+      const period = (3.8 + Math.random() * 2.4).toFixed(2) + 's';
+      const delay  = (-Math.random() * 5).toFixed(2) + 's';
+      const col    = getSubjectColor(n.session.subject);
+      const c      = col.border;
 
-      const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-      g.style.cursor = 'grab';
+      const nw = document.createElement('div');
+      nw.className = 'graph-nw';
+      nw.style.transform = `translate3d(${n.x}px,${n.y}px,${n.z}px)`;
+      pivot.appendChild(nw);
+      graphNodeMap[n.id] = nw;
 
-      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      circle.setAttribute('r', n.r);
-      circle.setAttribute('fill', col.bg);
-      circle.setAttribute('stroke', col.border);
-      circle.setAttribute('stroke-width', '2.5');
+      const nv = document.createElement('div');
+      nv.className = 'graph-nv';
+      nv.style.cssText = [
+        `width:${size}px`,
+        `height:${size}px`,
+        `background:radial-gradient(circle at 38% 32%,rgba(255,255,255,0.42) 0%,${c} 35%,rgba(0,0,0,0.5) 100%)`,
+        `box-shadow:0 0 ${n.r}px ${Math.round(n.r*0.6)}px ${c}80,0 0 ${n.r*2.5}px ${n.r}px ${c}38,0 0 ${n.r*5}px ${n.r*2}px ${c}16`,
+        `--glow:${c}`,
+        `--period:${period}`,
+        `--delay:${delay}`,
+        `animation:graph-breathe ${period} ease-in-out ${delay} infinite`,
+      ].join(';');
+      nw.appendChild(nv);
+      graphVisualMap[n.id] = nv;
 
-      const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      label.setAttribute('text-anchor', 'middle');
-      label.setAttribute('dy', n.r + 13);
-      label.setAttribute('font-size', '11');
-      label.setAttribute('font-family', 'system-ui,sans-serif');
-      label.setAttribute('fill', '#475569');
-      label.setAttribute('pointer-events', 'none');
-      label.setAttribute('font-weight', '500');
-      label.textContent = n.session.topic.length > 18 ? n.session.topic.slice(0, 16) + '…' : n.session.topic;
-
-      g.appendChild(circle);
-      g.appendChild(label);
-      nodeG.appendChild(g);
-      n.el = g; n.circleEl = circle;
-
-      // Drag
-      g.addEventListener('mousedown', evt => {
-        evt.stopPropagation();
-        n.pinned = true;
-        g.style.cursor = 'grabbing';
-        graphDragNode = { node: n, x0: evt.clientX, y0: evt.clientY, ox: n.x, oy: n.y };
-      });
-
-      // Hover
-      g.addEventListener('mouseenter', evt => {
-        const tip = document.getElementById('graphTip');
-        const tags = (n.session.tags || []).map(t => `<span style="color:#a78bfa">#${t}</span>`).join(' ');
-        tip.innerHTML = `<strong style="font-size:13px">${n.session.topic}</strong>` +
-          (n.session.subject ? `<br><span style="color:#94a3b8">${n.session.subject}</span>` : '') +
-          (tags ? `<br>${tags}` : '') +
-          `<br><span style="color:#475569;font-size:10px">${n.session.studiedDate}</span>`;
-        tip.style.opacity = '1';
-        // Highlight ring
-        circle.setAttribute('stroke-width', '4');
-        // Dim unconnected
-        const connIds = new Set(graphEdges.filter(e => e.source===n||e.target===n).map(e=>e.id));
-        const connNodes = new Set(graphEdges.flatMap(e => e.source===n||e.target===n ? [e.source.id,e.target.id] : []));
-        graphEdges.forEach(e => { e.el.setAttribute('opacity', connIds.has(e.id) ? '1' : '0.08'); });
-        graphNodes.forEach(nd => { nd.el.style.opacity = nd===n||connNodes.has(nd.id) ? '1' : '0.15'; });
-      });
-      g.addEventListener('mousemove', evt => {
-        const tip = document.getElementById('graphTip');
-        const rect = container.getBoundingClientRect();
-        tip.style.left = (evt.clientX - rect.left + 14) + 'px';
-        tip.style.top  = (evt.clientY - rect.top  + 14) + 'px';
-      });
-      g.addEventListener('mouseleave', () => {
-        document.getElementById('graphTip').style.opacity = '0';
-        circle.setAttribute('stroke-width', '2.5');
-        graphEdges.forEach(e => { e.el.setAttribute('opacity', '0.75'); });
-        graphNodes.forEach(nd => { nd.el.style.opacity = ''; });
-        if (graphSubjFocus) applySubjFocus(graphSubjFocus);
-      });
-
-      // Click to navigate
-      let didDrag = false;
-      g.addEventListener('mousedown', () => { didDrag = false; });
-      g.addEventListener('mousemove', () => { didDrag = true; });
-      g.addEventListener('click', () => {
-        if (didDrag) return;
+      nv.addEventListener('mouseenter', () => onGraphNodeHover(n.id));
+      nv.addEventListener('mouseleave', () => onGraphNodeUnhover());
+      nv.addEventListener('click', () => {
         closeGraphModal();
         setTimeout(() => openDayModal(n.session.studiedDate), 50);
       });
     });
 
-    // Pan (drag on background)
-    graphSvgEl.addEventListener('mousedown', evt => {
-      if (evt.target !== graphSvgEl && evt.target !== graphRootEl) return;
-      graphPanState = { sx: evt.clientX, sy: evt.clientY, tx: graphTransform.x, ty: graphTransform.y };
-      graphSvgEl.style.cursor = 'grabbing';
-    });
+    // Connection canvas (z-index 3, above scene)
+    const connCanvas = document.createElement('canvas');
+    connCanvas.width = W; connCanvas.height = H;
+    connCanvas.style.cssText = 'position:absolute;inset:0;z-index:3;pointer-events:none';
+    container.appendChild(connCanvas);
+    graphConnCtx = connCanvas.getContext('2d');
 
-    // Wheel zoom toward cursor
-    graphSvgEl.addEventListener('wheel', evt => {
-      evt.preventDefault();
-      const factor = evt.deltaY < 0 ? 1.12 : 0.89;
-      const newK   = Math.min(4, Math.max(0.2, graphTransform.k * factor));
-      const rect   = graphSvgEl.getBoundingClientRect();
-      const mx = evt.clientX - rect.left;
-      const my = evt.clientY - rect.top;
-      graphTransform.x = mx - (mx - graphTransform.x) * (newK / graphTransform.k);
-      graphTransform.y = my - (my - graphTransform.y) * (newK / graphTransform.k);
-      graphTransform.k = newK;
-      applyGraphTransform();
-    }, { passive: false });
-  }
-
-  function onGraphMouseMove(evt) {
-    if (graphDragNode) {
-      const n  = graphDragNode.node;
-      const dx = (evt.clientX - graphDragNode.x0) / graphTransform.k;
-      const dy = (evt.clientY - graphDragNode.y0) / graphTransform.k;
-      n.x = graphDragNode.ox + dx;
-      n.y = graphDragNode.oy + dy;
-      n.vx = 0; n.vy = 0;
-      updateGraphPositions();
-      if (!graphAnimId) runGraphSim(); // re-kick physics
-    } else if (graphPanState) {
-      graphTransform.x = graphPanState.tx + (evt.clientX - graphPanState.sx);
-      graphTransform.y = graphPanState.ty + (evt.clientY - graphPanState.sy);
-      applyGraphTransform();
-    }
-  }
-
-  function onGraphMouseUp() {
-    if (graphDragNode) {
-      graphDragNode.node.pinned = false;
-      if (graphDragNode.node.el) graphDragNode.node.el.style.cursor = 'grab';
-      graphDragNode = null;
-      if (!graphAnimId) runGraphSim();
-    }
-    if (graphPanState) {
-      graphPanState = null;
-      if (graphSvgEl) graphSvgEl.style.cursor = 'default';
-    }
-  }
-
-  function applyGraphTransform() {
-    if (graphRootEl) graphRootEl.setAttribute('transform',
-      `translate(${graphTransform.x},${graphTransform.y}) scale(${graphTransform.k})`);
-  }
-
-  function updateGraphPositions() {
-    graphEdges.forEach(e => {
-      e.el.setAttribute('x1', e.source.x); e.el.setAttribute('y1', e.source.y);
-      e.el.setAttribute('x2', e.target.x); e.el.setAttribute('y2', e.target.y);
-    });
+    // Label layer (z-index 4)
+    const labelLayer = document.createElement('div');
+    labelLayer.style.cssText = 'position:absolute;inset:0;z-index:4;pointer-events:none';
+    container.appendChild(labelLayer);
+    graphLabelMap = {};
     graphNodes.forEach(n => {
-      if (n.el) n.el.setAttribute('transform', `translate(${n.x},${n.y})`);
+      const lbl   = document.createElement('div');
+      lbl.className = 'graph-label';
+      const topic = n.session.topic.length > 22 ? n.session.topic.slice(0,20)+'…' : n.session.topic;
+      const col   = getSubjectColor(n.session.subject);
+      lbl.innerHTML =
+        `<div class="graph-label-name">${topic}</div>` +
+        `<div class="graph-label-sub">${n.session.subject || ''}</div>` +
+        `<div class="graph-label-links" style="color:${col.border}88">${n.degree} link${n.degree!==1?'s':''}</div>`;
+      labelLayer.appendChild(lbl);
+      graphLabelMap[n.id] = lbl;
+    });
+
+    // Info panel (z-index 5)
+    const panel = document.createElement('div');
+    panel.id = 'graphPanel';
+    container.appendChild(panel);
+
+    // Drag on the scene div
+    scene.addEventListener('mousedown', e => {
+      if (e.target.classList.contains('graph-nv')) return;
+      graphIsDragging = true;
+      graphLastMX = e.clientX;
+      graphLastMY = e.clientY;
+      graphAutoRotate = false;
+      clearTimeout(graphAutoTimer);
+      scene.style.cursor = 'grabbing';
     });
   }
 
-  function runGraphSim() {
-    let frame = 0;
-    const step = () => {
-      if (!document.getElementById('graphModal').classList.contains('active')) return;
-      const W = (graphSvgEl?.clientWidth  || 800);
-      const H = (graphSvgEl?.clientHeight || 500);
-      const cx = W / 2, cy = H / 2;
+  function initGraphParticles(W, H) {
+    graphStars = Array.from({length: 200}, () => ({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      r: Math.random() * 1.1,
+      a: 0.1 + Math.random() * 0.5,
+      tw:  Math.random() * Math.PI * 2,
+      tws: 0.005 + Math.random() * 0.02,
+    }));
+    const MOTE_COLS = ['#818cf8','#34d399','#fb923c','#f472b6','#2dd4bf'];
+    graphMotes = Array.from({length: 35}, () => ({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      r: 0.8 + Math.random() * 2,
+      vx: (Math.random()-0.5) * 0.22,
+      vy: (Math.random()-0.5) * 0.16,
+      a:  0.04 + Math.random() * 0.12,
+      c:  MOTE_COLS[Math.floor(Math.random()*5)],
+    }));
+  }
+
+  function drawGraphParticles() {
+    if (!graphPartCtx) return;
+    const ctx = graphPartCtx;
+    const W = ctx.canvas.width, H = ctx.canvas.height;
+    ctx.clearRect(0, 0, W, H);
+    graphStars.forEach(s => {
+      s.tw += s.tws;
+      const a = s.a * (0.6 + 0.4 * Math.sin(s.tw));
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(255,255,255,${a.toFixed(3)})`;
+      ctx.fill();
+    });
+    graphMotes.forEach(m => {
+      m.x = ((m.x + m.vx) + W) % W;
+      m.y = ((m.y + m.vy) + H) % H;
+      ctx.beginPath();
+      ctx.arc(m.x, m.y, m.r, 0, Math.PI*2);
+      ctx.fillStyle = m.c + Math.round(m.a*255).toString(16).padStart(2,'0');
+      ctx.fill();
+    });
+  }
+
+  function drawGraphConnections(dt) {
+    if (!graphConnCtx) return;
+    const ctx  = graphConnCtx;
+    const W    = ctx.canvas.width, H = ctx.canvas.height;
+    const cRef = ctx.canvas.getBoundingClientRect();
+    ctx.clearRect(0, 0, W, H);
+    ctx.lineCap = 'round';
+
+    graphEdges.forEach((e, i) => {
+      const avEl = graphVisualMap[e.source.id];
+      const bvEl = graphVisualMap[e.target.id];
+      if (!avEl || !bvEl) return;
+
+      const ar = avEl.getBoundingClientRect();
+      const br = bvEl.getBoundingClientRect();
+      const ax = ar.left + ar.width/2  - cRef.left;
+      const ay = ar.top  + ar.height/2 - cRef.top;
+      const bx = br.left + br.width/2  - cRef.left;
+      const by = br.top  + br.height/2 - cRef.top;
+
+      let op = graphHoveredId
+        ? (graphHoveredId === e.source.id || graphHoveredId === e.target.id ? 1.0 : 0.06)
+        : 0.55;
+
+      if (graphSubjFocus) {
+        const inFocus = e.source.session.subject === graphSubjFocus ||
+                        e.target.session.subject === graphSubjFocus;
+        if (!inFocus) op = Math.min(op, 0.06);
+      }
+
+      const col  = GRAPH_EDGE_COLORS[e.relation] || '#818cf8';
+      const hex2 = v => Math.round(v*255).toString(16).padStart(2,'0');
+
+      ctx.beginPath(); ctx.moveTo(ax,ay); ctx.lineTo(bx,by);
+      ctx.strokeStyle = col + hex2(op*0.18); ctx.lineWidth = 7; ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(ax,ay); ctx.lineTo(bx,by);
+      ctx.strokeStyle = col + hex2(op*0.35); ctx.lineWidth = 3; ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(ax,ay); ctx.lineTo(bx,by);
+      ctx.strokeStyle = col + hex2(op*0.70); ctx.lineWidth = 1; ctx.stroke();
+
+      if (op > 0.1) {
+        const isActive = graphHoveredId === e.source.id || graphHoveredId === e.target.id;
+        graphPulseT[i] = ((graphPulseT[i] || Math.random()) + dt * (isActive ? 0.9 : 0.35)) % 1;
+        const t  = graphPulseT[i];
+        const px = ax + (bx-ax)*t, py = ay + (by-ay)*t;
+        const grad = ctx.createRadialGradient(px, py, 0, px, py, 9);
+        grad.addColorStop(0,   col+'ff');
+        grad.addColorStop(0.4, col+'aa');
+        grad.addColorStop(1,   col+'00');
+        ctx.beginPath(); ctx.arc(px, py, 9, 0, Math.PI*2);
+        ctx.fillStyle = grad; ctx.fill();
+        ctx.beginPath(); ctx.arc(px, py, 2, 0, Math.PI*2);
+        ctx.fillStyle = '#fff'; ctx.fill();
+      }
+    });
+  }
+
+  function updateGraphLabels() {
+    if (!graphConnCtx) return;
+    const cRef = graphConnCtx.canvas.getBoundingClientRect();
+    graphNodes.forEach(n => {
+      const lbl  = graphLabelMap[n.id];
+      const nvEl = graphVisualMap[n.id];
+      if (!lbl || !nvEl) return;
+      const r  = nvEl.getBoundingClientRect();
+      const cx = r.left + r.width/2  - cRef.left;
+      const cy = r.top  + r.height/2 - cRef.top;
+      const apparentR = r.width / 2;
+      const scale = Math.max(0.55, Math.min(1, apparentR / n.r));
+      lbl.style.left      = cx + 'px';
+      lbl.style.top       = (cy + apparentR + 10) + 'px';
+      lbl.style.transform = `translate(-50%,0) scale(${scale.toFixed(3)})`;
+    });
+  }
+
+  function startGraphLoop() {
+    graphLastTs = 0;
+    const container = document.getElementById('graphContainer');
+    const W = graphConnCtx ? graphConnCtx.canvas.width  : 900;
+    const H = graphConnCtx ? graphConnCtx.canvas.height : 600;
+    const cx0 = W / 2, cy0 = H / 2;
+
+    function step(ts) {
+      if (!document.getElementById('graphModal').classList.contains('active')) {
+        graphAnimId = null; return;
+      }
+      const dt = Math.min((ts - (graphLastTs || ts)) / 1000, 0.05);
+      graphLastTs = ts;
+
+      if (graphAutoRotate) graphTargetRotY += 6 * dt;
+      graphRotX += (graphTargetRotX - graphRotX) * 0.08;
+      graphRotY += (graphTargetRotY - graphRotY) * 0.08;
+      if (graphPivotEl) {
+        graphPivotEl.style.transform =
+          `rotateX(${graphRotX.toFixed(3)}deg) rotateY(${graphRotY.toFixed(3)}deg)`;
+      }
 
       graphNodes.forEach(n => { n.fx = 0; n.fy = 0; });
 
-      // Repulsion between all pairs
       for (let i = 0; i < graphNodes.length; i++) {
-        for (let j = i + 1; j < graphNodes.length; j++) {
+        for (let j = i+1; j < graphNodes.length; j++) {
           const a = graphNodes[i], b = graphNodes[j];
           const dx = b.x - a.x, dy = b.y - a.y;
           const d2 = Math.max(64, dx*dx + dy*dy);
@@ -1299,50 +1391,129 @@
         }
       }
 
-      // Spring attraction along edges
       graphEdges.forEach(e => {
         const dx = e.target.x - e.source.x, dy = e.target.y - e.source.y;
         const d  = Math.max(1, Math.sqrt(dx*dx + dy*dy));
         const f  = GRAPH.spring * (d - GRAPH.springLen);
         const fx = f*dx/d, fy = f*dy/d;
-        if (!e.source.pinned) { e.source.fx += fx; e.source.fy += fy; }
-        if (!e.target.pinned) { e.target.fx -= fx; e.target.fy -= fy; }
+        e.source.fx += fx; e.source.fy += fy;
+        e.target.fx -= fx; e.target.fy -= fy;
       });
 
-      // Gravity toward viewport center
       graphNodes.forEach(n => {
-        if (!n.pinned) { n.fx += GRAPH.gravity*(cx-n.x); n.fy += GRAPH.gravity*(cy-n.y); }
+        n.fx += GRAPH.gravity * (cx0 - n.x);
+        n.fy += GRAPH.gravity * (cy0 - n.y);
       });
 
-      // Integrate
-      let energy = 0;
       graphNodes.forEach(n => {
-        if (n.pinned) return;
         n.vx = (n.vx + n.fx) * GRAPH.damping;
         n.vy = (n.vy + n.fy) * GRAPH.damping;
         n.x += n.vx; n.y += n.vy;
-        energy += n.vx*n.vx + n.vy*n.vy;
+        if (graphNodeMap[n.id]) {
+          graphNodeMap[n.id].style.transform =
+            `translate3d(${n.x.toFixed(1)}px,${n.y.toFixed(1)}px,${n.z}px)`;
+        }
       });
 
-      updateGraphPositions();
-      frame++;
+      drawGraphParticles();
+      drawGraphConnections(dt);
+      updateGraphLabels();
 
-      if (energy > 0.04 || frame < 180) {
-        graphAnimId = requestAnimationFrame(step);
-      } else {
-        graphAnimId = null; // settled
-      }
-    };
+      graphAnimId = requestAnimationFrame(step);
+    }
+
     graphAnimId = requestAnimationFrame(step);
   }
 
-  function applySubjFocus(subj) {
-    graphNodes.forEach(n => {
-      n.el.style.opacity = (!subj || n.session.subject === subj) ? '1' : '0.12';
-    });
+  function onGraphNodeHover(id) {
+    graphHoveredId = id;
+    graphAutoRotate = false;
+    clearTimeout(graphAutoTimer);
+
+    const vis = graphVisualMap[id];
+    if (vis) {
+      vis.classList.remove('graph-nv-excited');
+      void vis.offsetWidth;
+      vis.classList.add('graph-nv-excited');
+    }
+
+    const connectedIds = new Set();
     graphEdges.forEach(e => {
-      const active = !subj || e.source.session.subject === subj || e.target.session.subject === subj;
-      e.el.setAttribute('opacity', active ? '0.75' : '0.06');
+      if (e.source.id === id) connectedIds.add(e.target.id);
+      if (e.target.id === id) connectedIds.add(e.source.id);
+    });
+
+    let i = 0;
+    connectedIds.forEach(lid => {
+      setTimeout(() => {
+        const lv = graphVisualMap[lid];
+        if (!lv) return;
+        lv.classList.remove('graph-nv-excited');
+        void lv.offsetWidth;
+        lv.classList.add('graph-nv-excited');
+      }, 200 + (i++) * 120);
+    });
+
+    const visibleIds = new Set([id, ...connectedIds]);
+    graphNodes.forEach(n => {
+      const nv  = graphVisualMap[n.id];
+      const lbl = graphLabelMap[n.id];
+      const dim = !visibleIds.has(n.id);
+      if (nv)  nv.style.filter   = dim ? 'brightness(0.15) saturate(0.3)' : '';
+      if (lbl) lbl.style.opacity  = dim ? '0.08' : '1';
+    });
+
+    openGraphPanel(id);
+  }
+
+  function onGraphNodeUnhover() {
+    graphHoveredId = null;
+    graphNodes.forEach(n => {
+      const nv  = graphVisualMap[n.id];
+      const lbl = graphLabelMap[n.id];
+      if (nv)  nv.style.filter  = '';
+      if (lbl) lbl.style.opacity = '';
+    });
+    const panel = document.getElementById('graphPanel');
+    if (panel) panel.className = '';
+    clearTimeout(graphAutoTimer);
+    graphAutoTimer = setTimeout(() => { graphAutoRotate = true; }, 1200);
+  }
+
+  function openGraphPanel(id) {
+    const node  = graphNodes.find(n => n.id === id);
+    const panel = document.getElementById('graphPanel');
+    if (!panel || !node) return;
+    const col   = getSubjectColor(node.session.subject);
+    const conns = graphEdges
+      .filter(e => e.source.id === id || e.target.id === id)
+      .map(e => {
+        const otherId = e.source.id === id ? e.target.id : e.source.id;
+        return graphNodes.find(n => n.id === otherId);
+      })
+      .filter(Boolean);
+    panel.innerHTML =
+      `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">` +
+        `<span style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:${col.border};box-shadow:0 0 6px ${col.border}"></span>` +
+        `<span style="font-size:13px;font-weight:600;color:#f0f0ff;letter-spacing:0.5px">${node.session.topic}</span>` +
+      `</div>` +
+      `<div style="font-size:10px;color:rgba(255,255,255,0.36);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">${node.session.subject || 'Untagged'}</div>` +
+      `<div style="height:1px;background:rgba(255,255,255,0.06);margin-bottom:10px"></div>` +
+      `<div style="font-size:10px;color:rgba(255,255,255,0.44);margin-bottom:6px">Connections: <span style="color:rgba(255,255,255,0.82)">${node.degree}</span></div>` +
+      conns.map(cn =>
+        `<div style="font-size:9px;color:rgba(255,255,255,0.28);padding:2px 0;letter-spacing:0.5px">→ ${cn.session.topic}</div>`
+      ).join('');
+    panel.className = 'graph-panel-visible';
+  }
+
+  function applySubjFocus(subj) {
+    graphSubjFocus = subj || null;
+    graphNodes.forEach(n => {
+      const nv  = graphVisualMap[n.id];
+      const lbl = graphLabelMap[n.id];
+      const dim = subj && n.session.subject !== subj;
+      if (nv)  nv.style.filter   = dim ? 'brightness(0.12) saturate(0.2)' : '';
+      if (lbl) lbl.style.opacity  = dim ? '0.06' : '';
     });
   }
 
