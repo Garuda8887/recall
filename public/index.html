@@ -388,6 +388,7 @@
     <div class="modal-actions" style="margin-top:20px">
       <span class="deck-card-count" id="deckCardCount"></span>
       <button class="btn-ghost" id="exportDeckBtn" onclick="exportEditorDeck()" style="display:none">&#8595; Export .tsv</button>
+      <button class="btn-ghost" id="deleteDeckBtn" onclick="deleteDeck()" style="display:none;color:var(--danger,#e05)">&#128465; Delete deck</button>
       <button class="btn-cancel" onclick="closeDeckModal()">Cancel</button>
       <button class="btn-save" id="saveDeckBtn" onclick="saveDeck()">Save Deck</button>
     </div>
@@ -2445,6 +2446,7 @@
     document.getElementById('importTextarea').value = '';
     document.getElementById('fileImportStatus').textContent = '';
     document.getElementById('exportDeckBtn').style.display = deckId ? '' : 'none';
+    document.getElementById('deleteDeckBtn').style.display = deckId ? '' : 'none';
     switchDeckTab(tab || 'create');
     renderCardList();
     document.getElementById('deckModal').classList.add('active');
@@ -2786,6 +2788,20 @@
 
   function exportStudyDeck() {
     if (studyState) exportDeck(studyState.deckId);
+  }
+
+  async function deleteDeck() {
+    if (!editingDeckId) return;
+    const deck = decks.find(d => d.id === editingDeckId);
+    if (!confirm(`Delete "${deck?.name ?? 'this deck'}"? This cannot be undone.`)) return;
+    try {
+      await authFetch(`/api/decks/${editingDeckId}`, { method: 'DELETE' });
+      decks = decks.filter(d => d.id !== editingDeckId);
+      closeDeckModal();
+      showToast('Deck deleted');
+    } catch {
+      showToast('Error deleting deck');
+    }
   }
 
   async function saveDeck() {
