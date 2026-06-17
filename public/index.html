@@ -387,7 +387,7 @@
     </div>
     <div class="modal-actions" style="margin-top:20px">
       <span class="deck-card-count" id="deckCardCount"></span>
-      <button class="btn-ghost" id="exportDeckBtn" onclick="exportEditorDeck()" style="display:none">&#8595; Export .txt</button>
+      <button class="btn-ghost" id="exportDeckBtn" onclick="exportEditorDeck()" style="display:none">&#8595; Export .tsv</button>
       <button class="btn-cancel" onclick="closeDeckModal()">Cancel</button>
       <button class="btn-save" id="saveDeckBtn" onclick="saveDeck()">Save Deck</button>
     </div>
@@ -2768,16 +2768,16 @@
     const deck = decks.find(d => d.id === deckId);
     if (!deck || !deck.cards.length) { showToast('No cards to export'); return; }
     const tsv  = deck.cards.map(c => `${c.front}\t${c.back}`).join('\n');
-    const blob = new Blob([tsv], { type: 'text/plain;charset=utf-8' });
+    const blob = new Blob([tsv], { type: 'text/tab-separated-values;charset=utf-8' });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     a.href     = url;
-    a.download = deck.name.replace(/[^a-z0-9\-_ ]/gi, '_') + '.txt';
+    a.download = deck.name.replace(/[^a-z0-9\-_ ]/gi, '_') + '.tsv';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    showToast(`Exported "${deck.name}" — ${deck.cards.length} cards (Anki-compatible .txt)`);
+    showToast(`Exported "${deck.name}" — ${deck.cards.length} cards (.tsv, Anki-compatible)`);
   }
 
   function exportEditorDeck() {
