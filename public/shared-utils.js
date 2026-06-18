@@ -30,7 +30,29 @@ const SharedUtils = (() => {
     return null;
   }
 
-  return { addDays, todayUTC, computeSM2, nextRecurDate };
+  function toResponse(s) {
+    return {
+      id:             s.id,
+      topic:          s.topic,
+      studiedDate:    s.studied_date,
+      notes:          s.notes          || '',
+      subject:        s.subject        || '',
+      tags:           Array.isArray(s.tags) ? s.tags : [],
+      reviews:        Array.isArray(s.reviews) ? s.reviews : [],
+      easeFactor:     s.ease_factor    ?? 2.5,
+      reviewStreak:   s.review_streak  ?? 0,
+      recurrenceRule: s.recurrence_rule || null,
+      recurrenceId:   s.recurrence_id  || null,
+    };
+  }
+
+  function sanitizeCards(cards, uuidFn) {
+    return cards
+      .map(c => ({ id: c.id || uuidFn(), front: String(c.front || '').trim(), back: String(c.back || '').trim() }))
+      .filter(c => c.front || c.back);
+  }
+
+  return { addDays, todayUTC, computeSM2, nextRecurDate, toResponse, sanitizeCards };
 })();
 
 if (typeof module !== 'undefined') module.exports = SharedUtils;

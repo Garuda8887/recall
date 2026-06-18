@@ -9,7 +9,8 @@
  */
 
 const LocalAPI = (() => {
-  const { addDays, todayUTC, computeSM2, nextRecurDate } = SharedUtils;
+  const { addDays, todayUTC, computeSM2, nextRecurDate, toResponse, sanitizeCards } = SharedUtils;
+  const _uuid = () => crypto.randomUUID();
 
   // ── IndexedDB ──────────────────────────────────────────────────────────────
 
@@ -86,23 +87,6 @@ const LocalAPI = (() => {
     return ivs.map(days => ({ date: addDays(studiedDate, days), done: false }));
   }
 
-  // Convert stored session to the camelCase shape index.html expects
-  function toResponse(s) {
-    return {
-      id:             s.id,
-      topic:          s.topic,
-      studiedDate:    s.studied_date,
-      notes:          s.notes          || '',
-      subject:        s.subject        || '',
-      tags:           Array.isArray(s.tags) ? s.tags : [],
-      reviews:        Array.isArray(s.reviews) ? s.reviews : [],
-      easeFactor:     s.ease_factor    ?? 2.5,
-      reviewStreak:   s.review_streak  ?? 0,
-      recurrenceRule: s.recurrence_rule || null,
-      recurrenceId:   s.recurrence_id  || null,
-    };
-  }
-
   // ── Recurrences ────────────────────────────────────────────────────────────
 
   async function createRecurrences() {
@@ -118,14 +102,13 @@ const LocalAPI = (() => {
       if (!latest[rid] || s.studied_date > latest[rid].studied_date) latest[rid] = s;
     }
 
+    const existingKeys = new Set(sessions.map(x => `${x.recurrence_id}:${x.studied_date}`));
     let created = 0;
     for (const s of Object.values(latest)) {
       let nextDate = nextRecurDate(s.studied_date, s.recurrence_rule);
       let count = 0;
       while (nextDate && nextDate <= today && count < 14) {
-        const exists = sessions.some(
-          x => x.recurrence_id === s.recurrence_id && x.studied_date === nextDate
-        );
+        const exists = existingKeys.has(`${s.recurrence_id}:${nextDate}`);
         if (!exists) {
           const reviews = await buildReviews(nextDate);
           await dbPut('sessions', {
@@ -345,9 +328,7 @@ const LocalAPI = (() => {
         const { id, sessionId, name, cards } = body;
         if (!id || !sessionId || !name || !Array.isArray(cards))
           return resp({ error: 'Missing required fields' }, 400);
-        const sanitized = cards
-          .map(c => ({ id: c.id || crypto.randomUUID(), front: String(c.front || '').trim(), back: String(c.back || '').trim() }))
-          .filter(c => c.front || c.back);
+        const sanitized = sanitizeCards(cards, _uuid);
         await dbPut('decks', { id, session_id: sessionId, name, cards: sanitized, created_at: new Date().toISOString() });
         return resp({ ok: true });
       }
@@ -359,9 +340,7 @@ const LocalAPI = (() => {
         if (!d) return resp({ error: 'Not found' }, 404);
         const { name, cards } = body;
         if (!name || !Array.isArray(cards)) return resp({ error: 'name and cards required' }, 400);
-        const sanitized = cards
-          .map(c => ({ id: c.id || crypto.randomUUID(), front: String(c.front || '').trim(), back: String(c.back || '').trim() }))
-          .filter(c => c.front || c.back);
+        const sanitized = sanitizeCards(cards, _uuid);
         await dbPut('decks', { ...d, name, cards: sanitized });
         return resp({ ok: true });
       }

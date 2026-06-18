@@ -1,4 +1,4 @@
-const express = require('express');
+const express  = require('express');
 const Database = require('better-sqlite3');
 const bcrypt   = require('bcrypt');
 const jwt      = require('jsonwebtoken');
@@ -6,7 +6,8 @@ const path     = require('path');
 const crypto   = require('crypto');
 const os       = require('os');
 const fs       = require('fs');
-const { computeSM2, addDays, todayUTC, nextRecurDate } = require('./public/shared-utils');
+const AdmZip   = require('adm-zip');
+const { computeSM2, addDays, todayUTC, nextRecurDate, toResponse, sanitizeCards } = require('./public/shared-utils');
 
 const app  = express();
 const db   = new Database(path.join(__dirname, 'recall.db'));
@@ -254,18 +255,11 @@ app.get('/api/sessions', requireAuth, (req, res) => {
   ).all(req.user.id);
 
   res.json({
-    sessions: rows.map(r => ({
-      id:              r.id,
-      topic:           r.topic,
-      studiedDate:     r.studied_date,
-      notes:           r.notes,
-      subject:         r.subject || '',
+    sessions: rows.map(r => toResponse({
+      ...r,
       tags:            r.tags ? JSON.parse(r.tags) : [],
       reviews:         JSON.parse(r.reviews),
-      easeFactor:      r.ease_factor   ?? 2.5,
-      reviewStreak:    r.review_streak ?? 0,
-      recurrenceRule:  r.recurrence_rule ? JSON.parse(r.recurrence_rule) : null,
-      recurrenceId:    r.recurrence_id  || null,
+      recurrence_rule: r.recurrence_rule ? JSON.parse(r.recurrence_rule) : null,
     })),
     newRecurrences
   });
@@ -438,9 +432,7 @@ app.post('/api/decks', requireAuth, (req, res) => {
   if (!id || !sessionId || !name || !Array.isArray(cards)) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
-  const sanitized = cards
-    .map(c => ({ id: c.id || crypto.randomUUID(), front: String(c.front || '').trim(), back: String(c.back || '').trim() }))
-    .filter(c => c.front || c.back);
+  const sanitized = sanitizeCards(cards, () => crypto.randomUUID());
   db.prepare('INSERT INTO decks (id, user_id, session_id, name, cards, created_at) VALUES (?, ?, ?, ?, ?, ?)')
     .run(id, req.user.id, sessionId, name, JSON.stringify(sanitized), new Date().toISOString());
   res.json({ ok: true });
@@ -449,9 +441,7 @@ app.post('/api/decks', requireAuth, (req, res) => {
 app.put('/api/decks/:id', requireAuth, (req, res) => {
   const { name, cards } = req.body;
   if (!name || !Array.isArray(cards)) return res.status(400).json({ error: 'name and cards required' });
-  const sanitized = cards
-    .map(c => ({ id: c.id || crypto.randomUUID(), front: String(c.front || '').trim(), back: String(c.back || '').trim() }))
-    .filter(c => c.front || c.back);
+  const sanitized = sanitizeCards(cards, () => crypto.randomUUID());
   const result = db.prepare('UPDATE decks SET name = ?, cards = ? WHERE id = ? AND user_id = ?')
     .run(name, JSON.stringify(sanitized), req.params.id, req.user.id);
   if (result.changes === 0) return res.status(404).json({ error: 'Not found' });
@@ -472,8 +462,7 @@ app.post('/api/decks/parse-apkg', requireAuth,
     }
     const tmpPath = path.join(os.tmpdir(), `recall-anki-${Date.now()}-${Math.random().toString(36).slice(2)}.db`);
     try {
-      const AdmZip = require('adm-zip');
-      const zip    = new AdmZip(req.body);
+      const zip = new AdmZip(req.body);
       const entry  = zip.getEntry('collection.anki21') || zip.getEntry('collection.anki2');
       if (!entry) return res.status(400).json({ error: 'Not a valid .apkg file — no collection database found' });
 
