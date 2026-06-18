@@ -6,6 +6,7 @@ const path     = require('path');
 const crypto   = require('crypto');
 const os       = require('os');
 const fs       = require('fs');
+const { computeSM2, addDays, todayUTC, nextRecurDate } = require('./public/shared-utils');
 
 const app  = express();
 const db   = new Database(path.join(__dirname, 'recall.db'));
@@ -88,13 +89,7 @@ app.use((req, res, next) => {
 });
 
 // index.html must never be served from browser or proxy cache — always fresh
-app.get('/', (req, res) => {
-  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-  res.setHeader('Pragma', 'no-cache');
-  res.setHeader('Expires', '0');
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-app.get('/index.html', (req, res) => {
+app.get(['/', '/index.html'], (req, res) => {
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.setHeader('Pragma', 'no-cache');
   res.setHeader('Expires', '0');
@@ -118,43 +113,7 @@ function requireAuth(req, res, next) {
   }
 }
 
-// ── SM-2 helper ───────────────────────────────────────────────────────────────
-// quality: 1–5 (1-2 = fail, 3-5 = pass)
-function computeSM2(quality, easeFactor, intervalDays) {
-  if (quality < 3) {
-    return { nextInterval: 1, easeFactor: Math.max(1.3, easeFactor - 0.2), pass: false };
-  }
-  const q     = quality;
-  const newEF = Math.max(1.3, easeFactor + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02)));
-  return { nextInterval: Math.max(1, Math.round(intervalDays * newEF)), easeFactor: newEF, pass: true };
-}
-
-// UTC-safe date arithmetic — avoids local-midnight timezone rollover
-function addDays(dateStr, days) {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
-}
-
-function todayUTC() {
-  return new Date().toISOString().slice(0, 10);
-}
-
 // ── Recurrence helpers ────────────────────────────────────────────────────────
-
-// Compute the next occurrence date after lastDateStr given a recurrence rule JSON
-function nextRecurDate(lastDateStr, ruleJson) {
-  const rule = typeof ruleJson === 'string' ? JSON.parse(ruleJson) : ruleJson;
-  if (rule.type === 'interval') {
-    return addDays(lastDateStr, rule.days);
-  }
-  if (rule.type === 'weekly') {
-    const [y, m, d] = lastDateStr.split('-').map(Number);
-    const cur = new Date(Date.UTC(y, m - 1, d + 1)); // start from day after
-    while (cur.getUTCDay() !== rule.weekday) cur.setUTCDate(cur.getUTCDate() + 1);
-    return cur.toISOString().slice(0, 10);
-  }
-  return null;
-}
 
 // Build a reviews array from a studied date using the user's custom intervals
 function buildReviewsForDate(studiedDate, userId) {

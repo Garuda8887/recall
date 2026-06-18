@@ -9,6 +9,7 @@
  */
 
 const LocalAPI = (() => {
+  const { addDays, todayUTC, computeSM2, nextRecurDate } = SharedUtils;
 
   // ── IndexedDB ──────────────────────────────────────────────────────────────
 
@@ -75,46 +76,6 @@ const LocalAPI = (() => {
 
   // ── Utilities ──────────────────────────────────────────────────────────────
 
-  function uuid() {
-    return crypto?.randomUUID?.() ||
-      'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
-        const r = Math.random() * 16 | 0;
-        return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
-      });
-  }
-
-  function addDays(dateStr, days) {
-    const [y, m, d] = dateStr.split('-').map(Number);
-    return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
-  }
-
-  function todayUTC() {
-    return new Date().toISOString().slice(0, 10);
-  }
-
-  function computeSM2(quality, easeFactor, intervalDays) {
-    if (quality < 3) {
-      return { nextInterval: 1, easeFactor: Math.max(1.3, easeFactor - 0.2), pass: false };
-    }
-    const newEF = Math.max(1.3,
-      easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02))
-    );
-    return { nextInterval: Math.max(1, Math.round(intervalDays * newEF)), easeFactor: newEF, pass: true };
-  }
-
-  function nextRecurDate(lastDateStr, rule) {
-    if (typeof rule === 'string') rule = JSON.parse(rule);
-    if (!rule) return null;
-    if (rule.type === 'interval') return addDays(lastDateStr, rule.days);
-    if (rule.type === 'weekly') {
-      const [y, m, d] = lastDateStr.split('-').map(Number);
-      const cur = new Date(Date.UTC(y, m - 1, d + 1));
-      while (cur.getUTCDay() !== rule.weekday) cur.setUTCDate(cur.getUTCDate() + 1);
-      return cur.toISOString().slice(0, 10);
-    }
-    return null;
-  }
-
   async function getIntervals() {
     const row = await dbGet('settings', 'local:intervals');
     return row ? row.value : [1, 3, 7, 14, 30];
@@ -168,7 +129,7 @@ const LocalAPI = (() => {
         if (!exists) {
           const reviews = await buildReviews(nextDate);
           await dbPut('sessions', {
-            id:              uuid(),
+            id:              crypto.randomUUID(),
             topic:           s.topic,
             subject:         s.subject         || '',
             notes:           s.notes           || '',
@@ -250,7 +211,7 @@ const LocalAPI = (() => {
           ease_factor:     2.5,
           review_streak:   0,
           recurrence_rule: recurrenceRule || null,
-          recurrence_id:   recurrenceRule ? (recurrenceId || uuid()) : null,
+          recurrence_id:   recurrenceRule ? (recurrenceId || crypto.randomUUID()) : null,
         });
         return resp({ ok: true });
       }
@@ -358,7 +319,7 @@ const LocalAPI = (() => {
           (l.from_id === toId   && l.to_id === fromId)
         )) return resp({ error: 'A link between these sessions already exists' }, 409);
         const valid = ['related', 'builds-on', 'prerequisite', 'see-also'];
-        const id = uuid();
+        const id = crypto.randomUUID();
         await dbPut('links', {
           id,
           from_id:  fromId,
@@ -385,7 +346,7 @@ const LocalAPI = (() => {
         if (!id || !sessionId || !name || !Array.isArray(cards))
           return resp({ error: 'Missing required fields' }, 400);
         const sanitized = cards
-          .map(c => ({ id: c.id || uuid(), front: String(c.front || '').trim(), back: String(c.back || '').trim() }))
+          .map(c => ({ id: c.id || crypto.randomUUID(), front: String(c.front || '').trim(), back: String(c.back || '').trim() }))
           .filter(c => c.front || c.back);
         await dbPut('decks', { id, session_id: sessionId, name, cards: sanitized, created_at: new Date().toISOString() });
         return resp({ ok: true });
@@ -399,7 +360,7 @@ const LocalAPI = (() => {
         const { name, cards } = body;
         if (!name || !Array.isArray(cards)) return resp({ error: 'name and cards required' }, 400);
         const sanitized = cards
-          .map(c => ({ id: c.id || uuid(), front: String(c.front || '').trim(), back: String(c.back || '').trim() }))
+          .map(c => ({ id: c.id || crypto.randomUUID(), front: String(c.front || '').trim(), back: String(c.back || '').trim() }))
           .filter(c => c.front || c.back);
         await dbPut('decks', { ...d, name, cards: sanitized });
         return resp({ ok: true });
