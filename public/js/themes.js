@@ -72,6 +72,35 @@
       desc: 'Northern lights',
       swatches: ['#050D1A','#00E5A0','#7B5FFF','#0B1928'],
     },
+    {
+      id: 'noir',
+      name: 'Noir',
+      desc: 'Film detective',
+      swatches: ['#0E0C0B','#D4A84B','#F2E8D4','#1A1714'],
+    },
+    {
+      id: 'candy',
+      name: 'Candy',
+      desc: 'Bubbly & sweet',
+      swatches: ['#F0E8FF','#FF4DA6','#9B5FFF','#3BEBA0'],
+    },
+    {
+      id: 'cyberpunk',
+      name: 'Cyberpunk',
+      desc: 'Neon dystopia',
+      swatches: ['#FCE205','#00F0FF','#FF003C','#111111'],
+    },
+    {
+      id: 'glass',
+      name: 'Ethereal Glass',
+      desc: 'Frosted & dreamy',
+      swatches: ['#FFFFFF','#8FA6F5','#EABFF0','#F1F5F9'],
+    },
+  ];
+
+  function applyTheme(id) {
+    const el = document.documentElement;
+    document.body.removeAttribute('data-theme');
     if (id !== 'default') document.body.setAttribute('data-theme', id);
     localStorage.setItem('recall_theme', id);
     renderThemeGrid();
