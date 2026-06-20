@@ -70,8 +70,8 @@
       const r     = Math.min(W, H) * 0.27 + (Math.random() - 0.5) * 50;
       return {
         id: s.id, session: s,
-        x: W/2 + r * Math.cos(angle),
-        y: H/2 + r * Math.sin(angle),
+        x: r * Math.cos(angle),
+        y: r * Math.sin(angle),
         vx: 0, vy: 0, fx: 0, fy: 0,
         degree: 0, r: 14, z: 0,
       };
@@ -328,7 +328,7 @@
     const container = document.getElementById('graphContainer');
     const W = graphConnCtx ? graphConnCtx.canvas.width  : 900;
     const H = graphConnCtx ? graphConnCtx.canvas.height : 600;
-    const cx0 = W / 2, cy0 = H / 2;
+    const cx0 = 0, cy0 = 0;
 
     function step(ts) {
       if (!document.getElementById('graphModal').classList.contains('active')) {
