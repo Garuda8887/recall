@@ -6224,3 +6224,110 @@ body.dark .recur-option-row input[type="number"] { background: var(--surface); b
   transition: color 0.12s;
 }
 .subject-color-reset:hover { color: var(--tx); }
+
+/* ════════════════════════════════════════════════════════════
+   THEME: CYBERPUNK
+   ════════════════════════════════════════════════════════════ */
+[data-theme="cyberpunk"] {
+  --ff:          'Chakra Petch', 'Orbitron', 'Courier New', monospace;
+  --ff-heading:  'Chakra Petch', 'Orbitron', monospace;
+  --bg:          #111111;
+  --bg-2:        #1A1A1A;
+  --surface:     #0D0D0D;
+  --surface-2:   #222222;
+  --border:      #FCE205;
+  --border-soft: #444444;
+  --tx:    #FFFFFF;
+  --tx-2:  #CCCCCC;
+  --tx-3:  #777777;
+  --accent:    #00F0FF;
+  --accent-dk: #00B3C7;
+  --accent-bg: rgba(0, 240, 255, 0.1);
+  --accent-glow: 0 0 10px rgba(0, 240, 255, 0.5);
+  --amber:     #FF003C;
+  --amber-dk:  #C2002E;
+  --amber-bg:  rgba(255, 0, 60, 0.1);
+  --amber-bdr: #FF003C;
+  --sh-xs: 2px 2px 0 rgba(0,240,255,0.4);
+  --sh-sm: 4px 4px 0 rgba(252,226,5,0.4);
+  --sh-md: 6px 6px 0 rgba(255,0,60,0.4);
+  --sh-lg: 8px 8px 0 rgba(0,240,255,0.4);
+  --r-xs: 0px;
+  --r-sm: 0px;
+  --r-md: 0px;
+  --r-lg: 0px;
+  --r-xl: 0px;
+}
+[data-theme="cyberpunk"] body {
+  background-image: linear-gradient(0deg, transparent 24%, rgba(252,226,5,0.05) 25%, rgba(252,226,5,0.05) 26%, transparent 27%, transparent 74%, rgba(252,226,5,0.05) 75%, rgba(252,226,5,0.05) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(252,226,5,0.05) 25%, rgba(252,226,5,0.05) 26%, transparent 27%, transparent 74%, rgba(252,226,5,0.05) 75%, rgba(252,226,5,0.05) 76%, transparent 77%, transparent);
+  background-size: 50px 50px;
+}
+[data-theme="cyberpunk"] .btn-save, [data-theme="cyberpunk"] .add-btn, [data-theme="cyberpunk"] .nav-btn, [data-theme="cyberpunk"] .today-btn {
+  border: 1px solid var(--accent);
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+[data-theme="cyberpunk"] .card, [data-theme="cyberpunk"] .event {
+  border: 1px solid var(--border-soft);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%);
+}
+[data-theme="cyberpunk"] .modal, [data-theme="cyberpunk"] .calendar-outer {
+  border: 2px solid var(--border);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%);
+}
+
+/* ════════════════════════════════════════════════════════════
+   THEME: ETHEREAL GLASS
+   ════════════════════════════════════════════════════════════ */
+[data-theme="glass"] {
+  --bg:          #E8EEF2;
+  --bg-2:        #DDE5EC;
+  --surface:     rgba(255, 255, 255, 0.45);
+  --surface-2:   rgba(255, 255, 255, 0.65);
+  --border:      rgba(255, 255, 255, 0.9);
+  --border-soft: rgba(255, 255, 255, 0.5);
+  --tx:    #2C3E50;
+  --tx-2:  #5D6D7E;
+  --tx-3:  #85929E;
+  --accent:    #8FA6F5;
+  --accent-dk: #6D8BEB;
+  --accent-bg: rgba(143, 166, 245, 0.15);
+  --amber:     #EABFF0;
+  --amber-dk:  #D79AE0;
+  --amber-bg:  rgba(234, 191, 240, 0.15);
+  --amber-bdr: #EABFF0;
+  --sh-xs: 0 4px 12px rgba(143, 166, 245, 0.08);
+  --sh-sm: 0 8px 24px rgba(143, 166, 245, 0.12);
+  --sh-md: 0 12px 32px rgba(143, 166, 245, 0.16);
+  --sh-lg: 0 20px 48px rgba(143, 166, 245, 0.20);
+  --r-xs: 12px;
+  --r-sm: 16px;
+  --r-md: 20px;
+  --r-lg: 24px;
+  --r-xl: 32px;
+}
+[data-theme="glass"] body {
+  background: radial-gradient(circle at 15% 50%, #F5F7FA, #E8EEF2);
+}
+[data-theme="glass"] .card, 
+[data-theme="glass"] .modal, 
+[data-theme="glass"] .user-menu, 
+[data-theme="glass"] .calendar-outer,
+[data-theme="glass"] .graph-panel-visible,
+[data-theme="glass"] .event {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  box-shadow: var(--sh-md);
+  background: var(--surface);
+}
+[data-theme="glass"] .day-cell {
+  background: rgba(255, 255, 255, 0.2);
+}
+[data-theme="glass"] .btn-save, [data-theme="glass"] .add-btn {
+  background: var(--accent);
+  color: #FFF;
+  border: none;
+}
+
