@@ -108,26 +108,49 @@
     const W = container.clientWidth  || 900;
     const H = container.clientHeight || 600;
 
-    // Particle canvas (z-index 1, below scene)
     const partCanvas = document.createElement('canvas');
     partCanvas.width = W; partCanvas.height = H;
     partCanvas.style.cssText = 'position:absolute;inset:0;z-index:1;pointer-events:none';
     container.appendChild(partCanvas);
     graphPartCtx = partCanvas.getContext('2d');
 
-    // 3D scene (perspective container, z-index 2)
     const scene = document.createElement('div');
     scene.style.cssText = 'position:absolute;inset:0;z-index:2;perspective:1000px;perspective-origin:50% 48%;overflow:hidden;cursor:grab';
     container.appendChild(scene);
 
-    // Graph pivot (preserve-3d, rotated by JS each frame)
     const pivot = document.createElement('div');
     pivot.style.cssText = 'position:absolute;left:50%;top:50%;transform-style:preserve-3d';
     scene.appendChild(pivot);
     graphPivotEl = pivot;
 
-    // Build node wrappers + visuals
+    const edgeLayer = document.createElement('div');
+    edgeLayer.style.cssText = 'position:absolute;inset:0;transform-style:preserve-3d';
+    pivot.appendChild(edgeLayer);
+
+    const nodeLayer = document.createElement('div');
+    nodeLayer.style.cssText = 'position:absolute;inset:0;transform-style:preserve-3d';
+    pivot.appendChild(nodeLayer);
+
+    const labelLayer = document.createElement('div');
+    labelLayer.style.cssText = 'position:absolute;inset:0;transform-style:preserve-3d';
+    pivot.appendChild(labelLayer);
+
     graphDomMap = {};
+
+    graphEdges.forEach((e, i) => {
+      const col = GRAPH_EDGE_COLORS[e.relation] || '#818cf8';
+      const edge = document.createElement('div');
+      edge.className = 'graph-edge-3d';
+      edge.style.cssText = `position:absolute;left:0;top:0;height:2px;transform-origin:0 50%;background:linear-gradient(90deg, ${col}22, ${col}ff, ${col}22);opacity:0.55;pointer-events:none;transform-style:preserve-3d`;
+      
+      const dot = document.createElement('div');
+      dot.style.cssText = `position:absolute;top:-3.5px;width:9px;height:9px;border-radius:50%;background:#fff;box-shadow:0 0 10px ${col};display:none`;
+      edge.appendChild(dot);
+      
+      edgeLayer.appendChild(edge);
+      graphDomMap['edge_' + i] = { edge, dot, col };
+    });
+
     graphNodes.forEach(n => {
       const size   = n.r * 2;
       const period = (3.8 + Math.random() * 2.4).toFixed(2) + 's';
@@ -138,7 +161,7 @@
       const nw = document.createElement('div');
       nw.className = 'graph-nw';
       nw.style.transform = `translate3d(${n.x}px,${n.y}px,${n.z}px)`;
-      pivot.appendChild(nw);
+      nodeLayer.appendChild(nw);
       graphDomMap[n.id] = { nw };
 
       const nv = document.createElement('div');
@@ -162,38 +185,23 @@
         closeGraphModal();
         setTimeout(() => openDayModal(n.session.studiedDate), 50);
       });
-    });
 
-    // Connection canvas (z-index 3, above scene)
-    const connCanvas = document.createElement('canvas');
-    connCanvas.width = W; connCanvas.height = H;
-    connCanvas.style.cssText = 'position:absolute;inset:0;z-index:3;pointer-events:none';
-    container.appendChild(connCanvas);
-    graphConnCtx = connCanvas.getContext('2d');
-
-    // Label layer (z-index 4)
-    const labelLayer = document.createElement('div');
-    labelLayer.style.cssText = 'position:absolute;inset:0;z-index:4;pointer-events:none';
-    container.appendChild(labelLayer);
-    graphNodes.forEach(n => {
-      const lbl   = document.createElement('div');
+      const lbl = document.createElement('div');
       lbl.className = 'graph-label';
+      lbl.style.cssText = 'position:absolute;left:-100px;top:0;width:200px;text-align:center;pointer-events:none;display:flex;flex-direction:column;align-items:center';
       const topic = n.session.topic.length > 22 ? n.session.topic.slice(0,20)+'…' : n.session.topic;
-      const col   = getSubjectColor(n.session.subject);
       lbl.innerHTML =
         `<div class="graph-label-name">${topic}</div>` +
         `<div class="graph-label-sub">${n.session.subject || ''}</div>` +
-        `<div class="graph-label-links" style="color:${col.border}88">${n.degree} link${n.degree!==1?'s':''}</div>`;
+        `<div class="graph-label-links" style="color:${c}88">${n.degree} link${n.degree!==1?'s':''}</div>`;
       labelLayer.appendChild(lbl);
       graphDomMap[n.id].lbl = lbl;
     });
 
-    // Info panel (z-index 5)
     const panel = document.createElement('div');
     panel.id = 'graphPanel';
     container.appendChild(panel);
 
-    // Drag on the scene div
     scene.addEventListener('mousedown', e => {
       if (e.target.classList.contains('graph-nv')) return;
       graphIsDragging = true;
@@ -249,25 +257,19 @@
     });
   }
 
-  function drawGraphConnections(dt) {
-    if (!graphConnCtx) return;
-    const ctx  = graphConnCtx;
-    const W    = ctx.canvas.width, H = ctx.canvas.height;
-    const cRef = ctx.canvas.getBoundingClientRect();
-    ctx.clearRect(0, 0, W, H);
-    ctx.lineCap = 'round';
-
+  function updateGraphEdges(dt) {
     graphEdges.forEach((e, i) => {
-      const avEl = graphDomMap[e.source.id]?.nv;
-      const bvEl = graphDomMap[e.target.id]?.nv;
-      if (!avEl || !bvEl) return;
+      const dx = e.target.x - e.source.x;
+      const dy = e.target.y - e.source.y;
+      const dz = e.target.z - e.source.z;
+      const d  = Math.hypot(dx, dy, dz);
 
-      const ar = avEl.getBoundingClientRect();
-      const br = bvEl.getBoundingClientRect();
-      const ax = ar.left + ar.width/2  - cRef.left;
-      const ay = ar.top  + ar.height/2 - cRef.top;
-      const bx = br.left + br.width/2  - cRef.left;
-      const by = br.top  + br.height/2 - cRef.top;
+      const ry = Math.atan2(-dz, Math.hypot(dx, dy));
+      const rz = Math.atan2(dy, dx);
+
+      const { edge, dot } = graphDomMap['edge_' + i];
+      edge.style.width = d + 'px';
+      edge.style.transform = `translate3d(${e.source.x.toFixed(1)}px,${e.source.y.toFixed(1)}px,${e.source.z}px) rotateZ(${rz.toFixed(4)}rad) rotateY(${ry.toFixed(4)}rad)`;
 
       let op = graphHoveredId
         ? (graphHoveredId === e.source.id || graphHoveredId === e.target.id ? 1.0 : 0.06)
@@ -278,56 +280,26 @@
                         e.target.session.subject === graphSubjFocus;
         if (!inFocus) op = Math.min(op, 0.06);
       }
-
-      const col  = GRAPH_EDGE_COLORS[e.relation] || '#818cf8';
-      const hex2 = v => Math.round(v*255).toString(16).padStart(2,'0');
-
-      ctx.beginPath(); ctx.moveTo(ax,ay); ctx.lineTo(bx,by);
-      ctx.strokeStyle = col + hex2(op*0.18); ctx.lineWidth = 7; ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(ax,ay); ctx.lineTo(bx,by);
-      ctx.strokeStyle = col + hex2(op*0.35); ctx.lineWidth = 3; ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(ax,ay); ctx.lineTo(bx,by);
-      ctx.strokeStyle = col + hex2(op*0.70); ctx.lineWidth = 1; ctx.stroke();
+      
+      edge.style.opacity = op;
 
       if (op > 0.1) {
         const isActive = graphHoveredId === e.source.id || graphHoveredId === e.target.id;
         graphPulseT[i] = ((graphPulseT[i] || Math.random()) + dt * (isActive ? 0.9 : 0.35)) % 1;
-        const t  = graphPulseT[i];
-        const px = ax + (bx-ax)*t, py = ay + (by-ay)*t;
-        const grad = ctx.createRadialGradient(px, py, 0, px, py, 9);
-        grad.addColorStop(0,   col+'ff');
-        grad.addColorStop(0.4, col+'aa');
-        grad.addColorStop(1,   col+'00');
-        ctx.beginPath(); ctx.arc(px, py, 9, 0, Math.PI*2);
-        ctx.fillStyle = grad; ctx.fill();
-        ctx.beginPath(); ctx.arc(px, py, 2, 0, Math.PI*2);
-        ctx.fillStyle = '#fff'; ctx.fill();
+        dot.style.display = 'block';
+        dot.style.left = `calc(${graphPulseT[i] * 100}% - 4px)`;
+        dot.style.opacity = isActive ? '1' : '0.4';
+      } else {
+        dot.style.display = 'none';
       }
-    });
-  }
-
-  function updateGraphLabels() {
-    if (!graphConnCtx) return;
-    const cRef = graphConnCtx.canvas.getBoundingClientRect();
-    graphNodes.forEach(n => {
-      const { lbl, nv: nvEl } = graphDomMap[n.id] || {};
-      if (!lbl || !nvEl) return;
-      const r  = nvEl.getBoundingClientRect();
-      const cx = r.left + r.width/2  - cRef.left;
-      const cy = r.top  + r.height/2 - cRef.top;
-      const apparentR = r.width / 2;
-      const scale = Math.max(0.55, Math.min(1, apparentR / n.r));
-      lbl.style.left      = cx + 'px';
-      lbl.style.top       = (cy + apparentR + 10) + 'px';
-      lbl.style.transform = `translate(-50%,0) scale(${scale.toFixed(3)})`;
     });
   }
 
   function startGraphLoop() {
     graphLastTs = 0;
     const container = document.getElementById('graphContainer');
-    const W = graphConnCtx ? graphConnCtx.canvas.width  : 900;
-    const H = graphConnCtx ? graphConnCtx.canvas.height : 600;
+    const W = container.clientWidth  || 900;
+    const H = container.clientHeight || 600;
     const cx0 = 0, cy0 = 0;
 
     function step(ts) {
@@ -378,13 +350,19 @@
         n.vx = (n.vx + n.fx) * GRAPH.damping;
         n.vy = (n.vy + n.fy) * GRAPH.damping;
         n.x += n.vx; n.y += n.vy;
+        
         graphDomMap[n.id].nw.style.transform =
           `translate3d(${n.x.toFixed(1)}px,${n.y.toFixed(1)}px,${n.z}px)`;
+          
+        const lbl = graphDomMap[n.id].lbl;
+        if (lbl) {
+          const scale = Math.max(0.6, Math.min(1, 14/n.r));
+          lbl.style.transform = `translate3d(${n.x.toFixed(1)}px,${n.y.toFixed(1)}px,${n.z}px) rotateY(${-graphRotY.toFixed(3)}deg) rotateX(${-graphRotX.toFixed(3)}deg) translateY(${n.r + 14}px) scale(${scale.toFixed(3)})`;
+        }
       });
 
       drawGraphParticles();
-      drawGraphConnections(dt);
-      updateGraphLabels();
+      updateGraphEdges(dt);
 
       graphAnimId = requestAnimationFrame(step);
     }
