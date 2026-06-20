@@ -107,7 +107,25 @@ If Recall is useful to you, consider giving it a ⭐ — it helps others find it
 - [Node.js](https://nodejs.org/) 18 or later
 - npm
 
-### Install & run
+### Install & run (Docker)
+
+The easiest way to run Recall is using Docker Compose. This automatically provisions the environment and sets up a persistent volume for your database.
+
+```bash
+git clone https://github.com/Garuda8887/recall.git
+cd recall
+docker compose up -d
+```
+
+Open **http://localhost:3000** in your browser. Your database is automatically saved to a local `./data` folder so it persists across container restarts. 
+
+To apply future updates, simply pull the latest code and rebuild:
+```bash
+git pull
+docker compose up -d --build
+```
+
+### Install & run (Manual)
 
 ```bash
 git clone https://github.com/Garuda8887/recall.git

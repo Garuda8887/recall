@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  recall:
+    build: .
+    container_name: recall-app
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - JWT_SECRET=change_this_to_a_secure_random_string_for_production
+      # Store the database inside the /app/data directory so we can persist it
+      - DB_PATH=/app/data/recall.db
+    volumes:
+      # Mounts the local ./data folder to /app/data inside the container
+      # This ensures your database isn't lost when the container stops!
+      - ./data:/app/data
+    restart: unless-stopped

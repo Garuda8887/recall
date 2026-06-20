@@ -10,7 +10,8 @@ const AdmZip   = require('adm-zip');
 const { computeSM2, addDays, todayUTC, nextRecurDate, toResponse, sanitizeCards } = require('./public/shared-utils');
 
 const app  = express();
-const db   = new Database(path.join(__dirname, 'recall.db'));
+const dbPath = process.env.DB_PATH || path.join(__dirname, 'recall.db');
+const db   = new Database(dbPath);
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET  = process.env.JWT_SECRET || 'recall-dev-secret-please-change-in-production';
 const JWT_EXPIRES = '7d';
