@@ -96,6 +96,24 @@
       desc: 'Frosted & dreamy',
       swatches: ['#FFFFFF','#8FA6F5','#EABFF0','#F1F5F9'],
     },
+    {
+      id: 'atlas',
+      name: 'Celestial Atlas',
+      desc: 'Engraved star chart',
+      swatches: ['#0E1626','#D4AF6A','#EDE4CF','#2B3B58'],
+    },
+    {
+      id: 'riso',
+      name: 'Risograph',
+      desc: 'Overprinted zine',
+      swatches: ['#FAF5EA','#FF48B0','#0078BF','#1D1D1B'],
+    },
+    {
+      id: 'abyss',
+      name: 'The Abyss',
+      desc: 'Bioluminescent deep',
+      swatches: ['#041318','#3EF2D2','#9D7BFF','#082028'],
+    },
   ];
 
   function applyTheme(id) {
