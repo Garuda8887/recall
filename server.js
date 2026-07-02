@@ -81,15 +81,6 @@ try { db.exec(`ALTER TABLE sessions ADD COLUMN tags            TEXT DEFAULT '[]'
 
 app.use(express.json({ limit: '25mb' }));
 
-// CORS — allow Capacitor WebView and any self-hosted origin to reach the API
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin',  '*');
-  res.header('Access-Control-Allow-Headers', 'Authorization, Content-Type');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-  if (req.method === 'OPTIONS') return res.sendStatus(200);
-  next();
-});
-
 // index.html must never be served from browser or proxy cache — always fresh
 app.get(['/', '/index.html'], (req, res) => {
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');

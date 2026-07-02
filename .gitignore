@@ -27,12 +27,15 @@ npm-debug.log*
 .claude/
 EVIDENCE.txt
 
-# Android build outputs (keep source, ignore binaries)
-android/build/
-android/app/build/
-android/.gradle/
-android/local.properties
-future.md
+# Dev-session debris (tool artifacts, debug screenshots, test data)
+.superpowers/
+.codegraph/
+.ctxignore
+.fitcheck-skeleton.md
+/*.png
+demo.tape
+flashcards.txt
 
 # Local design specs / planning docs
+future.md
 docs/

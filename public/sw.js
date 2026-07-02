@@ -1,4 +1,4 @@
-const CACHE = 'recall-v8';
+const CACHE = 'recall-v9';
 
 // Static assets only — index.html is intentionally excluded so CSS/JS
 // changes are always served fresh from the server without a cache bust.
@@ -6,7 +6,6 @@ const SHELL = [
   '/auth.html',
   '/style.css',
   '/auth.css',
-  '/setup.html',
   '/local-api.js',
   '/favicon.svg',
   '/logo.svg',

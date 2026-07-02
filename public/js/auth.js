@@ -39,10 +39,9 @@
       }
       return LocalAPI.handle(url, options);
     }
-    // Server mode — hit the configured (or same-origin) server
-    const token     = localStorage.getItem('recall_token');
-    const serverUrl = localStorage.getItem('recall_server') || '';
-    return fetch(serverUrl + url, {
+    // Server mode — same-origin API
+    const token = localStorage.getItem('recall_token');
+    return fetch(url, {
       ...options,
       headers: { ...options.headers, 'Authorization': `Bearer ${token}` }
     }).then(res => {
@@ -58,6 +57,8 @@
   function logout() {
     localStorage.removeItem('recall_token');
     localStorage.removeItem('recall_user');
+    localStorage.removeItem('recall_mode');
+    localStorage.removeItem('recall_server');
     window.location.href = '/auth.html';
   }
 
