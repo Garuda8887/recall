@@ -68,6 +68,19 @@ db.exec(`
   )
 `);
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS attachments (
+    id         TEXT PRIMARY KEY,
+    user_id    TEXT NOT NULL,
+    session_id TEXT NOT NULL,
+    file_id    TEXT NOT NULL,
+    filename   TEXT NOT NULL,
+    mime       TEXT NOT NULL,
+    size       INTEGER NOT NULL,
+    created_at TEXT NOT NULL
+  )
+`);
+
 // Migrations
 try { db.exec(`ALTER TABLE sessions ADD COLUMN subject         TEXT DEFAULT ''`); } catch {}
 try { db.exec(`ALTER TABLE sessions ADD COLUMN user_id         TEXT NOT NULL DEFAULT ''`); } catch {}
@@ -103,6 +116,33 @@ function requireAuth(req, res, next) {
     next();
   } catch {
     return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+}
+
+// ── Attachment helpers ────────────────────────────────────────────────────────
+
+const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(__dirname, 'uploads');
+const ATT_TYPES   = { '.pdf': 'application/pdf', '.html': 'text/html', '.htm': 'text/html' };
+
+// Map of session_id → [{id, filename, mime, size}] for one user
+function attachmentsBySession(userId) {
+  const rows = db.prepare(
+    'SELECT id, session_id, filename, mime, size FROM attachments WHERE user_id = ?'
+  ).all(userId);
+  const map = {};
+  rows.forEach(a => {
+    (map[a.session_id] = map[a.session_id] || []).push(
+      { id: a.id, filename: a.filename, mime: a.mime, size: a.size }
+    );
+  });
+  return map;
+}
+
+// Delete the disk file once no attachment row references it anymore
+function removeFileIfOrphaned(userId, fileId) {
+  const still = db.prepare('SELECT 1 FROM attachments WHERE file_id = ? LIMIT 1').get(fileId);
+  if (!still) {
+    try { fs.unlinkSync(path.join(UPLOADS_DIR, userId, fileId)); } catch {}
   }
 }
 
@@ -152,12 +192,25 @@ function createRecurrences(userId) {
 
       if (!exists) {
         const reviews = buildReviewsForDate(nextDate, userId);
+        const newId   = crypto.randomUUID();
         insert.run(
-          crypto.randomUUID(), userId,
+          newId, userId,
           s.topic, s.subject || '', s.notes || '',
           nextDate, JSON.stringify(reviews),
           s.recurrence_rule, s.recurrence_id
         );
+        // Carry attachments over — new metadata rows sharing the same file on disk
+        const atts = db.prepare(
+          'SELECT * FROM attachments WHERE session_id = ? AND user_id = ?'
+        ).all(s.id, userId);
+        const insertAtt = db.prepare(
+          `INSERT INTO attachments (id, user_id, session_id, file_id, filename, mime, size, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+        );
+        atts.forEach(a => insertAtt.run(
+          crypto.randomUUID(), userId, newId, a.file_id, a.filename, a.mime, a.size,
+          new Date().toISOString()
+        ));
         created++;
       }
       nextDate = nextRecurDate(nextDate, s.recurrence_rule);
@@ -245,6 +298,7 @@ app.get('/api/sessions', requireAuth, (req, res) => {
   const rows = db.prepare(
     'SELECT * FROM sessions WHERE user_id = ? ORDER BY studied_date DESC'
   ).all(req.user.id);
+  const attMap = attachmentsBySession(req.user.id);
 
   res.json({
     sessions: rows.map(r => toResponse({
@@ -252,6 +306,7 @@ app.get('/api/sessions', requireAuth, (req, res) => {
       tags:            r.tags ? JSON.parse(r.tags) : [],
       reviews:         JSON.parse(r.reviews),
       recurrence_rule: r.recurrence_rule ? JSON.parse(r.recurrence_rule) : null,
+      attachments:     attMap[r.id] || [],
     })),
     newRecurrences
   });
@@ -361,6 +416,67 @@ app.delete('/api/sessions/:id', requireAuth, (req, res) => {
   // Also remove any links referencing this session
   db.prepare('DELETE FROM links WHERE user_id = ? AND (from_id = ? OR to_id = ?)')
     .run(req.user.id, req.params.id, req.params.id);
+  // And its attachments (+ files nothing else references)
+  const atts = db.prepare('SELECT * FROM attachments WHERE session_id = ? AND user_id = ?')
+    .all(req.params.id, req.user.id);
+  db.prepare('DELETE FROM attachments WHERE session_id = ? AND user_id = ?')
+    .run(req.params.id, req.user.id);
+  atts.forEach(a => removeFileIfOrphaned(req.user.id, a.file_id));
+  res.json({ ok: true });
+});
+
+// ── Attachments ───────────────────────────────────────────────────────────────
+
+// POST /api/sessions/:id/attachments?filename=… — raw file bytes
+app.post('/api/sessions/:id/attachments', requireAuth,
+  express.raw({ type: '*/*', limit: '25mb' }),
+  (req, res) => {
+    const session = db.prepare('SELECT id FROM sessions WHERE id = ? AND user_id = ?')
+      .get(req.params.id, req.user.id);
+    if (!session) return res.status(404).json({ error: 'Session not found' });
+    if (!req.body || !req.body.length) return res.status(400).json({ error: 'No file data received' });
+
+    const filename = String(req.query.filename || 'file').slice(0, 200);
+    const mime     = ATT_TYPES[path.extname(filename).toLowerCase()];
+    if (!mime) return res.status(400).json({ error: 'Only .pdf and .html files are supported' });
+
+    const fileId = crypto.randomUUID();
+    const dir    = path.join(UPLOADS_DIR, req.user.id);
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, fileId), req.body);
+
+    const id = crypto.randomUUID();
+    db.prepare(
+      `INSERT INTO attachments (id, user_id, session_id, file_id, filename, mime, size, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(id, req.user.id, req.params.id, fileId, filename, mime, req.body.length,
+          new Date().toISOString());
+
+    res.json({ attachment: { id, filename, mime, size: req.body.length } });
+  }
+);
+
+app.get('/api/attachments/:id', requireAuth, (req, res) => {
+  const att = db.prepare('SELECT * FROM attachments WHERE id = ? AND user_id = ?')
+    .get(req.params.id, req.user.id);
+  if (!att) return res.status(404).json({ error: 'Not found' });
+  const file = path.join(UPLOADS_DIR, req.user.id, att.file_id);
+  if (!fs.existsSync(file)) return res.status(404).json({ error: 'File missing on disk' });
+
+  res.setHeader('Content-Type', att.mime);
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  // uploaded HTML must never execute with access to our origin
+  res.setHeader('Content-Security-Policy', "sandbox; default-src 'none'; img-src data:; style-src 'unsafe-inline'");
+  res.setHeader('Content-Disposition', `inline; filename="${att.filename.replace(/["\r\n]/g, '')}"`);
+  res.sendFile(file);
+});
+
+app.delete('/api/attachments/:id', requireAuth, (req, res) => {
+  const att = db.prepare('SELECT * FROM attachments WHERE id = ? AND user_id = ?')
+    .get(req.params.id, req.user.id);
+  if (!att) return res.status(404).json({ error: 'Not found' });
+  db.prepare('DELETE FROM attachments WHERE id = ?').run(att.id);
+  removeFileIfOrphaned(req.user.id, att.file_id);
   res.json({ ok: true });
 });
 

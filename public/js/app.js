@@ -3,7 +3,8 @@
     if (e.target === document.getElementById(id)) {
       ({ addModal: closeAddModal, dayModal: closeDayModal,
          statsModal: closeStats, settingsModal: closeSettings,
-         cardSearchModal: closeCardSearch })[id]?.();
+         cardSearchModal: closeCardSearch,
+         attachViewerModal: closeAttachViewer })[id]?.();
     }
   }
 
@@ -13,7 +14,7 @@
       clearSearch(); closeAddModal(); closeDayModal(); closeStats(); closeSettings();
       closeCurveModal(); closeLinkModal(); closeGraphModal();
       closeDeckPrompt(); closeDeckModal(); closeStudyModal(); closeCardSearch();
-      closeSidebar();
+      closeSidebar(); closeAttachViewer();
     }
     // Study modal keyboard navigation
     if (studyState) {

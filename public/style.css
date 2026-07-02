@@ -6773,6 +6773,47 @@ body.dark .recur-option-row input[type="number"] { background: var(--surface); b
 [data-theme="abyss"] .graph-container { background: var(--bg); }
 [data-theme="abyss"] .theme-card.active { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(62,242,210,0.18); }
 
+/* ─── Attachments ─────────────────────────────────────────── */
+.attach-add-btn { font-size: 13px; padding: 7px 12px; cursor: pointer; border-radius: var(--r-sm); }
+.attach-chips, .attach-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.attach-list { margin-top: 6px; }
+.attach-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  padding: 4px 9px;
+  border-radius: var(--r-sm);
+  background: var(--accent-bg);
+  color: var(--accent-dk);
+  border: 1px solid var(--border);
+}
+.attach-chip.openable { cursor: pointer; }
+.attach-chip.openable:hover { border-color: var(--accent); }
+.attach-chip-x {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 0 0 2px;
+  opacity: 0.7;
+}
+.attach-chip-x:hover { opacity: 1; }
+.attach-viewer iframe {
+  width: 100%;
+  height: min(65vh, 640px);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: #fff;
+  margin-top: 10px;
+}
+
 /* respect reduced motion for themed transitions */
 @media (prefers-reduced-motion: reduce) {
   [data-theme="riso"] *, [data-theme="atlas"] *, [data-theme="abyss"] * { transition-duration: 0.01ms !important; }

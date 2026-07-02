@@ -1,3 +1,143 @@
+// ── Attachments ──────────────────────────────────────────
+  let pendingAttachFiles = [];   // File objects queued on a not-yet-saved session
+  let editAttachments    = [];   // saved metadata chips while editing
+  let currentAttachView  = null; // { url, filename } shown in the viewer
+
+  const ATTACH_MAX  = 25 * 1024 * 1024;
+  const ATTACH_EXTS = ['pdf', 'html', 'htm']; // escHtml comes from state.js
+
+  function validAttachFile(file) {
+    if (!ATTACH_EXTS.includes(file.name.split('.').pop().toLowerCase())) {
+      showToast(`"${file.name}" skipped — only PDF and HTML files`);
+      return false;
+    }
+    if (file.size > ATTACH_MAX) {
+      showToast(`"${file.name}" skipped — larger than 25 MB`);
+      return false;
+    }
+    return true;
+  }
+
+  async function uploadAttachment(sessionId, file) {
+    const res = await authFetch(
+      `/api/sessions/${sessionId}/attachments?filename=${encodeURIComponent(file.name)}`,
+      { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: file }
+    );
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Upload failed');
+    return data.attachment;
+  }
+
+  async function handleAttachPick(fileList) {
+    const files = [...fileList].filter(validAttachFile);
+    if (!files.length) return;
+
+    if (editingSessionId) {
+      // Editing an existing session — upload right away
+      for (const f of files) {
+        try {
+          const att = await uploadAttachment(editingSessionId, f);
+          editAttachments.push(att);
+          const s = sessions.find(x => x.id === editingSessionId);
+          if (s) s.attachments = [...editAttachments];
+        } catch (err) {
+          showToast(`Upload failed: ${err.message}`);
+        }
+      }
+    } else {
+      pendingAttachFiles.push(...files);
+    }
+    renderAttachChips();
+  }
+
+  function renderAttachChips() {
+    const wrap = document.getElementById('attachChips');
+    wrap.innerHTML = '';
+    const mkChip = (label, onRemove, onOpen) => {
+      const chip = document.createElement('span');
+      chip.className = 'attach-chip';
+      chip.innerHTML = `&#128206; ${escHtml(label)}`;
+      if (onOpen) { chip.classList.add('openable'); chip.onclick = onOpen; }
+      const x = document.createElement('button');
+      x.className = 'attach-chip-x';
+      x.textContent = '×';
+      x.title = 'Remove';
+      x.onclick = e => { e.stopPropagation(); onRemove(); };
+      chip.appendChild(x);
+      wrap.appendChild(chip);
+    };
+    editAttachments.forEach(att => mkChip(
+      att.filename,
+      () => deleteAttachment(att.id),
+      () => openAttachmentById(att.id)
+    ));
+    pendingAttachFiles.forEach((f, i) => mkChip(
+      f.name,
+      () => { pendingAttachFiles.splice(i, 1); renderAttachChips(); }
+    ));
+  }
+
+  async function deleteAttachment(attId) {
+    if (!confirm('Remove this attachment?')) return;
+    const res = await authFetch(`/api/attachments/${attId}`, { method: 'DELETE' });
+    if (!res.ok) { showToast('Could not remove attachment'); return; }
+    editAttachments = editAttachments.filter(a => a.id !== attId);
+    const s = sessions.find(x => x.id === editingSessionId);
+    if (s) s.attachments = (s.attachments || []).filter(a => a.id !== attId);
+    renderAttachChips();
+    showToast('Attachment removed');
+  }
+
+  function findAttachment(attId) {
+    for (const s of sessions) {
+      const att = (s.attachments || []).find(a => a.id === attId);
+      if (att) return att;
+    }
+    return null;
+  }
+
+  async function openAttachmentById(attId) {
+    const att = findAttachment(attId);
+    if (!att) return;
+    const res = await authFetch(`/api/attachments/${attId}`);
+    if (!res.ok) { showToast('Could not load attachment'); return; }
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
+
+    if (att.mime === 'application/pdf') {
+      // PDFs are inert — the browser's viewer in a new tab is the best reader
+      const win = window.open(url, '_blank');
+      if (!win) triggerDownload(url, att.filename); // popup blocked → download
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } else {
+      // HTML renders in a sandboxed iframe: no scripts, no same-origin access
+      if (currentAttachView) URL.revokeObjectURL(currentAttachView.url);
+      currentAttachView = { url, filename: att.filename };
+      document.getElementById('attachViewerTitle').textContent = att.filename;
+      document.getElementById('attachViewerFrame').src = url;
+      document.getElementById('attachViewerModal').classList.add('active');
+    }
+  }
+
+  function triggerDownload(url, filename) {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+  }
+
+  function downloadCurrentAttachment() {
+    if (currentAttachView) triggerDownload(currentAttachView.url, currentAttachView.filename);
+  }
+
+  function closeAttachViewer() {
+    const modal = document.getElementById('attachViewerModal');
+    if (!modal.classList.contains('active')) return;
+    modal.classList.remove('active');
+    document.getElementById('attachViewerFrame').src = 'about:blank';
+    if (currentAttachView) { URL.revokeObjectURL(currentAttachView.url); currentAttachView = null; }
+  }
+
 // ── Add Modal ────────────────────────────────────────────
   function openAddModal() { openAddModalForDate(todayStr()); }
 
@@ -11,6 +151,9 @@
     document.getElementById('subjectInput').value = session.subject || '';
     document.getElementById('notesInput').value   = session.notes || '';
     resetEditTags(session.tags || []);
+    pendingAttachFiles = [];
+    editAttachments    = [...(session.attachments || [])];
+    renderAttachChips();
     document.getElementById('saveBtn').textContent = 'Save Changes';
     buildReviewChips(session.studiedDate);
     // hide review preview and recurrence on edit
@@ -34,6 +177,9 @@
     document.getElementById('subjectInput').value = activeSubject || '';
     document.getElementById('notesInput').value   = '';
     resetEditTags([]);
+    pendingAttachFiles = [];
+    editAttachments    = [];
+    renderAttachChips();
     resetRecurUI(dateStr);
 
     const list = document.getElementById('subjectList');
@@ -154,6 +300,12 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(session)
         });
+        session.attachments = [];
+        for (const f of pendingAttachFiles) {
+          try { session.attachments.push(await uploadAttachment(session.id, f)); }
+          catch (err) { showToast(`Upload failed: ${err.message}`); }
+        }
+        pendingAttachFiles = [];
         sessions.push(session);
         const recurSuffix = recurrenceRule ? ` · 🔁 ${recurRuleLabel(recurrenceRule)}` : '';
         showToast(`"${topic}" saved — ${intervals.length} reviews scheduled${recurSuffix}`);
@@ -201,12 +353,19 @@
               `<span class="session-tag" onclick="filterByTag('${t}');closeDayModal()">#${t}</span>`
             ).join('')}</div>`
           : '';
+        // Attachments follow the session — shown on the entry and every review of it
+        const evAtts  = ev.session.attachments || [];
+        const attHtml = evAtts.length
+          ? `<div class="attach-list">${evAtts.map(a =>
+              `<span class="attach-chip openable" onclick="event.stopPropagation();openAttachmentById('${a.id}')">&#128206; ${escHtml(a.filename)}</span>`
+            ).join('')}</div>`
+          : '';
         info.innerHTML =
           `<div class="event-title">${ev.type === 'study' ? ev.session.topic : 'Review: ' + ev.session.topic}</div>` +
           `<div class="event-meta">${ev.type === 'study'
             ? (ev.session.notes || 'Initial study session') + (ev.session.reviewStreak >= 2 ? ` &nbsp;<span class="streak-badge">🔥 ${ev.session.reviewStreak}-review streak</span>` : '')
             : `Spaced review (${intervalLabel(intervals[ev.reviewIndex] ?? ev.reviewIndex)})${ev.done ? ' — Done ✓' + (ev.session.reviews[ev.reviewIndex]?.confidence ? ' · ' + RATINGS[ev.session.reviews[ev.reviewIndex].confidence - 1]?.emoji : '') : ''}`
-          }</div>${tagsHtml}`;
+          }</div>${tagsHtml}${attHtml}`;
 
         item.appendChild(dot);
         item.appendChild(info);

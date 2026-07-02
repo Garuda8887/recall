@@ -5,6 +5,9 @@ node_modules/
 recall.db
 *.db
 
+# Uploaded attachments (user data — never commit)
+uploads/
+
 # Environment / secrets
 .env
 .env.*

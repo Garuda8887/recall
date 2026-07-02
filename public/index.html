@@ -150,6 +150,12 @@
         <input class="tag-chip-input" id="tagChipInput" placeholder="Type a tag and press Enter…" autocomplete="off" spellcheck="false">
       </div>
     </div>
+    <div class="form-group">
+      <label>Attachments <span style="font-weight:400;color:#94a3b8">(optional — PDF or HTML, 25 MB max)</span></label>
+      <input type="file" id="attachInput" accept=".pdf,.html,.htm" multiple style="display:none" onchange="handleAttachPick(this.files); this.value='';">
+      <button type="button" class="btn-ghost attach-add-btn" onclick="document.getElementById('attachInput').click()">&#128206; Add files</button>
+      <div class="attach-chips" id="attachChips"></div>
+    </div>
     <div class="review-preview">
       <p>Scheduled reviews</p>
       <div class="review-chips" id="reviewChips"></div>
@@ -173,6 +179,21 @@
     <div class="modal-actions" style="margin-top:18px">
       <button class="btn-cancel" onclick="closeDayModal()">Close</button>
       <button class="btn-save" onclick="openAddModalForDate(currentDayDate)">&#43; Add Study</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Attachment Viewer Modal (sandboxed — uploaded HTML must never run scripts) ── -->
+<div class="modal-overlay" id="attachViewerModal" onclick="handleOverlayClick(event,'attachViewerModal')">
+  <div class="modal wide attach-viewer">
+    <div class="modal-header">
+      <h3 id="attachViewerTitle"></h3>
+      <button class="modal-close" onclick="closeAttachViewer()">&#215;</button>
+    </div>
+    <iframe id="attachViewerFrame" sandbox="" title="Attachment preview"></iframe>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeAttachViewer()">Close</button>
+      <button class="btn-save" onclick="downloadCurrentAttachment()">Download</button>
     </div>
   </div>
 </div>

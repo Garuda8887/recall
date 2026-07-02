@@ -43,6 +43,7 @@ const SharedUtils = (() => {
       reviewStreak:   s.review_streak  ?? 0,
       recurrenceRule: s.recurrence_rule || null,
       recurrenceId:   s.recurrence_id  || null,
+      attachments:    Array.isArray(s.attachments) ? s.attachments : [],
     };
   }
 

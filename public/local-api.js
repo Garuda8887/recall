@@ -15,7 +15,7 @@ const LocalAPI = (() => {
   // ── IndexedDB ──────────────────────────────────────────────────────────────
 
   const DB_NAME    = 'recall-local';
-  const DB_VERSION = 2;
+  const DB_VERSION = 3;
   let _dbPromise   = null;
 
   function openDB() {
@@ -34,6 +34,10 @@ const LocalAPI = (() => {
           db.createObjectStore('settings', { keyPath: 'key' });
         if (!db.objectStoreNames.contains('decks'))
           db.createObjectStore('decks', { keyPath: 'id' });
+        if (!db.objectStoreNames.contains('attachments'))
+          db.createObjectStore('attachments', { keyPath: 'id' });
+        if (!db.objectStoreNames.contains('files'))
+          db.createObjectStore('files', { keyPath: 'id' });
       };
     });
     return _dbPromise;
@@ -111,8 +115,9 @@ const LocalAPI = (() => {
         const exists = existingKeys.has(`${s.recurrence_id}:${nextDate}`);
         if (!exists) {
           const reviews = await buildReviews(nextDate);
+          const newId   = crypto.randomUUID();
           await dbPut('sessions', {
-            id:              crypto.randomUUID(),
+            id:              newId,
             topic:           s.topic,
             subject:         s.subject         || '',
             notes:           s.notes           || '',
@@ -124,6 +129,11 @@ const LocalAPI = (() => {
             recurrence_rule: s.recurrence_rule,
             recurrence_id:   s.recurrence_id,
           });
+          // Carry attachments over — new metadata rows sharing the same stored file
+          const allAtts = await dbGetAll('attachments');
+          for (const a of allAtts.filter(a => a.session_id === s.id)) {
+            await dbPut('attachments', { ...a, id: crypto.randomUUID(), session_id: newId });
+          }
           created++;
         }
         nextDate = nextRecurDate(nextDate, s.recurrence_rule);
@@ -135,22 +145,28 @@ const LocalAPI = (() => {
 
   // ── Response helpers ───────────────────────────────────────────────────────
 
-  function resp(data, status = 200) {
+  function resp(data, status = 200, blob = null) {
     return {
       ok:     status >= 200 && status < 300,
       status,
       json:   () => Promise.resolve(data),
+      blob:   () => Promise.resolve(blob),
       headers: { get: () => null },
     };
   }
+
+  const ATT_TYPES = { pdf: 'application/pdf', html: 'text/html', htm: 'text/html' };
+  const ATT_MAX   = 25 * 1024 * 1024;
 
   // ── Main router ────────────────────────────────────────────────────────────
 
   async function handle(url, options = {}) {
     try {
       const method = (options.method || 'GET').toUpperCase();
-      const body   = options.body ? JSON.parse(options.body) : {};
+      // Binary uploads (attachments) pass a Blob/File body — only parse strings
+      const body   = typeof options.body === 'string' ? JSON.parse(options.body) : {};
       const path   = url.split('?')[0].replace(/\/$/, '');
+      const query  = new URLSearchParams(url.split('?')[1] || '');
 
       // ── Auth stubs ──
       if (path === '/api/auth/me')
@@ -176,7 +192,16 @@ const LocalAPI = (() => {
         const newRecurrences = await createRecurrences();
         const sessions = await dbGetAll('sessions');
         sessions.sort((a, b) => b.studied_date.localeCompare(a.studied_date));
-        return resp({ sessions: sessions.map(toResponse), newRecurrences });
+        const attMap = {};
+        (await dbGetAll('attachments')).forEach(a => {
+          (attMap[a.session_id] = attMap[a.session_id] || []).push(
+            { id: a.id, filename: a.filename, mime: a.mime, size: a.size }
+          );
+        });
+        return resp({
+          sessions: sessions.map(s => toResponse({ ...s, attachments: attMap[s.id] || [] })),
+          newRecurrences
+        });
       }
 
       // ── POST /api/sessions ──
@@ -223,6 +248,54 @@ const LocalAPI = (() => {
           if (l.from_id === sessMatch[1] || l.to_id === sessMatch[1])
             await dbDel('links', l.id);
         }
+        // Remove its attachments + file blobs nothing else references
+        const allAtts = await dbGetAll('attachments');
+        const mine    = allAtts.filter(a => a.session_id === sessMatch[1]);
+        for (const a of mine) {
+          await dbDel('attachments', a.id);
+          const stillUsed = allAtts.some(x => x.file_id === a.file_id && x.session_id !== sessMatch[1]);
+          if (!stillUsed) await dbDel('files', a.file_id);
+        }
+        return resp({ ok: true });
+      }
+
+      // ── POST /api/sessions/:id/attachments ──
+      const attUpMatch = path.match(/^\/api\/sessions\/([^/]+)\/attachments$/);
+      if (attUpMatch && method === 'POST') {
+        const s = await dbGet('sessions', attUpMatch[1]);
+        if (!s) return resp({ error: 'Session not found' }, 404);
+        const blob = options.body;
+        if (!blob || !blob.size) return resp({ error: 'No file data received' }, 400);
+        if (blob.size > ATT_MAX)  return resp({ error: 'File too large (25 MB max)' }, 400);
+        const filename = String(query.get('filename') || 'file').slice(0, 200);
+        const mime = ATT_TYPES[filename.split('.').pop().toLowerCase()];
+        if (!mime) return resp({ error: 'Only .pdf and .html files are supported' }, 400);
+
+        const fileId = crypto.randomUUID();
+        await dbPut('files', { id: fileId, blob });
+        const att = {
+          id: crypto.randomUUID(), session_id: attUpMatch[1], file_id: fileId,
+          filename, mime, size: blob.size, created_at: new Date().toISOString(),
+        };
+        await dbPut('attachments', att);
+        return resp({ attachment: { id: att.id, filename, mime, size: blob.size } });
+      }
+
+      // ── GET/DELETE /api/attachments/:id ──
+      const attMatch = path.match(/^\/api\/attachments\/([^/]+)$/);
+      if (attMatch && method === 'GET') {
+        const att = await dbGet('attachments', attMatch[1]);
+        if (!att) return resp({ error: 'Not found' }, 404);
+        const file = await dbGet('files', att.file_id);
+        if (!file) return resp({ error: 'File missing' }, 404);
+        return resp({ ok: true }, 200, file.blob);
+      }
+      if (attMatch && method === 'DELETE') {
+        const att = await dbGet('attachments', attMatch[1]);
+        if (!att) return resp({ error: 'Not found' }, 404);
+        await dbDel('attachments', att.id);
+        const stillUsed = (await dbGetAll('attachments')).some(x => x.file_id === att.file_id);
+        if (!stillUsed) await dbDel('files', att.file_id);
         return resp({ ok: true });
       }
 
