@@ -15,7 +15,7 @@ const LocalAPI = (() => {
   // ── IndexedDB ──────────────────────────────────────────────────────────────
 
   const DB_NAME    = 'recall-local';
-  const DB_VERSION = 3;
+  const DB_VERSION = 4;
   let _dbPromise   = null;
 
   function openDB() {
@@ -38,6 +38,8 @@ const LocalAPI = (() => {
           db.createObjectStore('attachments', { keyPath: 'id' });
         if (!db.objectStoreNames.contains('files'))
           db.createObjectStore('files', { keyPath: 'id' });
+        if (!db.objectStoreNames.contains('tasks'))
+          db.createObjectStore('tasks', { keyPath: 'id' });
       };
     });
     return _dbPromise;
@@ -419,6 +421,61 @@ const LocalAPI = (() => {
       }
       if (deckMatch && method === 'DELETE') {
         await dbDel('decks', deckMatch[1]);
+        return resp({ ok: true });
+      }
+
+      // ── GET /api/tasks ──
+      if (path === '/api/tasks' && method === 'GET') {
+        const tasks = await dbGetAll('tasks');
+        tasks.sort((a, b) => b.created_at.localeCompare(a.created_at));
+        return resp({ tasks });
+      }
+
+      // ── POST /api/tasks ──
+      if (path === '/api/tasks' && method === 'POST') {
+        const { title, category, timeOfDay, dueDate, priority, notes, sessionId } = body;
+        if (!title) return resp({ error: 'title required' }, 400);
+        const TASK_TOD  = ['', 'morning', 'afternoon', 'evening'];
+        const TASK_PRIO = ['none', 'low', 'medium', 'high'];
+        const id = crypto.randomUUID();
+        await dbPut('tasks', {
+          id, user_id: 'local', title,
+          category:    category || '',
+          time_of_day: TASK_TOD.includes(timeOfDay) ? timeOfDay : '',
+          due_date:    dueDate || null,
+          priority:    TASK_PRIO.includes(priority) ? priority : 'none',
+          notes:       notes || '',
+          session_id:  sessionId || null,
+          done:        false,
+          created_at:  new Date().toISOString(),
+        });
+        return resp({ ok: true, id });
+      }
+
+      // ── PUT/DELETE /api/tasks/:id ──
+      const taskMatch = path.match(/^\/api\/tasks\/([^/]+)$/);
+      if (taskMatch && method === 'PUT') {
+        const t = await dbGet('tasks', taskMatch[1]);
+        if (!t) return resp({ error: 'Not found' }, 404);
+        const TASK_TOD  = ['', 'morning', 'afternoon', 'evening'];
+        const TASK_PRIO = ['none', 'low', 'medium', 'high'];
+        const title = body.title !== undefined ? body.title : t.title;
+        if (!title) return resp({ error: 'title required' }, 400);
+        await dbPut('tasks', {
+          ...t,
+          title,
+          category:    body.category   !== undefined ? (body.category || '') : t.category,
+          time_of_day: body.timeOfDay  !== undefined ? (TASK_TOD.includes(body.timeOfDay) ? body.timeOfDay : '') : t.time_of_day,
+          due_date:    body.dueDate    !== undefined ? (body.dueDate || null) : t.due_date,
+          priority:    body.priority   !== undefined ? (TASK_PRIO.includes(body.priority) ? body.priority : 'none') : t.priority,
+          notes:       body.notes      !== undefined ? (body.notes || '') : t.notes,
+          session_id:  body.sessionId  !== undefined ? (body.sessionId || null) : t.session_id,
+          done:        body.done       !== undefined ? Boolean(body.done) : t.done,
+        });
+        return resp({ ok: true });
+      }
+      if (taskMatch && method === 'DELETE') {
+        await dbDel('tasks', taskMatch[1]);
         return resp({ ok: true });
       }
 
