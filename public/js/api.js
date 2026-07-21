@@ -28,6 +28,14 @@
     } catch { decks = []; }
   }
 
+  async function loadTasks() {
+    try {
+      const res  = await authFetch('/api/tasks');
+      const data = await res.json();
+      tasks = data.tasks || [];
+    } catch { tasks = []; }
+  }
+
   function getDeckForSession(sessionId) {
     return decks.find(d => d.session_id === sessionId) || null;
   }
