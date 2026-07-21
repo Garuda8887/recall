@@ -60,6 +60,10 @@
   let deckEditorCards       = [];
   let deckEditorSession     = null;
   let editingDeckId         = null;
+  let tasks                 = [];
+  let taskGroupBy           = 'time';   // 'time' | 'category'
+  let activeTaskCategory    = null;     // active category filter, or null
+  let editingTaskId         = null;     // null = create, string = editing existing task
   let studyState            = null;
   let importedParsedCards   = [];
   let intervals             = [...DEFAULT_INTERVALS];
