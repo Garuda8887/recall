@@ -81,6 +81,22 @@ db.exec(`
   )
 `);
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS tasks (
+    id           TEXT PRIMARY KEY,
+    user_id      TEXT NOT NULL,
+    title        TEXT NOT NULL,
+    category     TEXT DEFAULT '',
+    time_of_day  TEXT DEFAULT '',
+    due_date     TEXT DEFAULT NULL,
+    priority     TEXT NOT NULL DEFAULT 'none',
+    notes        TEXT DEFAULT '',
+    session_id   TEXT DEFAULT NULL,
+    done         INTEGER NOT NULL DEFAULT 0,
+    created_at   TEXT NOT NULL
+  )
+`);
+
 // Migrations
 try { db.exec(`ALTER TABLE sessions ADD COLUMN subject         TEXT DEFAULT ''`); } catch {}
 try { db.exec(`ALTER TABLE sessions ADD COLUMN user_id         TEXT NOT NULL DEFAULT ''`); } catch {}
@@ -595,6 +611,63 @@ app.post('/api/decks/parse-apkg', requireAuth,
     }
   }
 );
+
+// ── Tasks ─────────────────────────────────────────────────────────────────────
+
+const TASK_TOD  = ['', 'morning', 'afternoon', 'evening'];
+const TASK_PRIO = ['none', 'low', 'medium', 'high'];
+
+app.get('/api/tasks', requireAuth, (req, res) => {
+  const rows = db.prepare('SELECT * FROM tasks WHERE user_id = ? ORDER BY created_at DESC').all(req.user.id);
+  res.json({ tasks: rows.map(r => ({ ...r, done: !!r.done })) });
+});
+
+app.post('/api/tasks', requireAuth, (req, res) => {
+  const { title, category, timeOfDay, dueDate, priority, notes, sessionId } = req.body;
+  if (!title) return res.status(400).json({ error: 'title required' });
+  const id = crypto.randomUUID();
+  db.prepare(
+    `INSERT INTO tasks (id, user_id, title, category, time_of_day, due_date, priority, notes, session_id, done, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`
+  ).run(
+    id, req.user.id, title,
+    category || '',
+    TASK_TOD.includes(timeOfDay) ? timeOfDay : '',
+    dueDate || null,
+    TASK_PRIO.includes(priority) ? priority : 'none',
+    notes || '',
+    sessionId || null,
+    new Date().toISOString()
+  );
+  res.json({ ok: true, id });
+});
+
+app.put('/api/tasks/:id', requireAuth, (req, res) => {
+  const task = db.prepare('SELECT * FROM tasks WHERE id = ? AND user_id = ?').get(req.params.id, req.user.id);
+  if (!task) return res.status(404).json({ error: 'Not found' });
+
+  const title = req.body.title !== undefined ? req.body.title : task.title;
+  if (!title) return res.status(400).json({ error: 'title required' });
+
+  const category   = req.body.category   !== undefined ? (req.body.category || '') : task.category;
+  const timeOfDay  = req.body.timeOfDay  !== undefined ? (TASK_TOD.includes(req.body.timeOfDay) ? req.body.timeOfDay : '') : task.time_of_day;
+  const dueDate    = req.body.dueDate    !== undefined ? (req.body.dueDate || null) : task.due_date;
+  const priority   = req.body.priority   !== undefined ? (TASK_PRIO.includes(req.body.priority) ? req.body.priority : 'none') : task.priority;
+  const notes      = req.body.notes      !== undefined ? (req.body.notes || '') : task.notes;
+  const sessionId  = req.body.sessionId  !== undefined ? (req.body.sessionId || null) : task.session_id;
+  const done       = req.body.done       !== undefined ? Boolean(req.body.done) : !!task.done;
+
+  db.prepare(
+    `UPDATE tasks SET title = ?, category = ?, time_of_day = ?, due_date = ?, priority = ?, notes = ?, session_id = ?, done = ?
+     WHERE id = ? AND user_id = ?`
+  ).run(title, category, timeOfDay, dueDate, priority, notes, sessionId, done ? 1 : 0, req.params.id, req.user.id);
+  res.json({ ok: true });
+});
+
+app.delete('/api/tasks/:id', requireAuth, (req, res) => {
+  db.prepare('DELETE FROM tasks WHERE id = ? AND user_id = ?').run(req.params.id, req.user.id);
+  res.json({ ok: true });
+});
 
 // ── Start ─────────────────────────────────────────────────────────────────────
 
