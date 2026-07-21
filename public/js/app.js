@@ -4,14 +4,15 @@
       ({ addModal: closeAddModal, dayModal: closeDayModal,
          statsModal: closeStats, settingsModal: closeSettings,
          cardSearchModal: closeCardSearch,
-         attachViewerModal: closeAttachViewer })[id]?.();
+         attachViewerModal: closeAttachViewer,
+         tasksModal: closeTasks })[id]?.();
     }
   }
 
   // ── Keyboard ─────────────────────────────────────────────
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
-      clearSearch(); closeAddModal(); closeDayModal(); closeStats(); closeSettings();
+      clearSearch(); closeAddModal(); closeDayModal(); closeStats(); closeSettings(); closeTasks();
       closeCurveModal(); closeLinkModal(); closeGraphModal();
       closeDeckPrompt(); closeDeckModal(); closeStudyModal(); closeCardSearch();
       closeSidebar(); closeAttachViewer();
@@ -267,6 +268,7 @@
   currentMonth = now.getMonth();
 
   loadExams();
+  loadTasks();
   Promise.all([loadSessions(), loadSettings(), loadDecks()]).then(() => renderCalendar());
 
   // ── Service Worker — unregister all to prevent stale cache ──
