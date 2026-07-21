@@ -259,6 +259,73 @@
   </div>
 </div>
 
+<!-- ── Tasks Modal ── -->
+<div class="modal-overlay" id="tasksModal" onclick="handleOverlayClick(event,'tasksModal')">
+  <div class="modal wide">
+    <div class="modal-header">
+      <h3>Tasks</h3>
+      <button class="modal-close" onclick="closeTasks()">&#215;</button>
+    </div>
+    <p class="subtitle">Sort by time of day or by category.</p>
+
+    <div class="form-group">
+      <label>Title</label>
+      <input type="text" id="taskTitleInput" placeholder="e.g. Revise Chapter 4 flashcards" autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label>Category <span style="font-weight:400;color:#94a3b8">(optional)</span></label>
+      <input type="text" id="taskCategoryInput" placeholder="e.g. Math, Errands…" list="taskCategoryList" autocomplete="off">
+      <datalist id="taskCategoryList"></datalist>
+    </div>
+    <div class="form-group">
+      <label>Time of day</label>
+      <select id="taskTimeInput">
+        <option value="">Anytime</option>
+        <option value="morning">Morning</option>
+        <option value="afternoon">Afternoon</option>
+        <option value="evening">Evening</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Due date <span style="font-weight:400;color:#94a3b8">(optional)</span></label>
+      <input type="date" id="taskDueInput">
+    </div>
+    <div class="form-group">
+      <label>Priority</label>
+      <select id="taskPriorityInput">
+        <option value="none">No priority</option>
+        <option value="low">Low</option>
+        <option value="medium">Medium</option>
+        <option value="high">High</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Notes <span style="font-weight:400;color:#94a3b8">(optional)</span></label>
+      <textarea id="taskNotesInput" placeholder="Anything worth remembering…"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Link to a study session <span style="font-weight:400;color:#94a3b8">(optional)</span></label>
+      <select id="taskSessionInput"><option value="">None</option></select>
+    </div>
+    <div class="modal-actions">
+      <a id="taskEditCancelLink" style="display:none;font-size:12px;cursor:pointer;color:#94a3b8;margin-right:auto" onclick="resetTaskForm()">Cancel edit</a>
+      <button class="btn-save" id="taskSaveBtn" onclick="saveTask()">Add task</button>
+    </div>
+
+    <div class="taskgroup-toggle">
+      <button class="taskgroup-btn active" id="groupByTimeBtn" onclick="setTaskGroupBy('time')">Time of day</button>
+      <button class="taskgroup-btn" id="groupByCategoryBtn" onclick="setTaskGroupBy('category')">Category</button>
+    </div>
+    <div class="tag-filter-row" id="taskCategoryFilterBar"></div>
+
+    <div id="taskGroups"></div>
+
+    <div class="modal-actions" style="margin-top:18px">
+      <button class="btn-cancel" onclick="closeTasks()">Close</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── Confidence Rating Modal ── -->
 <div class="modal-overlay" id="ratingModal" onclick="handleOverlayClick(event,'ratingModal')">
   <div class="modal rating-modal">
@@ -521,6 +588,11 @@
       Settings
       <span class="sidebar-nav-arrow">›</span>
     </button>
+    <button class="sidebar-nav-btn" onclick="closeSidebar();openTasks()">
+      <svg width="14" height="14" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><rect x="1.5" y="2.5" width="4" height="4" rx="1"/><rect x="1.5" y="9" width="4" height="4" rx="1"/><line x1="8" y1="4.5" x2="13.5" y2="4.5"/><line x1="8" y1="11" x2="13.5" y2="11"/></svg>
+      Tasks
+      <span class="sidebar-nav-arrow">›</span>
+    </button>
   </div>
 </div>
 
@@ -536,6 +608,7 @@
   <script src="/js/modals.js"></script>
   <script src="/js/flashcards.js"></script>
   <script src="/js/stats.js"></script>
+  <script src="/js/tasks.js"></script>
   <script src="/js/app.js"></script>
 
 </body>
