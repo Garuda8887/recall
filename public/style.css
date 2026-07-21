@@ -6819,3 +6819,12 @@ body.dark .recur-option-row input[type="number"] { background: var(--surface); b
   [data-theme="riso"] *, [data-theme="atlas"] *, [data-theme="abyss"] * { transition-duration: 0.01ms !important; }
 }
 
+
+/* ── Tasks ── */
+.taskgroup-toggle { display: flex; gap: 6px; margin: 18px 0 10px; }
+.taskgroup-btn {
+  padding: 6px 14px; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface); color: var(--tx-3); font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.taskgroup-btn.active { background: #ede9fe; border-color: #8b5cf6; color: #5b21b6; }
+.task-done .event-title { text-decoration: line-through; color: var(--tx-3); }
