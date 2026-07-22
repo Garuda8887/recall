@@ -7,52 +7,10 @@
       swatches: ['#edeae4','#6366f1','#f59e0b','#1a1917'],
     },
     {
-      id: 'pixel',
-      name: 'Pixel Game',
-      desc: '8-bit arcade',
-      swatches: ['#4A90D9','#FEFCE8','#E8220A','#FFD700'],
-    },
-    {
-      id: 'wabi',
-      name: 'Wabi-Sabi',
-      desc: 'Earthy & quiet',
-      swatches: ['#EDE8DF','#7C6347','#C4955A','#2A2118'],
-    },
-    {
-      id: 'brutalist',
-      name: 'Brutalist',
-      desc: 'Raw & unapologetic',
-      swatches: ['#C8C4BC','#000000','#E8000A','#FFFF00'],
-    },
-    {
-      id: 'synthwave',
-      name: 'Synthwave',
-      desc: 'Neon & midnight',
-      swatches: ['#0B0821','#FF0090','#00FFFF','#9B00FF'],
-    },
-    {
-      id: 'terminal',
-      name: 'Terminal',
-      desc: 'Hacker green',
-      swatches: ['#0A0E0A','#00FF41','#FFFF00','#0D120D'],
-    },
-    {
-      id: 'y2k',
-      name: 'Y2K',
-      desc: 'Chrome & gloss',
-      swatches: ['#DDE8F8','#0055FF','#FF6600','#F0F6FF'],
-    },
-    {
       id: 'sakura',
       name: 'Sakura',
       desc: 'Cherry blossom',
       swatches: ['#FFF5F8','#D4607A','#F0C8D8','#1C0F14'],
-    },
-    {
-      id: 'wisteria',
-      name: 'Wisteria',
-      desc: 'Cascading blooms',
-      swatches: ['#F8F5FF','#8B5CF6','#D8CCF0','#1A1228'],
     },
     {
       id: 'peach',
@@ -61,58 +19,10 @@
       swatches: ['#FFF8F3','#E8704A','#F0CFBA','#1F120A'],
     },
     {
-      id: 'moonlit',
-      name: 'Moonlit Sakura',
-      desc: 'Night-blooming',
-      swatches: ['#130A0E','#F472B6','#3D1E30','#FFE8F0'],
-    },
-    {
-      id: 'aurora',
-      name: 'Aurora',
-      desc: 'Northern lights',
-      swatches: ['#050D1A','#00E5A0','#7B5FFF','#0B1928'],
-    },
-    {
-      id: 'noir',
-      name: 'Noir',
-      desc: 'Film detective',
-      swatches: ['#0E0C0B','#D4A84B','#F2E8D4','#1A1714'],
-    },
-    {
       id: 'candy',
       name: 'Candy',
       desc: 'Bubbly & sweet',
       swatches: ['#F0E8FF','#FF4DA6','#9B5FFF','#3BEBA0'],
-    },
-    {
-      id: 'cyberpunk',
-      name: 'Cyberpunk',
-      desc: 'Neon dystopia',
-      swatches: ['#FCE205','#00F0FF','#FF003C','#111111'],
-    },
-    {
-      id: 'glass',
-      name: 'Ethereal Glass',
-      desc: 'Frosted & dreamy',
-      swatches: ['#FFFFFF','#8FA6F5','#EABFF0','#F1F5F9'],
-    },
-    {
-      id: 'atlas',
-      name: 'Celestial Atlas',
-      desc: 'Engraved star chart',
-      swatches: ['#0E1626','#D4AF6A','#EDE4CF','#2B3B58'],
-    },
-    {
-      id: 'riso',
-      name: 'Risograph',
-      desc: 'Overprinted zine',
-      swatches: ['#FAF5EA','#FF48B0','#0078BF','#1D1D1B'],
-    },
-    {
-      id: 'abyss',
-      name: 'The Abyss',
-      desc: 'Bioluminescent deep',
-      swatches: ['#041318','#3EF2D2','#9D7BFF','#082028'],
     },
   ];
 
