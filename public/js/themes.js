@@ -7,6 +7,12 @@
       swatches: ['#edeae4','#6366f1','#f59e0b','#1a1917'],
     },
     {
+      id: 'lotus',
+      name: 'White Lotus',
+      desc: 'Sunlit travertine',
+      swatches: ['#FDFBF7','#1B4953','#C86D51','#D4AF37'],
+    },
+    {
       id: 'sakura',
       name: 'Sakura',
       desc: 'Cherry blossom',

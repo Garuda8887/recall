@@ -333,6 +333,29 @@
       }
     };
 
+    /* Sunlit dust — motes drifting up through a shaft of afternoon light,
+       not petals falling. Slower and sparser than SAKURA/PEACH on purpose. */
+    const LOTUS = {
+      count:22,
+      spawn:()=>({x:R(0,W),y:R(H,H*1.6),vy:R(0.10,0.34),
+        sz:R(0.8,2.4),sw:R(0,Math.PI*2),swV:R(0.004,0.014),
+        gl:R(0,Math.PI*2),glV:R(0.008,0.022),
+        a:R(0.20,0.55),h:R(38,50),s:R(52,78),l:R(66,84)}),
+      update(p){
+        p.sw+=p.swV;p.gl+=p.glV;
+        p.x+=Math.sin(p.sw)*0.28;p.y-=p.vy;
+        if(p.y<-20){p.y=H+R(10,140);p.x=R(0,W);}
+      },
+      draw(p){
+        cx.save();
+        cx.globalAlpha=p.a*(0.45+0.55*Math.abs(Math.sin(p.gl)));
+        const c=`hsl(${p.h},${p.s}%,${p.l}%)`;
+        cx.shadowBlur=7;cx.shadowColor=c;cx.fillStyle=c;
+        cx.beginPath();cx.arc(p.x,p.y,p.sz,0,Math.PI*2);cx.fill();
+        cx.restore();
+      }
+    };
+
     function spawnAll() {
       pts = [];
       for (let i=0; i<activeCfg.count; i++) {
@@ -349,7 +372,7 @@
     }
 
     window._setThemeParticles = function(id) {
-      const CONFIGS = {sakura:SAKURA, peach:PEACH};
+      const CONFIGS = {sakura:SAKURA, peach:PEACH, lotus:LOTUS};
       const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
       activeCfg = reduced ? null : (CONFIGS[id] || null);
       cx.clearRect(0,0,W,H);
