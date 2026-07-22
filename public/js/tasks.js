@@ -9,16 +9,22 @@
     populateTaskCategoryDatalist();
     resetTaskForm();
     renderTasks();
-    if (!tasks.length) setTaskFormVisible(true);
     document.getElementById('tasksModal').classList.add('active');
+    loadTasks().then(() => {
+      populateTaskCategoryDatalist();
+      renderTasks();
+      if (!tasks.length) setTaskFormVisible(true);
+    });
   }
 
   function setTaskFormVisible(show) {
-    document.getElementById('taskFormWrap').style.display    = show ? '' : 'none';
-    document.getElementById('taskAddToggleBtn').style.display = show ? 'none' : '';
+    document.getElementById('taskFormWrap').style.display = show ? '' : 'none';
+    document.getElementById('taskAddToggleBtn').textContent = show ? 'Cancel' : '+ Add task';
   }
 
   function toggleTaskForm() {
+    const isOpen = document.getElementById('taskFormWrap').style.display !== 'none';
+    if (isOpen) { resetTaskForm(); return; }
     setTaskFormVisible(true);
     document.getElementById('taskTitleInput').focus();
   }
@@ -39,7 +45,7 @@
     dl.innerHTML = cats.map(c => `<option value="${escHtml(c)}">`).join('');
   }
 
-  function resetTaskForm() {
+  function resetTaskForm(keepOpen) {
     document.getElementById('taskTitleInput').value    = '';
     document.getElementById('taskCategoryInput').value = '';
     document.getElementById('taskTimeInput').value     = '';
@@ -49,8 +55,8 @@
     document.getElementById('taskSessionInput').value  = '';
     editingTaskId = null;
     document.getElementById('taskSaveBtn').textContent = 'Add task';
-    document.getElementById('taskEditCancelLink').style.display = 'none';
-    setTaskFormVisible(false);
+    if (keepOpen) document.getElementById('taskTitleInput').focus();
+    else setTaskFormVisible(false);
   }
 
   function editTask(id) {
@@ -66,7 +72,6 @@
     document.getElementById('taskNotesInput').value    = t.notes || '';
     document.getElementById('taskSessionInput').value  = t.session_id || '';
     document.getElementById('taskSaveBtn').textContent = 'Save changes';
-    document.getElementById('taskEditCancelLink').style.display = '';
     document.getElementById('taskTitleInput').focus();
   }
 
@@ -109,7 +114,7 @@
         });
         showToast('Task added');
       }
-      resetTaskForm();
+      resetTaskForm(!editingTaskId);
       populateTaskCategoryDatalist();
       renderTasks();
     } catch {
@@ -196,7 +201,7 @@
     renderTaskCategoryFilterBar();
     const wrap = document.getElementById('taskGroups');
     const list = visibleTasks();
-    if (!list.length) { wrap.innerHTML = '<div class="empty-day">No tasks yet — add one above.</div>'; return; }
+    if (!list.length) { wrap.innerHTML = '<div class="empty-day">No tasks yet — add one below.</div>'; return; }
 
     const groups = {};
     list.forEach(t => { const k = taskGroupKey(t); (groups[k] = groups[k] || []).push(t); });
