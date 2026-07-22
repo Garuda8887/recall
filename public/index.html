@@ -271,50 +271,6 @@
     </div>
     <p class="subtitle">Sort by time of day or by category.</p>
 
-    <div class="form-group">
-      <label>Title</label>
-      <input type="text" id="taskTitleInput" placeholder="e.g. Revise Chapter 4 flashcards" autocomplete="off">
-    </div>
-    <div class="form-group">
-      <label>Category <span style="font-weight:400;color:#94a3b8">(optional)</span></label>
-      <input type="text" id="taskCategoryInput" placeholder="e.g. Math, Errands…" list="taskCategoryList" autocomplete="off">
-      <datalist id="taskCategoryList"></datalist>
-    </div>
-    <div class="form-group">
-      <label>Time of day</label>
-      <select id="taskTimeInput">
-        <option value="">Anytime</option>
-        <option value="morning">Morning</option>
-        <option value="afternoon">Afternoon</option>
-        <option value="evening">Evening</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>Due date <span style="font-weight:400;color:#94a3b8">(optional)</span></label>
-      <input type="date" id="taskDueInput">
-    </div>
-    <div class="form-group">
-      <label>Priority</label>
-      <select id="taskPriorityInput">
-        <option value="none">No priority</option>
-        <option value="low">Low</option>
-        <option value="medium">Medium</option>
-        <option value="high">High</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>Notes <span style="font-weight:400;color:#94a3b8">(optional)</span></label>
-      <textarea id="taskNotesInput" placeholder="Anything worth remembering…"></textarea>
-    </div>
-    <div class="form-group">
-      <label>Link to a study session <span style="font-weight:400;color:#94a3b8">(optional)</span></label>
-      <select id="taskSessionInput"><option value="">None</option></select>
-    </div>
-    <div class="modal-actions">
-      <a id="taskEditCancelLink" style="display:none;font-size:12px;cursor:pointer;color:#94a3b8;margin-right:auto" onclick="resetTaskForm()">Cancel edit</a>
-      <button class="btn-save" id="taskSaveBtn" onclick="saveTask()">Add task</button>
-    </div>
-
     <div class="taskgroup-toggle">
       <button class="taskgroup-btn active" id="groupByTimeBtn" onclick="setTaskGroupBy('time')">Time of day</button>
       <button class="taskgroup-btn" id="groupByCategoryBtn" onclick="setTaskGroupBy('category')">Category</button>
@@ -322,6 +278,54 @@
     <div class="tag-filter-row" id="taskCategoryFilterBar"></div>
 
     <div id="taskGroups"></div>
+
+    <button class="add-btn" id="taskAddToggleBtn" style="margin:14px 0" onclick="toggleTaskForm()">+ Add task</button>
+
+    <div id="taskFormWrap" style="display:none">
+      <div class="form-group">
+        <label>Title</label>
+        <input type="text" id="taskTitleInput" placeholder="e.g. Revise Chapter 4 flashcards" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label>Category <span class="optional-label">(optional)</span></label>
+        <input type="text" id="taskCategoryInput" placeholder="e.g. Math, Errands…" list="taskCategoryList" autocomplete="off">
+        <datalist id="taskCategoryList"></datalist>
+      </div>
+      <div class="form-group">
+        <label>Time of day</label>
+        <select id="taskTimeInput">
+          <option value="">Anytime</option>
+          <option value="morning">Morning</option>
+          <option value="afternoon">Afternoon</option>
+          <option value="evening">Evening</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Due date <span class="optional-label">(optional)</span></label>
+        <input type="date" id="taskDueInput">
+      </div>
+      <div class="form-group">
+        <label>Priority</label>
+        <select id="taskPriorityInput">
+          <option value="none">No priority</option>
+          <option value="low">Low</option>
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Notes <span class="optional-label">(optional)</span></label>
+        <textarea id="taskNotesInput" placeholder="Anything worth remembering…"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Link to a study session <span class="optional-label">(optional)</span></label>
+        <select id="taskSessionInput"><option value="">None</option></select>
+      </div>
+      <div class="modal-actions">
+        <a id="taskEditCancelLink" class="cancel-edit-link" style="display:none" onclick="resetTaskForm()">Cancel edit</a>
+        <button class="btn-save" id="taskSaveBtn" onclick="saveTask()">Add task</button>
+      </div>
+    </div>
 
     <div class="modal-actions" style="margin-top:18px">
       <button class="btn-cancel" onclick="closeTasks()">Close</button>

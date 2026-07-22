@@ -9,7 +9,18 @@
     populateTaskCategoryDatalist();
     resetTaskForm();
     renderTasks();
+    if (!tasks.length) setTaskFormVisible(true);
     document.getElementById('tasksModal').classList.add('active');
+  }
+
+  function setTaskFormVisible(show) {
+    document.getElementById('taskFormWrap').style.display    = show ? '' : 'none';
+    document.getElementById('taskAddToggleBtn').style.display = show ? 'none' : '';
+  }
+
+  function toggleTaskForm() {
+    setTaskFormVisible(true);
+    document.getElementById('taskTitleInput').focus();
   }
 
   function closeTasks() {
@@ -39,12 +50,14 @@
     editingTaskId = null;
     document.getElementById('taskSaveBtn').textContent = 'Add task';
     document.getElementById('taskEditCancelLink').style.display = 'none';
+    setTaskFormVisible(false);
   }
 
   function editTask(id) {
     const t = tasks.find(x => x.id === id);
     if (!t) return;
     editingTaskId = id;
+    setTaskFormVisible(true);
     document.getElementById('taskTitleInput').value    = t.title;
     document.getElementById('taskCategoryInput').value = t.category || '';
     document.getElementById('taskTimeInput').value     = t.time_of_day || '';
@@ -153,7 +166,7 @@
   function renderTaskRow(t) {
     const due  = t.due_date ? `<span class="scheduled-badge">Due ${displayDate(t.due_date)}</span>` : '';
     const cc   = t.category ? getSubjectColor(t.category) : null;
-    const cat  = t.category
+    const cat  = (t.category && taskGroupBy !== 'category')
       ? `<span class="session-tag" style="background:${cc.bg};color:${cc.text};border-color:${cc.border}">${escHtml(t.category)}</span>`
       : '';
     const sess = t.session_id ? sessions.find(s => s.id === t.session_id) : null;
