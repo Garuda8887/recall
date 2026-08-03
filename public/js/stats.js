@@ -560,23 +560,6 @@
     renderThemeGrid();
     renderIntervalsList(intervals);
     buildSubjectColorsList();
-    
-    // Change password visibility & reset fields
-    const isLocal = localStorage.getItem('recall_mode') === 'local';
-    if (isLocal) {
-      document.getElementById('changePasswordSection').style.display = 'none';
-      document.getElementById('changePasswordLocalNotice').style.display = 'block';
-    } else {
-      document.getElementById('changePasswordSection').style.display = 'block';
-      document.getElementById('changePasswordLocalNotice').style.display = 'none';
-      document.getElementById('oldPasswordInput').value = '';
-      document.getElementById('newPasswordInput').value = '';
-      document.getElementById('confirmPasswordInput').value = '';
-      const msgEl = document.getElementById('changePasswordMessage');
-      msgEl.style.display = 'none';
-      msgEl.textContent = '';
-    }
-
     document.getElementById('settingsModal').classList.add('active');
   }
 
@@ -683,4 +666,27 @@
       msgEl.style.color = 'var(--amber-dk)';
       msgEl.style.display = 'block';
     }
+  }
+
+  function openChangePasswordModal() {
+    const menu = document.getElementById('userMenu');
+    if (menu) menu.classList.remove('open');
+
+    const isLocal = localStorage.getItem('recall_mode') === 'local';
+    if (isLocal) {
+      showToast('ℹ️ Change password is not available in local mode.');
+      return;
+    }
+
+    document.getElementById('oldPasswordInput').value = '';
+    document.getElementById('newPasswordInput').value = '';
+    document.getElementById('confirmPasswordInput').value = '';
+    const msgEl = document.getElementById('changePasswordMessage');
+    msgEl.style.display = 'none';
+    msgEl.textContent = '';
+    document.getElementById('changePasswordModal').classList.add('active');
+  }
+
+  function closeChangePasswordModal() {
+    document.getElementById('changePasswordModal').classList.remove('active');
   }

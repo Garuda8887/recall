@@ -5,6 +5,7 @@
          statsModal: closeStats, settingsModal: closeSettings,
          cardSearchModal: closeCardSearch,
          attachViewerModal: closeAttachViewer,
+         changePasswordModal: closeChangePasswordModal,
          tasksModal: closeTasks })[id]?.();
     }
   }
@@ -15,7 +16,7 @@
       clearSearch(); closeAddModal(); closeDayModal(); closeStats(); closeSettings(); closeTasks();
       closeCurveModal(); closeLinkModal(); closeGraphModal();
       closeDeckPrompt(); closeDeckModal(); closeStudyModal(); closeCardSearch();
-      closeSidebar(); closeAttachViewer();
+      closeSidebar(); closeAttachViewer(); closeChangePasswordModal();
     }
     // Study modal keyboard navigation
     if (studyState) {
