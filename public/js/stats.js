@@ -560,6 +560,23 @@
     renderThemeGrid();
     renderIntervalsList(intervals);
     buildSubjectColorsList();
+    
+    // Change password visibility & reset fields
+    const isLocal = localStorage.getItem('recall_mode') === 'local';
+    if (isLocal) {
+      document.getElementById('changePasswordSection').style.display = 'none';
+      document.getElementById('changePasswordLocalNotice').style.display = 'block';
+    } else {
+      document.getElementById('changePasswordSection').style.display = 'block';
+      document.getElementById('changePasswordLocalNotice').style.display = 'none';
+      document.getElementById('oldPasswordInput').value = '';
+      document.getElementById('newPasswordInput').value = '';
+      document.getElementById('confirmPasswordInput').value = '';
+      const msgEl = document.getElementById('changePasswordMessage');
+      msgEl.style.display = 'none';
+      msgEl.textContent = '';
+    }
+
     document.getElementById('settingsModal').classList.add('active');
   }
 
@@ -605,3 +622,65 @@
   }
 
   function closeSettings() { document.getElementById('settingsModal').classList.remove('active'); }
+
+  async function submitChangePassword() {
+    const oldPassword = document.getElementById('oldPasswordInput').value;
+    const newPassword = document.getElementById('newPasswordInput').value;
+    const confirmPassword = document.getElementById('confirmPasswordInput').value;
+    const msgEl = document.getElementById('changePasswordMessage');
+
+    // Reset message
+    msgEl.style.display = 'none';
+    msgEl.textContent = '';
+    msgEl.style.color = '';
+
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      msgEl.textContent = 'All fields are required.';
+      msgEl.style.color = 'var(--amber-dk)';
+      msgEl.style.display = 'block';
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      msgEl.textContent = 'New password must be at least 8 characters.';
+      msgEl.style.color = 'var(--amber-dk)';
+      msgEl.style.display = 'block';
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      msgEl.textContent = 'New passwords do not match.';
+      msgEl.style.color = 'var(--amber-dk)';
+      msgEl.style.display = 'block';
+      return;
+    }
+
+    try {
+      const res = await authFetch('/api/user/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ oldPassword, newPassword })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        msgEl.textContent = data.error || 'Failed to update password.';
+        msgEl.style.color = 'var(--amber-dk)';
+        msgEl.style.display = 'block';
+      } else {
+        msgEl.textContent = 'Password updated successfully!';
+        msgEl.style.color = 'var(--accent)';
+        msgEl.style.display = 'block';
+        // Clear fields
+        document.getElementById('oldPasswordInput').value = '';
+        document.getElementById('newPasswordInput').value = '';
+        document.getElementById('confirmPasswordInput').value = '';
+      }
+    } catch (err) {
+      console.error(err);
+      msgEl.textContent = 'Network or server error.';
+      msgEl.style.color = 'var(--amber-dk)';
+      msgEl.style.display = 'block';
+    }
+  }

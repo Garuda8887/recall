@@ -19,585 +19,614 @@
 </head>
 <body>
 
-<header>
-  <div class="logo">recall<span>.</span></div>
-  <div class="header-right">
-    <div class="search-wrap">
-      <button class="icon-btn" id="searchBtn" title="Search topics and notes (/ or ⌘K)" onclick="focusSearch()">
+  <header>
+    <div class="logo">recall<span>.</span></div>
+    <div class="header-right">
+      <div class="search-wrap">
+        <button class="icon-btn" id="searchBtn" title="Search topics and notes (/ or ⌘K)" onclick="focusSearch()">
         <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
           <circle cx="6.5" cy="6.5" r="4.5"/>
           <line x1="10" y1="10" x2="13.5" y2="13.5"/>
-        </svg>
-      </button>
+          </svg>
+        </button>
       <input class="search-input" id="searchInput" placeholder="Search topics, notes…" autocomplete="off" spellcheck="false">
-      <button class="search-clear" id="searchClear" title="Clear search" onclick="clearSearch()">×</button>
-    </div>
-    <span class="search-count" id="searchCount"></span>
-    <div class="streak" id="streakBadge"></div>
-    <button class="icon-btn" id="tasksBtn" title="Tasks" onclick="openTasks()">
+        <button class="search-clear" id="searchClear" title="Clear search" onclick="clearSearch()">×</button>
+      </div>
+      <span class="search-count" id="searchCount"></span>
+      <div class="streak" id="streakBadge"></div>
+      <button class="icon-btn" id="tasksBtn" title="Tasks" onclick="openTasks()">
       <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><rect x="1.5" y="2.5" width="4" height="4" rx="1"/><rect x="1.5" y="9" width="4" height="4" rx="1"/><line x1="8" y1="4.5" x2="13.5" y2="4.5"/><line x1="8" y1="11" x2="13.5" y2="11"/></svg>
-    </button>
-    <button class="icon-btn" id="darkToggle" title="Toggle dark mode" onclick="toggleDark()"></button>
+      </button>
+      <button class="icon-btn" id="darkToggle" title="Toggle dark mode" onclick="toggleDark()"></button>
     <button class="add-btn" onclick="openAddModal()" title="Log a study session (N)">&#43;<span class="add-btn-text"> Log Study Session</span></button>
-    <div class="user-avatar" id="userAvatar" title="" onclick="toggleUserMenu()"></div>
-    <div class="user-menu" id="userMenu">
-      <div class="user-menu-email" id="userMenuEmail"></div>
-      <button class="user-menu-item logout-item" onclick="logout()">Sign out</button>
-    </div>
-    <button class="icon-btn" id="menuBtn" title="Menu" onclick="openSidebar()">
+      <div class="user-avatar" id="userAvatar" title="" onclick="toggleUserMenu()"></div>
+      <div class="user-menu" id="userMenu">
+        <div class="user-menu-email" id="userMenuEmail"></div>
+        <button class="user-menu-item logout-item" onclick="logout()">Sign out</button>
+      </div>
+      <button class="icon-btn" id="menuBtn" title="Menu" onclick="openSidebar()">
       <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg">
         <line x1="2" y1="4" x2="13" y2="4"/>
         <line x1="2" y1="7.5" x2="13" y2="7.5"/>
         <line x1="2" y1="11" x2="13" y2="11"/>
-      </svg>
-    </button>
-  </div>
-</header>
+        </svg>
+      </button>
+    </div>
+  </header>
 
-<div class="calendar-container">
-  <div id="emptyState" style="display:none">
-    <div class="empty-state-card">
-      <div class="empty-state-icon">🧠</div>
-      <h2 class="empty-state-title">Welcome to Recall</h2>
+  <div class="calendar-container">
+    <div id="emptyState" style="display:none">
+      <div class="empty-state-card">
+        <div class="empty-state-icon">🧠</div>
+        <h2 class="empty-state-title">Welcome to Recall</h2>
       <p class="empty-state-body">Log what you study today and Recall will automatically schedule review sessions across your calendar — so you never forget.</p>
-      <button class="add-btn empty-state-btn" onclick="openAddModal()">+ Log Your First Session</button>
-      <p class="empty-state-hint">Based on the Ebbinghaus forgetting curve · Reviews at +1, +3, +7, +14, +30 days</p>
-    </div>
-  </div>
-  <div id="dueToday"></div>
-  <div class="filter-bar" id="filterBar"></div>
-  <div class="tag-filter-row" id="tagFilterBar"></div>
-
-  <div class="calendar-nav">
-    <h2 id="monthYear"></h2>
-    <span id="buildTag" style="display:none;font-size:10px;color:#94a3b8;margin-left:8px">ef6bd8c</span>
-    <div class="nav-controls">
-      <button class="today-btn" onclick="goToToday()">Today</button>
-      <button class="nav-btn" onclick="prevMonth()">&#8249;</button>
-      <button class="nav-btn" onclick="nextMonth()">&#8250;</button>
-    </div>
-  </div>
-
-  <div class="calendar-outer" id="calendarOuter">
-    <div class="calendar-grid" id="calendarGrid">
-      <div class="cal-row">
-        <div class="day-header">Sun</div>
-        <div class="day-header">Mon</div>
-        <div class="day-header">Tue</div>
-        <div class="day-header">Wed</div>
-        <div class="day-header">Thu</div>
-        <div class="day-header">Fri</div>
-        <div class="day-header">Sat</div>
+        <button class="add-btn empty-state-btn" onclick="openAddModal()">+ Log Your First Session</button>
+        <p class="empty-state-hint">Based on the Ebbinghaus forgetting curve · Reviews at +1, +3, +7, +14, +30 days</p>
       </div>
     </div>
+    <div id="dueToday"></div>
+    <div class="filter-bar" id="filterBar"></div>
+    <div class="tag-filter-row" id="tagFilterBar"></div>
+
+    <div class="calendar-nav">
+      <h2 id="monthYear"></h2>
+      <span id="buildTag" style="display:none;font-size:10px;color:#94a3b8;margin-left:8px">ef6bd8c</span>
+      <div class="nav-controls">
+        <button class="today-btn" onclick="goToToday()">Today</button>
+        <button class="nav-btn" onclick="prevMonth()">&#8249;</button>
+        <button class="nav-btn" onclick="nextMonth()">&#8250;</button>
+      </div>
+    </div>
+
+    <div class="calendar-outer" id="calendarOuter">
+      <div class="calendar-grid" id="calendarGrid">
+        <div class="cal-row">
+          <div class="day-header">Sun</div>
+          <div class="day-header">Mon</div>
+          <div class="day-header">Tue</div>
+          <div class="day-header">Wed</div>
+          <div class="day-header">Thu</div>
+          <div class="day-header">Fri</div>
+          <div class="day-header">Sat</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="legend" id="legend"></div>
   </div>
 
-  <div class="legend" id="legend"></div>
-</div>
-
-<!-- ── Add Study Modal ── -->
-<div class="modal-overlay" id="addModal" onclick="handleOverlayClick(event,'addModal')">
-  <div class="modal">
-    <div class="modal-header">
-      <h3>Log Study Session</h3>
-      <button class="modal-close" onclick="closeAddModal()">&#215;</button>
-    </div>
-    <p class="subtitle">Reviews will be auto-scheduled based on the forgetting curve.</p>
-    <div class="form-group">
-      <label>What did you study?</label>
-      <input type="text" id="topicInput" placeholder="e.g. Calculus Ch.3, Spanish vocab, React hooks…" />
-    </div>
-    <div class="form-group">
-      <label>Subject <span style="font-weight:400;color:#94a3b8">(optional)</span></label>
+  <!-- ── Add Study Modal ── -->
+  <div class="modal-overlay" id="addModal" onclick="handleOverlayClick(event,'addModal')">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Log Study Session</h3>
+        <button class="modal-close" onclick="closeAddModal()">&#215;</button>
+      </div>
+      <p class="subtitle">Reviews will be auto-scheduled based on the forgetting curve.</p>
+      <div class="form-group">
+        <label>What did you study?</label>
+        <input type="text" id="topicInput" placeholder="e.g. Calculus Ch.3, Spanish vocab, React hooks…" />
+      </div>
+      <div class="form-group">
+        <label>Subject <span style="font-weight:400;color:#94a3b8">(optional)</span></label>
       <input type="text" id="subjectInput" placeholder="e.g. Math, Spanish, Biology…" list="subjectList" autocomplete="off" />
-      <datalist id="subjectList"></datalist>
-    </div>
-    <div class="form-group">
-      <label>Date studied</label>
-      <input type="date" id="dateInput" />
-    </div>
-    <div class="form-group recur-group" id="recurGroup">
-      <label class="recur-toggle-label">
-        <input type="checkbox" id="recurCheck" onchange="toggleRecurOptions()">
-        Repeat this session
-      </label>
-      <div class="recur-options" id="recurOptions" style="display:none">
-        <div class="recur-option-row">
+        <datalist id="subjectList"></datalist>
+      </div>
+      <div class="form-group">
+        <label>Date studied</label>
+        <input type="date" id="dateInput" />
+      </div>
+      <div class="form-group recur-group" id="recurGroup">
+        <label class="recur-toggle-label">
+          <input type="checkbox" id="recurCheck" onchange="toggleRecurOptions()">
+          Repeat this session
+        </label>
+        <div class="recur-options" id="recurOptions" style="display:none">
+          <div class="recur-option-row">
           <input type="radio" name="recurType" id="recurTypeWeekly" value="weekly" checked onchange="syncRecurPreview()">
-          <label for="recurTypeWeekly">Every</label>
-          <select id="recurWeekday" onchange="syncRecurPreview()">
-            <option value="0">Sunday</option>
-            <option value="1">Monday</option>
-            <option value="2">Tuesday</option>
-            <option value="3">Wednesday</option>
-            <option value="4">Thursday</option>
-            <option value="5">Friday</option>
-            <option value="6">Saturday</option>
-          </select>
-        </div>
-        <div class="recur-option-row">
-          <input type="radio" name="recurType" id="recurTypeInterval" value="interval" onchange="syncRecurPreview()">
-          <label for="recurTypeInterval">Every</label>
-          <input type="number" id="recurDays" value="7" min="1" max="365" onchange="syncRecurPreview()">
-          <span>days</span>
+            <label for="recurTypeWeekly">Every</label>
+            <select id="recurWeekday" onchange="syncRecurPreview()">
+              <option value="0">Sunday</option>
+              <option value="1">Monday</option>
+              <option value="2">Tuesday</option>
+              <option value="3">Wednesday</option>
+              <option value="4">Thursday</option>
+              <option value="5">Friday</option>
+              <option value="6">Saturday</option>
+            </select>
+          </div>
+          <div class="recur-option-row">
+            <input type="radio" name="recurType" id="recurTypeInterval" value="interval" onchange="syncRecurPreview()">
+            <label for="recurTypeInterval">Every</label>
+            <input type="number" id="recurDays" value="7" min="1" max="365" onchange="syncRecurPreview()">
+            <span>days</span>
+          </div>
         </div>
       </div>
-    </div>
-    <div class="form-group">
-      <label>Notes <span style="font-weight:400;color:#94a3b8">(optional)</span></label>
-      <textarea id="notesInput" placeholder="Anything worth remembering about this session…"></textarea>
-    </div>
-    <div class="form-group">
-      <label>Tags <span style="font-weight:400;color:#94a3b8">(optional)</span></label>
-      <div class="tag-input-wrap" id="tagInputWrap" onclick="document.getElementById('tagChipInput').focus()">
+      <div class="form-group">
+        <label>Notes <span style="font-weight:400;color:#94a3b8">(optional)</span></label>
+        <textarea id="notesInput" placeholder="Anything worth remembering about this session…"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Tags <span style="font-weight:400;color:#94a3b8">(optional)</span></label>
+        <div class="tag-input-wrap" id="tagInputWrap" onclick="document.getElementById('tagChipInput').focus()">
         <input class="tag-chip-input" id="tagChipInput" placeholder="Type a tag and press Enter…" autocomplete="off" spellcheck="false">
+        </div>
       </div>
-    </div>
-    <div class="form-group">
+      <div class="form-group">
       <label>Attachments <span style="font-weight:400;color:#94a3b8">(optional — PDF or HTML, 25 MB max)</span></label>
       <input type="file" id="attachInput" accept=".pdf,.html,.htm" multiple style="display:none" onchange="handleAttachPick(this.files); this.value='';">
       <button type="button" class="btn-ghost attach-add-btn" onclick="document.getElementById('attachInput').click()">&#128206; Add files</button>
-      <div class="attach-chips" id="attachChips"></div>
-    </div>
-    <div class="review-preview">
-      <p>Scheduled reviews</p>
-      <div class="review-chips" id="reviewChips"></div>
-    </div>
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeAddModal()">Cancel</button>
-      <button class="btn-save" id="saveBtn" onclick="saveStudySession()">Save &amp; Schedule</button>
-    </div>
-  </div>
-</div>
-
-<!-- ── Day Detail Modal ── -->
-<div class="modal-overlay" id="dayModal" onclick="handleOverlayClick(event,'dayModal')">
-  <div class="modal">
-    <div class="modal-header">
-      <h3 id="dayModalTitle"></h3>
-      <button class="modal-close" onclick="closeDayModal()">&#215;</button>
-    </div>
-    <p class="subtitle">Click a review to mark it complete.</p>
-    <div id="dayModalEvents"></div>
-    <div class="modal-actions" style="margin-top:18px">
-      <button class="btn-cancel" onclick="closeDayModal()">Close</button>
-      <button class="btn-save" onclick="openAddModalForDate(currentDayDate)">&#43; Add Study</button>
-    </div>
-  </div>
-</div>
-
-<!-- ── Attachment Viewer Modal (sandboxed — uploaded HTML must never run scripts) ── -->
-<div class="modal-overlay" id="attachViewerModal" onclick="handleOverlayClick(event,'attachViewerModal')">
-  <div class="modal wide attach-viewer">
-    <div class="modal-header">
-      <h3 id="attachViewerTitle"></h3>
-      <button class="modal-close" onclick="closeAttachViewer()">&#215;</button>
-    </div>
-    <iframe id="attachViewerFrame" sandbox="" title="Attachment preview"></iframe>
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeAttachViewer()">Close</button>
-      <button class="btn-save" onclick="downloadCurrentAttachment()">Download</button>
-    </div>
-  </div>
-</div>
-
-<!-- ── Stats Modal ── -->
-<div class="modal-overlay" id="statsModal" onclick="handleOverlayClick(event,'statsModal')">
-  <div class="modal wide">
-    <div class="modal-header">
-      <h3>Progress</h3>
-      <button class="modal-close" onclick="closeStats()">&#215;</button>
-    </div>
-    <p class="subtitle">Your study activity and retention at a glance.</p>
-    <div class="stat-cards" id="statCards"></div>
-    <div class="heatmap-wrap">
-      <div class="stats-section-title">Activity — last 13 weeks</div>
-      <div class="heatmap-grid" id="heatmapGrid"></div>
-      <div style="display:flex;align-items:center;gap:6px;margin-top:8px">
-        <span style="font-size:11px;color:#94a3b8">Less</span>
-        <div style="width:12px;height:12px;border-radius:2px;background:#f1f5f9"></div>
-        <div style="width:12px;height:12px;border-radius:2px;background:#c7d2fe"></div>
-        <div style="width:12px;height:12px;border-radius:2px;background:#818cf8"></div>
-        <div style="width:12px;height:12px;border-radius:2px;background:#4f46e5"></div>
-        <span style="font-size:11px;color:#94a3b8">More</span>
+        <div class="attach-chips" id="attachChips"></div>
       </div>
-    </div>
-    <div id="subjectBreakdown"></div>
-    <div id="retentionList"></div>
-    <div class="modal-actions" style="margin-top:24px; border-top:1px solid #f1f5f9; padding-top:16px">
-      <button class="btn-ghost" onclick="exportCSV()" title="Download all sessions and review history as CSV">
-        ↓ Export CSV
-      </button>
-      <button class="btn-cancel" onclick="closeStats()">Close</button>
-    </div>
-  </div>
-</div>
-
-<!-- ── Settings Modal ── -->
-<div class="modal-overlay" id="settingsModal" onclick="handleOverlayClick(event,'settingsModal')">
-  <div class="modal">
-    <div class="modal-header">
-      <h3>Settings</h3>
-      <button class="modal-close" onclick="closeSettings()">&#215;</button>
-    </div>
-
-    <p class="subtitle">Appearance and review preferences.</p>
-
-    <div class="theme-section-label">Theme</div>
-    <div class="theme-grid" id="themeGrid"></div>
-
-    <div class="theme-section-label">Review Intervals</div>
-    <div class="settings-note">
-      ⚠️ Changes only apply to new sessions logged after saving.
-    </div>
-    <div class="intervals-list" id="intervalsList"></div>
-    <div class="modal-actions">
-      <button class="btn-ghost" onclick="resetIntervals()">Reset to defaults</button>
-      <button class="btn-cancel" onclick="closeSettings()">Cancel</button>
-      <button class="btn-save" onclick="saveSettings()">Save</button>
-    </div>
-
-    <div class="theme-section-label" style="margin-top:20px">Subject Colors</div>
-    <div id="subjectColorsList"></div>
-  </div>
-</div>
-
-<!-- ── Tasks Modal ── -->
-<div class="modal-overlay" id="tasksModal" onclick="handleOverlayClick(event,'tasksModal')">
-  <div class="modal wide">
-    <div class="modal-header">
-      <h3>Tasks</h3>
-      <button class="modal-close" onclick="closeTasks()">&#215;</button>
-    </div>
-    <p class="subtitle">Sort by time of day or by category.</p>
-
-    <div class="taskgroup-toggle">
-      <button class="taskgroup-btn active" id="groupByTimeBtn" onclick="setTaskGroupBy('time')">Time of day</button>
-      <button class="taskgroup-btn" id="groupByCategoryBtn" onclick="setTaskGroupBy('category')">Category</button>
-    </div>
-    <div class="tag-filter-row" id="taskCategoryFilterBar"></div>
-
-    <div id="taskGroups"></div>
-
-    <button class="add-btn" id="taskAddToggleBtn" style="margin:14px 0" onclick="toggleTaskForm()">+ Add task</button>
-
-    <div id="taskFormWrap" style="display:none">
-      <div class="form-group">
-        <label>Title</label>
-        <input type="text" id="taskTitleInput" placeholder="e.g. Revise Chapter 4 flashcards" autocomplete="off">
-      </div>
-      <div class="form-group">
-        <label>Category <span class="optional-label">(optional)</span></label>
-        <input type="text" id="taskCategoryInput" placeholder="e.g. Math, Errands…" list="taskCategoryList" autocomplete="off">
-        <datalist id="taskCategoryList"></datalist>
-      </div>
-      <div class="form-group">
-        <label>Time of day</label>
-        <select id="taskTimeInput">
-          <option value="">Anytime</option>
-          <option value="morning">Morning</option>
-          <option value="afternoon">Afternoon</option>
-          <option value="evening">Evening</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Due date <span class="optional-label">(optional)</span></label>
-        <input type="date" id="taskDueInput">
-      </div>
-      <div class="form-group">
-        <label>Priority</label>
-        <select id="taskPriorityInput">
-          <option value="none">No priority</option>
-          <option value="low">Low</option>
-          <option value="medium">Medium</option>
-          <option value="high">High</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Notes <span class="optional-label">(optional)</span></label>
-        <textarea id="taskNotesInput" placeholder="Anything worth remembering…"></textarea>
-      </div>
-      <div class="form-group">
-        <label>Link to a study session <span class="optional-label">(optional)</span></label>
-        <select id="taskSessionInput"><option value="">None</option></select>
+      <div class="review-preview">
+        <p>Scheduled reviews</p>
+        <div class="review-chips" id="reviewChips"></div>
       </div>
       <div class="modal-actions">
-        <button class="btn-save" id="taskSaveBtn" onclick="saveTask()">Add task</button>
+        <button class="btn-cancel" onclick="closeAddModal()">Cancel</button>
+        <button class="btn-save" id="saveBtn" onclick="saveStudySession()">Save &amp; Schedule</button>
       </div>
-    </div>
-
-    <div class="modal-actions" style="margin-top:18px">
-      <button class="btn-cancel" onclick="closeTasks()">Close</button>
     </div>
   </div>
-</div>
 
-<!-- ── Confidence Rating Modal ── -->
-<div class="modal-overlay" id="ratingModal" onclick="handleOverlayClick(event,'ratingModal')">
-  <div class="modal rating-modal">
-    <div class="modal-header">
-      <div>
-        <h3>How well did you recall this?</h3>
-        <p class="subtitle" id="ratingSubtitle" style="margin-bottom:0"></p>
+  <!-- ── Day Detail Modal ── -->
+  <div class="modal-overlay" id="dayModal" onclick="handleOverlayClick(event,'dayModal')">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="dayModalTitle"></h3>
+        <button class="modal-close" onclick="closeDayModal()">&#215;</button>
       </div>
-      <button class="modal-close" onclick="skipRating()">×</button>
-    </div>
-    <div class="late-recovery-row" id="lateRecoveryRow" style="display:none">
-      <label class="late-recovery-label">
-        <input type="checkbox" id="rescheduleCheck" checked>
-        <span id="lateRecoveryText">Reschedule next review from today</span>
-      </label>
-    </div>
-    <div class="rating-grid" id="ratingGrid"></div>
-    <div class="rating-skip"><a onclick="skipRating()">Skip — just mark done</a></div>
-  </div>
-</div>
-
-<!-- ── Knowledge Graph Modal ── -->
-<div class="graph-overlay" id="graphModal" onclick="handleGraphOverlayClick(event)">
-  <div class="graph-modal-content" onclick="event.stopPropagation()">
-    <div class="graph-header">
-      <h3>Knowledge Graph</h3>
-      <button class="modal-close" onclick="closeGraphModal()">×</button>
-    </div>
-    <div class="graph-toolbar" id="graphToolbar">
-      <div class="graph-edge-legend">
-        <span class="graph-leg-item"><span class="graph-leg-line" style="background:#94a3b8"></span>Related to</span>
-        <span class="graph-leg-item"><span class="graph-leg-line" style="background:#818cf8"></span>Builds on</span>
-        <span class="graph-leg-item"><span class="graph-leg-line" style="background:#fb923c"></span>Prerequisite of</span>
-        <span class="graph-leg-item"><span class="graph-leg-line" style="background:#2dd4bf"></span>See also</span>
+      <p class="subtitle">Click a review to mark it complete.</p>
+      <div id="dayModalEvents"></div>
+      <div class="modal-actions" style="margin-top:18px">
+        <button class="btn-cancel" onclick="closeDayModal()">Close</button>
+        <button class="btn-save" onclick="openAddModalForDate(currentDayDate)">&#43; Add Study</button>
       </div>
-      <div class="graph-toolbar-sep"></div>
-      <div id="graphSubjBar" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"></div>
-    </div>
-    <div class="graph-container" id="graphContainer"></div>
-    <div class="graph-hint">Drag to rotate · Hover to explore · Click to open session · Filter by subject →</div>
-  </div>
-</div>
-
-<!-- ── Link Picker Modal ── -->
-<div class="modal-overlay" id="linkModal" onclick="handleOverlayClick(event,'linkModal')">
-  <div class="modal">
-    <div class="modal-header">
-      <h3>Link to a session</h3>
-      <button class="modal-close" onclick="closeLinkModal()">×</button>
-    </div>
-    <p class="subtitle">Connect related topics to build your second brain.</p>
-    <div class="form-group">
-      <label>Relationship</label>
-      <div class="link-relation-picker" id="linkRelationPicker"></div>
-    </div>
-    <div class="form-group">
-      <label>Session</label>
-      <input type="text" id="linkSearchInput" placeholder="Search by topic, subject…" autocomplete="off" oninput="renderLinkSearch(this.value)">
-      <div class="link-session-list" id="linkSessionList"></div>
-    </div>
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeLinkModal()">Cancel</button>
-      <button class="btn-save" id="linkSaveBtn" onclick="saveLink()" disabled>Save Link</button>
     </div>
   </div>
-</div>
 
-<!-- ── Forgetting Curve Modal ── -->
-<div class="modal-overlay" id="curveModal" onclick="handleOverlayClick(event,'curveModal')">
-  <div class="modal wide">
-    <div class="modal-header">
-      <div>
-        <h3 id="curveTitle">Forgetting Curve</h3>
-        <p class="subtitle" id="curveSubtitle" style="margin-bottom:0"></p>
+  <!-- ── Attachment Viewer Modal (sandboxed — uploaded HTML must never run scripts) ── -->
+  <div class="modal-overlay" id="attachViewerModal" onclick="handleOverlayClick(event,'attachViewerModal')">
+    <div class="modal wide attach-viewer">
+      <div class="modal-header">
+        <h3 id="attachViewerTitle"></h3>
+        <button class="modal-close" onclick="closeAttachViewer()">&#215;</button>
       </div>
-      <button class="modal-close" onclick="closeCurveModal()">×</button>
-    </div>
-    <div class="curve-wrap" id="curveChart"></div>
-    <div class="curve-legend" id="curveLegend"></div>
-    <div class="curve-history" id="curveHistory"></div>
-    <div class="modal-actions" style="margin-top:16px">
-      <button class="btn-cancel" onclick="closeCurveModal()">Close</button>
+      <iframe id="attachViewerFrame" sandbox="" title="Attachment preview"></iframe>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeAttachViewer()">Close</button>
+        <button class="btn-save" onclick="downloadCurrentAttachment()">Download</button>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- ── Deck Prompt Modal ── -->
-<div class="modal-overlay" id="deckPromptModal" onclick="handleOverlayClick(event,'deckPromptModal')">
-  <div class="modal" style="max-width:400px">
-    <div class="modal-header">
-      <h3>Session saved ✓</h3>
-      <button class="modal-close" onclick="closeDeckPrompt()">&#215;</button>
-    </div>
-    <p class="subtitle">Add flashcards for active recall during reviews?</p>
-    <p class="deck-prompt-topic" id="deckPromptTopic"></p>
-    <div class="deck-prompt-btns">
-      <button class="btn-save" onclick="openDeckEditorNew()">🃏 Create cards</button>
-      <button class="btn-ghost" onclick="openDeckImportNew()">&#8679; Import text</button>
-      <button class="btn-cancel" onclick="closeDeckPrompt()">Skip</button>
-    </div>
-  </div>
-</div>
-
-<!-- ── Deck Editor Modal ── -->
-<div class="modal-overlay" id="deckModal" onclick="handleOverlayClick(event,'deckModal')">
-  <div class="modal wide">
-    <div class="modal-header">
-      <div>
-        <h3 id="deckModalTitle">Create Flashcard Deck</h3>
-        <p class="subtitle" id="deckModalSubtitle" style="margin-bottom:0"></p>
+  <!-- ── Stats Modal ── -->
+  <div class="modal-overlay" id="statsModal" onclick="handleOverlayClick(event,'statsModal')">
+    <div class="modal wide">
+      <div class="modal-header">
+        <h3>Progress</h3>
+        <button class="modal-close" onclick="closeStats()">&#215;</button>
       </div>
-      <button class="modal-close" onclick="closeDeckModal()">&#215;</button>
-    </div>
-    <div class="deck-tabs">
-      <button class="deck-tab active" id="tabCreate" onclick="switchDeckTab('create')">Create</button>
-      <button class="deck-tab" id="tabImport" onclick="switchDeckTab('import')">Import</button>
-    </div>
-    <div id="deckCreatePane">
-      <div class="deck-name-row">
-        <input type="text" id="deckNameInput" placeholder="Deck name (e.g. Calculus Ch.3)">
-      </div>
-      <div class="card-list" id="cardList"></div>
-      <div class="deck-add-row">
-        <button class="btn-ghost deck-add-card" onclick="addCardRow()">+ Add card</button>
-        <button class="btn-ghost deck-sort-btn" onclick="sortCardsByDifficulty()">↓ Hardest first</button>
-      </div>
-    </div>
-    <div id="deckImportPane" style="display:none">
-      <div class="import-file-section">
-        <p class="import-hint" style="margin-bottom:8px">Import from file:</p>
-        <div class="import-file-btns">
-          <label class="btn-ghost import-file-label">
-            &#128230; Anki Package (.apkg)
-            <input type="file" id="apkgFileInput" accept=".apkg" style="display:none" onchange="handleApkgFile(event)">
-          </label>
-          <label class="btn-ghost import-file-label">
-            &#128196; Text / TSV (.txt)
-            <input type="file" id="txtFileInput" accept=".txt,.tsv,.csv" style="display:none" onchange="handleTxtFile(event)">
-          </label>
+      <p class="subtitle">Your study activity and retention at a glance.</p>
+      <div class="stat-cards" id="statCards"></div>
+      <div class="heatmap-wrap">
+        <div class="stats-section-title">Activity — last 13 weeks</div>
+        <div class="heatmap-grid" id="heatmapGrid"></div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:8px">
+          <span style="font-size:11px;color:#94a3b8">Less</span>
+          <div style="width:12px;height:12px;border-radius:2px;background:#f1f5f9"></div>
+          <div style="width:12px;height:12px;border-radius:2px;background:#c7d2fe"></div>
+          <div style="width:12px;height:12px;border-radius:2px;background:#818cf8"></div>
+          <div style="width:12px;height:12px;border-radius:2px;background:#4f46e5"></div>
+          <span style="font-size:11px;color:#94a3b8">More</span>
         </div>
-        <div id="fileImportStatus" class="file-import-status"></div>
       </div>
-      <div class="import-divider"><span>— or paste text —</span></div>
-      <p class="import-hint"><code>Question | Answer</code> or tab-separated — one per line</p>
-      <textarea class="import-textarea" id="importTextarea" placeholder="What is osmosis? | Movement of water across a semipermeable membrane&#10;What is mitosis? | Cell division producing two identical daughter cells"></textarea>
-      <button class="btn-ghost" onclick="parseImport()" style="margin-top:8px">Preview cards</button>
-      <div id="importPreview" class="import-preview"></div>
+      <div id="subjectBreakdown"></div>
+      <div id="retentionList"></div>
+      <div class="modal-actions" style="margin-top:24px; border-top:1px solid #f1f5f9; padding-top:16px">
+        <button class="btn-ghost" onclick="exportCSV()" title="Download all sessions and review history as CSV">
+          ↓ Export CSV
+        </button>
+        <button class="btn-cancel" onclick="closeStats()">Close</button>
+      </div>
     </div>
-    <div class="modal-actions" style="margin-top:20px">
-      <span class="deck-card-count" id="deckCardCount"></span>
+  </div>
+
+  <!-- ── Settings Modal ── -->
+  <div class="modal-overlay" id="settingsModal" onclick="handleOverlayClick(event,'settingsModal')">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Settings</h3>
+        <button class="modal-close" onclick="closeSettings()">&#215;</button>
+      </div>
+
+      <p class="subtitle">Appearance and review preferences.</p>
+
+      <div class="theme-section-label">Theme</div>
+      <div class="theme-grid" id="themeGrid"></div>
+
+      <div class="theme-section-label">Review Intervals</div>
+      <div class="settings-note">
+        ⚠️ Changes only apply to new sessions logged after saving.
+      </div>
+      <div class="intervals-list" id="intervalsList"></div>
+      <div class="modal-actions">
+        <button class="btn-ghost" onclick="resetIntervals()">Reset to defaults</button>
+        <button class="btn-cancel" onclick="closeSettings()">Cancel</button>
+        <button class="btn-save" onclick="saveSettings()">Save</button>
+      </div>
+
+      <div class="theme-section-label" style="margin-top:20px">Subject Colors</div>
+      <div id="subjectColorsList"></div>
+
+      <div id="changePasswordSection"
+        style="margin-top: 25px; border-top: 1px solid var(--border-soft); padding-top: 20px;">
+        <div class="theme-section-label">Change Password</div>
+        <div class="form-group" style="margin-top: 12px;">
+          <label for="oldPasswordInput">Old Password</label>
+          <input type="password" id="oldPasswordInput" placeholder="Current Password" style="width: 100%;" />
+        </div>
+        <div class="form-group" style="margin-top: 12px;">
+          <label for="newPasswordInput">New Password</label>
+          <input type="password" id="newPasswordInput" placeholder="New Password (Min. 8 characters)"
+            style="width: 100%;" />
+        </div>
+        <div class="form-group" style="margin-top: 12px;">
+          <label for="confirmPasswordInput">Confirm New Password</label>
+          <input type="password" id="confirmPasswordInput" placeholder="Confirm New Password" style="width: 100%;" />
+        </div>
+        <div id="changePasswordMessage" style="font-size: 12px; margin-top: 10px; font-weight: 600; display: none;">
+        </div>
+        <button class="btn-save" style="margin-top: 15px; width: 100%;" onclick="submitChangePassword()">Update
+          Password</button>
+      </div>
+      <div id="changePasswordLocalNotice"
+        style="margin-top: 25px; border-top: 1px solid var(--border-soft); padding-top: 20px; display: none;">
+        <div class="theme-section-label">Change Password</div>
+        <div class="settings-note" style="margin-top: 10px;">
+          ℹ️ Change password is not available in local-only mode.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Tasks Modal ── -->
+  <div class="modal-overlay" id="tasksModal" onclick="handleOverlayClick(event,'tasksModal')">
+    <div class="modal wide">
+      <div class="modal-header">
+        <h3>Tasks</h3>
+        <button class="modal-close" onclick="closeTasks()">&#215;</button>
+      </div>
+      <p class="subtitle">Sort by time of day or by category.</p>
+
+      <div class="taskgroup-toggle">
+        <button class="taskgroup-btn active" id="groupByTimeBtn" onclick="setTaskGroupBy('time')">Time of day</button>
+        <button class="taskgroup-btn" id="groupByCategoryBtn" onclick="setTaskGroupBy('category')">Category</button>
+      </div>
+      <div class="tag-filter-row" id="taskCategoryFilterBar"></div>
+
+      <div id="taskGroups"></div>
+
+      <button class="add-btn" id="taskAddToggleBtn" style="margin:14px 0" onclick="toggleTaskForm()">+ Add task</button>
+
+      <div id="taskFormWrap" style="display:none">
+        <div class="form-group">
+          <label>Title</label>
+          <input type="text" id="taskTitleInput" placeholder="e.g. Revise Chapter 4 flashcards" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label>Category <span class="optional-label">(optional)</span></label>
+        <input type="text" id="taskCategoryInput" placeholder="e.g. Math, Errands…" list="taskCategoryList" autocomplete="off">
+          <datalist id="taskCategoryList"></datalist>
+        </div>
+        <div class="form-group">
+          <label>Time of day</label>
+          <select id="taskTimeInput">
+            <option value="">Anytime</option>
+            <option value="morning">Morning</option>
+            <option value="afternoon">Afternoon</option>
+            <option value="evening">Evening</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Due date <span class="optional-label">(optional)</span></label>
+          <input type="date" id="taskDueInput">
+        </div>
+        <div class="form-group">
+          <label>Priority</label>
+          <select id="taskPriorityInput">
+            <option value="none">No priority</option>
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Notes <span class="optional-label">(optional)</span></label>
+          <textarea id="taskNotesInput" placeholder="Anything worth remembering…"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Link to a study session <span class="optional-label">(optional)</span></label>
+        <select id="taskSessionInput"><option value="">None</option></select>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-save" id="taskSaveBtn" onclick="saveTask()">Add task</button>
+        </div>
+      </div>
+
+      <div class="modal-actions" style="margin-top:18px">
+        <button class="btn-cancel" onclick="closeTasks()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Confidence Rating Modal ── -->
+  <div class="modal-overlay" id="ratingModal" onclick="handleOverlayClick(event,'ratingModal')">
+    <div class="modal rating-modal">
+      <div class="modal-header">
+        <div>
+          <h3>How well did you recall this?</h3>
+          <p class="subtitle" id="ratingSubtitle" style="margin-bottom:0"></p>
+        </div>
+        <button class="modal-close" onclick="skipRating()">×</button>
+      </div>
+      <div class="late-recovery-row" id="lateRecoveryRow" style="display:none">
+        <label class="late-recovery-label">
+          <input type="checkbox" id="rescheduleCheck" checked>
+          <span id="lateRecoveryText">Reschedule next review from today</span>
+        </label>
+      </div>
+      <div class="rating-grid" id="ratingGrid"></div>
+      <div class="rating-skip"><a onclick="skipRating()">Skip — just mark done</a></div>
+    </div>
+  </div>
+
+  <!-- ── Knowledge Graph Modal ── -->
+  <div class="graph-overlay" id="graphModal" onclick="handleGraphOverlayClick(event)">
+    <div class="graph-modal-content" onclick="event.stopPropagation()">
+      <div class="graph-header">
+        <h3>Knowledge Graph</h3>
+        <button class="modal-close" onclick="closeGraphModal()">×</button>
+      </div>
+      <div class="graph-toolbar" id="graphToolbar">
+        <div class="graph-edge-legend">
+          <span class="graph-leg-item"><span class="graph-leg-line" style="background:#94a3b8"></span>Related to</span>
+          <span class="graph-leg-item"><span class="graph-leg-line" style="background:#818cf8"></span>Builds on</span>
+        <span class="graph-leg-item"><span class="graph-leg-line" style="background:#fb923c"></span>Prerequisite of</span>
+          <span class="graph-leg-item"><span class="graph-leg-line" style="background:#2dd4bf"></span>See also</span>
+        </div>
+        <div class="graph-toolbar-sep"></div>
+        <div id="graphSubjBar" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"></div>
+      </div>
+      <div class="graph-container" id="graphContainer"></div>
+      <div class="graph-hint">Drag to rotate · Hover to explore · Click to open session · Filter by subject →</div>
+    </div>
+  </div>
+
+  <!-- ── Link Picker Modal ── -->
+  <div class="modal-overlay" id="linkModal" onclick="handleOverlayClick(event,'linkModal')">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Link to a session</h3>
+        <button class="modal-close" onclick="closeLinkModal()">×</button>
+      </div>
+      <p class="subtitle">Connect related topics to build your second brain.</p>
+      <div class="form-group">
+        <label>Relationship</label>
+        <div class="link-relation-picker" id="linkRelationPicker"></div>
+      </div>
+      <div class="form-group">
+        <label>Session</label>
+      <input type="text" id="linkSearchInput" placeholder="Search by topic, subject…" autocomplete="off" oninput="renderLinkSearch(this.value)">
+        <div class="link-session-list" id="linkSessionList"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeLinkModal()">Cancel</button>
+        <button class="btn-save" id="linkSaveBtn" onclick="saveLink()" disabled>Save Link</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Forgetting Curve Modal ── -->
+  <div class="modal-overlay" id="curveModal" onclick="handleOverlayClick(event,'curveModal')">
+    <div class="modal wide">
+      <div class="modal-header">
+        <div>
+          <h3 id="curveTitle">Forgetting Curve</h3>
+          <p class="subtitle" id="curveSubtitle" style="margin-bottom:0"></p>
+        </div>
+        <button class="modal-close" onclick="closeCurveModal()">×</button>
+      </div>
+      <div class="curve-wrap" id="curveChart"></div>
+      <div class="curve-legend" id="curveLegend"></div>
+      <div class="curve-history" id="curveHistory"></div>
+      <div class="modal-actions" style="margin-top:16px">
+        <button class="btn-cancel" onclick="closeCurveModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Deck Prompt Modal ── -->
+  <div class="modal-overlay" id="deckPromptModal" onclick="handleOverlayClick(event,'deckPromptModal')">
+    <div class="modal" style="max-width:400px">
+      <div class="modal-header">
+        <h3>Session saved ✓</h3>
+        <button class="modal-close" onclick="closeDeckPrompt()">&#215;</button>
+      </div>
+      <p class="subtitle">Add flashcards for active recall during reviews?</p>
+      <p class="deck-prompt-topic" id="deckPromptTopic"></p>
+      <div class="deck-prompt-btns">
+        <button class="btn-save" onclick="openDeckEditorNew()">🃏 Create cards</button>
+        <button class="btn-ghost" onclick="openDeckImportNew()">&#8679; Import text</button>
+        <button class="btn-cancel" onclick="closeDeckPrompt()">Skip</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Deck Editor Modal ── -->
+  <div class="modal-overlay" id="deckModal" onclick="handleOverlayClick(event,'deckModal')">
+    <div class="modal wide">
+      <div class="modal-header">
+        <div>
+          <h3 id="deckModalTitle">Create Flashcard Deck</h3>
+          <p class="subtitle" id="deckModalSubtitle" style="margin-bottom:0"></p>
+        </div>
+        <button class="modal-close" onclick="closeDeckModal()">&#215;</button>
+      </div>
+      <div class="deck-tabs">
+        <button class="deck-tab active" id="tabCreate" onclick="switchDeckTab('create')">Create</button>
+        <button class="deck-tab" id="tabImport" onclick="switchDeckTab('import')">Import</button>
+      </div>
+      <div id="deckCreatePane">
+        <div class="deck-name-row">
+          <input type="text" id="deckNameInput" placeholder="Deck name (e.g. Calculus Ch.3)">
+        </div>
+        <div class="card-list" id="cardList"></div>
+        <div class="deck-add-row">
+          <button class="btn-ghost deck-add-card" onclick="addCardRow()">+ Add card</button>
+          <button class="btn-ghost deck-sort-btn" onclick="sortCardsByDifficulty()">↓ Hardest first</button>
+        </div>
+      </div>
+      <div id="deckImportPane" style="display:none">
+        <div class="import-file-section">
+          <p class="import-hint" style="margin-bottom:8px">Import from file:</p>
+          <div class="import-file-btns">
+            <label class="btn-ghost import-file-label">
+              &#128230; Anki Package (.apkg)
+            <input type="file" id="apkgFileInput" accept=".apkg" style="display:none" onchange="handleApkgFile(event)">
+            </label>
+            <label class="btn-ghost import-file-label">
+              &#128196; Text / TSV (.txt)
+            <input type="file" id="txtFileInput" accept=".txt,.tsv,.csv" style="display:none" onchange="handleTxtFile(event)">
+            </label>
+          </div>
+          <div id="fileImportStatus" class="file-import-status"></div>
+        </div>
+        <div class="import-divider"><span>— or paste text —</span></div>
+        <p class="import-hint"><code>Question | Answer</code> or tab-separated — one per line</p>
+      <textarea class="import-textarea" id="importTextarea" placeholder="What is osmosis? | Movement of water across a semipermeable membrane&#10;What is mitosis? | Cell division producing two identical daughter cells"></textarea>
+        <button class="btn-ghost" onclick="parseImport()" style="margin-top:8px">Preview cards</button>
+        <div id="importPreview" class="import-preview"></div>
+      </div>
+      <div class="modal-actions" style="margin-top:20px">
+        <span class="deck-card-count" id="deckCardCount"></span>
       <button class="btn-ghost" id="exportDeckBtn" onclick="exportEditorDeck()" style="display:none">&#8595; Export .tsv</button>
       <button class="btn-ghost" id="deleteDeckBtn" onclick="deleteDeck()" style="display:none;color:var(--danger,#e05)">&#128465; Delete deck</button>
-      <button class="btn-cancel" onclick="closeDeckModal()">Cancel</button>
-      <button class="btn-save" id="saveDeckBtn" onclick="saveDeck()">Save Deck</button>
+        <button class="btn-cancel" onclick="closeDeckModal()">Cancel</button>
+        <button class="btn-save" id="saveDeckBtn" onclick="saveDeck()">Save Deck</button>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- ── Flashcard Study Modal ── -->
-<div class="modal-overlay" id="studyModal" onclick="handleOverlayClick(event,'studyModal')">
-  <div class="modal wide study-modal">
-    <div class="modal-header">
-      <div>
-        <h3 id="studyTitle">Flashcards</h3>
-        <p class="subtitle" id="studySubtitle" style="margin-bottom:0"></p>
+  <!-- ── Flashcard Study Modal ── -->
+  <div class="modal-overlay" id="studyModal" onclick="handleOverlayClick(event,'studyModal')">
+    <div class="modal wide study-modal">
+      <div class="modal-header">
+        <div>
+          <h3 id="studyTitle">Flashcards</h3>
+          <p class="subtitle" id="studySubtitle" style="margin-bottom:0"></p>
+        </div>
+        <button class="modal-close" onclick="closeStudyModal()">&#215;</button>
       </div>
-      <button class="modal-close" onclick="closeStudyModal()">&#215;</button>
-    </div>
-    <div class="fc-progress-row">
-      <span class="fc-progress" id="fcProgress"></span>
-      <span class="fc-diff-dot" id="fcDiffDot" style="display:none"></span>
+      <div class="fc-progress-row">
+        <span class="fc-progress" id="fcProgress"></span>
+        <span class="fc-diff-dot" id="fcDiffDot" style="display:none"></span>
       <button class="fc-mini-btn" id="fcWeakBtn" onclick="toggleWeakFilter()" title="Study only weak cards (avg &lt; 3)">&#9888; Weak</button>
-      <button class="fc-mini-btn" onclick="shuffleDeck()">&#8644; Shuffle</button>
-      <button class="fc-mini-btn" onclick="restartDeck()">&#8635; Restart</button>
-      <button class="fc-mini-btn" onclick="editCurrentDeck()">&#9998; Edit</button>
-      <button class="fc-mini-btn" onclick="exportStudyDeck()">&#8595; Export</button>
-      <button class="fc-mini-btn" onclick="openCardSearch()" title="Search cards (F)">&#128269; Search</button>
-    </div>
-    <div class="fc-wrap" id="fcWrap" onclick="flipCard()">
-      <div class="fc-card" id="fcCard">
-        <div class="fc-face fc-front" id="fcFront"></div>
-        <div class="fc-face fc-back" id="fcBack"></div>
+        <button class="fc-mini-btn" onclick="shuffleDeck()">&#8644; Shuffle</button>
+        <button class="fc-mini-btn" onclick="restartDeck()">&#8635; Restart</button>
+        <button class="fc-mini-btn" onclick="editCurrentDeck()">&#9998; Edit</button>
+        <button class="fc-mini-btn" onclick="exportStudyDeck()">&#8595; Export</button>
+        <button class="fc-mini-btn" onclick="openCardSearch()" title="Search cards (F)">&#128269; Search</button>
       </div>
-    </div>
-    <div class="fc-hint" id="fcHint">Click to reveal answer</div>
-    <div class="fc-controls">
-      <button class="btn-ghost" onclick="prevCard()" id="fcPrev">&#8592; Prev</button>
-      <button class="btn-save" onclick="flipCard()" id="fcReveal">Reveal &#8594;</button>
-    </div>
-    <div class="fc-rating" id="fcRating"></div>
-    <div class="study-complete" id="studyComplete">
-      <div class="study-complete-icon">&#10003;</div>
-      <div class="study-complete-label" id="studyCompleteLabel"></div>
-      <div class="study-complete-score" id="studyCompleteScore"></div>
-      <div class="study-complete-breakdown" id="studyCompleteBreakdown"></div>
-      <div class="study-complete-actions">
-        <button class="btn-ghost" onclick="restartFromComplete()">&#8635; Study again</button>
-        <button class="btn-save" onclick="closeStudyModal()">Done</button>
+      <div class="fc-wrap" id="fcWrap" onclick="flipCard()">
+        <div class="fc-card" id="fcCard">
+          <div class="fc-face fc-front" id="fcFront"></div>
+          <div class="fc-face fc-back" id="fcBack"></div>
+        </div>
+      </div>
+      <div class="fc-hint" id="fcHint">Click to reveal answer</div>
+      <div class="fc-controls">
+        <button class="btn-ghost" onclick="prevCard()" id="fcPrev">&#8592; Prev</button>
+        <button class="btn-save" onclick="flipCard()" id="fcReveal">Reveal &#8594;</button>
+      </div>
+      <div class="fc-rating" id="fcRating"></div>
+      <div class="study-complete" id="studyComplete">
+        <div class="study-complete-icon">&#10003;</div>
+        <div class="study-complete-label" id="studyCompleteLabel"></div>
+        <div class="study-complete-score" id="studyCompleteScore"></div>
+        <div class="study-complete-breakdown" id="studyCompleteBreakdown"></div>
+        <div class="study-complete-actions">
+          <button class="btn-ghost" onclick="restartFromComplete()">&#8635; Study again</button>
+          <button class="btn-save" onclick="closeStudyModal()">Done</button>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
-<!-- ── Card Search Modal ── -->
-<div class="modal-overlay" id="cardSearchModal" onclick="handleOverlayClick(event,'cardSearchModal')">
-  <div class="modal card-search-modal">
-    <div class="modal-header">
-      <h3>Search Cards</h3>
-      <button class="modal-close" onclick="closeCardSearch()">&#215;</button>
-    </div>
+  <!-- ── Card Search Modal ── -->
+  <div class="modal-overlay" id="cardSearchModal" onclick="handleOverlayClick(event,'cardSearchModal')">
+    <div class="modal card-search-modal">
+      <div class="modal-header">
+        <h3>Search Cards</h3>
+        <button class="modal-close" onclick="closeCardSearch()">&#215;</button>
+      </div>
     <input class="card-search-input" id="cardSearchInput" placeholder="Search across all decks…" autocomplete="off" spellcheck="false" oninput="searchCards()">
-    <div class="card-search-results" id="cardSearchResults"></div>
-  </div>
-</div>
-
-<!-- ── Sidebar overlay ── -->
-<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
-
-<!-- ── Right Sidebar ── -->
-<div class="sidebar" id="sidebar">
-  <div class="sidebar-hd">
-    <span class="sidebar-title">Menu</span>
-    <button class="modal-close" onclick="closeSidebar()">&#215;</button>
-  </div>
-
-  <!-- Exams -->
-  <div class="sidebar-section">
-    <div class="sidebar-section-hd">
-      <span class="sidebar-section-label">🎓 Exams</span>
-      <button class="sidebar-add-exam-btn" id="examAddBtn" onclick="toggleExamForm()">+ Add</button>
+      <div class="card-search-results" id="cardSearchResults"></div>
     </div>
-    <div class="exam-form" id="examForm" style="display:none">
-      <input type="text" id="examNameInput" placeholder="Exam name" maxlength="60" oninput="validateExamForm()">
-      <input type="date" id="examDateInput" oninput="validateExamForm()">
-      <select id="examSubjectSelect">
-        <option value="">No subject</option>
-      </select>
-      <div class="exam-form-actions">
-        <button class="btn-save exam-save-btn" id="examSaveBtn" onclick="saveExam()" disabled>Add Exam</button>
-        <button class="btn-cancel exam-cancel-btn" onclick="toggleExamForm()">Cancel</button>
+  </div>
+
+  <!-- ── Sidebar overlay ── -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+  <!-- ── Right Sidebar ── -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-hd">
+      <span class="sidebar-title">Menu</span>
+      <button class="modal-close" onclick="closeSidebar()">&#215;</button>
+    </div>
+
+    <!-- Exams -->
+    <div class="sidebar-section">
+      <div class="sidebar-section-hd">
+        <span class="sidebar-section-label">🎓 Exams</span>
+        <button class="sidebar-add-exam-btn" id="examAddBtn" onclick="toggleExamForm()">+ Add</button>
       </div>
+      <div class="exam-form" id="examForm" style="display:none">
+        <input type="text" id="examNameInput" placeholder="Exam name" maxlength="60" oninput="validateExamForm()">
+        <input type="date" id="examDateInput" oninput="validateExamForm()">
+        <select id="examSubjectSelect">
+          <option value="">No subject</option>
+        </select>
+        <div class="exam-form-actions">
+          <button class="btn-save exam-save-btn" id="examSaveBtn" onclick="saveExam()" disabled>Add Exam</button>
+          <button class="btn-cancel exam-cancel-btn" onclick="toggleExamForm()">Cancel</button>
+        </div>
+      </div>
+      <div id="examList"></div>
     </div>
-    <div id="examList"></div>
-  </div>
 
-  <!-- Nav links -->
-  <div class="sidebar-section sidebar-nav-section">
-    <button class="sidebar-nav-btn" onclick="closeSidebar();openStats()">
+    <!-- Nav links -->
+    <div class="sidebar-section sidebar-nav-section">
+      <button class="sidebar-nav-btn" onclick="closeSidebar();openStats()">
       <svg width="14" height="14" viewBox="0 0 15 15" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="8" width="3" height="6" rx="1"/><rect x="6" y="4.5" width="3" height="9.5" rx="1"/><rect x="11" y="1" width="3" height="13" rx="1"/></svg>
-      Stats
-      <span class="sidebar-nav-arrow">›</span>
-    </button>
-    <button class="sidebar-nav-btn" onclick="closeSidebar();openGraphModal()">
+        Stats
+        <span class="sidebar-nav-arrow">›</span>
+      </button>
+      <button class="sidebar-nav-btn" onclick="closeSidebar();openGraphModal()">
       <svg width="14" height="14" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg"><circle cx="7.5" cy="2.5" r="1.5" fill="currentColor" stroke="none"/><circle cx="2" cy="11.5" r="1.5" fill="currentColor" stroke="none"/><circle cx="13" cy="11.5" r="1.5" fill="currentColor" stroke="none"/><line x1="7.5" y1="4" x2="3.2" y2="10.2"/><line x1="7.5" y1="4" x2="11.8" y2="10.2"/><line x1="3.7" y1="11.5" x2="11.3" y2="11.5"/></svg>
-      Knowledge Graph
-      <span class="sidebar-nav-arrow">›</span>
-    </button>
-    <button class="sidebar-nav-btn" onclick="closeSidebar();openSettings()">
+        Knowledge Graph
+        <span class="sidebar-nav-arrow">›</span>
+      </button>
+      <button class="sidebar-nav-btn" onclick="closeSidebar();openSettings()">
       <svg width="14" height="14" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" xmlns="http://www.w3.org/2000/svg"><circle cx="7.5" cy="7.5" r="2"/><path d="M7.5 1.5v1M7.5 12.5v1M1.5 7.5h1M12.5 7.5h1M3.4 3.4l.7.7M10.9 10.9l.7.7M3.4 11.6l.7-.7M10.9 4.1l.7-.7"/></svg>
-      Settings
-      <span class="sidebar-nav-arrow">›</span>
-    </button>
+        Settings
+        <span class="sidebar-nav-arrow">›</span>
+      </button>
+    </div>
   </div>
-</div>
 
-<div class="toast" id="toast"></div>
+  <div class="toast" id="toast"></div>
 
   <script src="/js/themes.js"></script>
   <script src="/js/state.js"></script>
