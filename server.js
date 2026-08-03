@@ -10,7 +10,7 @@ const AdmZip   = require('adm-zip');
 
 const { computeSM2, addDays, todayUTC, nextRecurDate, toResponse, sanitizeCards } = require('./public/shared-utils');
 
-const userSectionRoutes = require('./src/routes/user');
+
 
 const app  = express();
 const dbPath = process.env.DB_PATH || path.join(__dirname, 'recall.db');
@@ -309,7 +309,8 @@ app.put('/api/settings', requireAuth, (req, res) => {
 });
 
 // ── User ─────────────────────────────────────────────────────────────────────
-app.use('/api/user', userSectionRoutes({ db, requireAuth }));
+const { changePassword } = require('./src/controllers/userController');
+app.post('/api/user/change-password', requireAuth, changePassword(db));
 
 // ── Study Sessions (per-user) ─────────────────────────────────────────────────
 
