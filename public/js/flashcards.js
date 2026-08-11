@@ -227,6 +227,7 @@
   function renderImportPreview() {
     const preview = document.getElementById('importPreview');
     preview.innerHTML = '';
+    importPreviewExpanded = false;
     if (!importedParsedCards.length) {
       const msg = document.createElement('p');
       msg.style.cssText = 'font-size:13px;color:var(--tx-3);margin:8px 0';
@@ -234,8 +235,7 @@
       preview.appendChild(msg);
       return;
     }
-    const shown = importedParsedCards.slice(0, 5);
-    const more  = importedParsedCards.length - shown.length;
+    const COLLAPSED_LIMIT = 5;
 
     const count = document.createElement('p');
     count.style.cssText = 'font-size:13px;font-weight:500;color:var(--accent);margin:8px 0';
@@ -243,27 +243,58 @@
 
     const listEl = document.createElement('div');
     listEl.style.cssText = 'font-size:12px;background:var(--surface-2);border-radius:var(--r-sm);padding:8px;margin-bottom:10px';
-    shown.forEach(c => {
-      const row = document.createElement('div');
-      row.style.cssText = 'display:flex;gap:8px;padding:3px 0;border-bottom:1px solid var(--border-soft)';
-      const f = document.createElement('span');
-      f.style.cssText = 'flex:1;font-weight:500;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
-      f.textContent = c.front;
-      const sep = document.createElement('span');
-      sep.style.cssText = 'color:var(--tx-3)';
-      sep.textContent = '→';
-      const b = document.createElement('span');
-      b.style.cssText = 'flex:1;color:var(--tx-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
-      b.textContent = c.back;
-      row.append(f, sep, b);
-      listEl.appendChild(row);
-    });
+
+    const rowsEl = document.createElement('div');
+    listEl.appendChild(rowsEl);
+
+    const toggleEl = document.createElement('button');
+    toggleEl.type = 'button';
+    toggleEl.style.cssText = 'font-size:11px;color:var(--accent);padding:6px 0 2px;background:none;border:none;cursor:pointer;font-weight:500';
+
+    const renderRows = () => {
+      rowsEl.innerHTML = '';
+      const cards = importPreviewExpanded
+        ? importedParsedCards
+        : importedParsedCards.slice(0, COLLAPSED_LIMIT);
+      if (importPreviewExpanded && cards.length > COLLAPSED_LIMIT) {
+        rowsEl.style.cssText = 'max-height:260px;overflow-y:auto';
+      } else {
+        rowsEl.style.cssText = '';
+      }
+      cards.forEach(c => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;gap:8px;padding:3px 0;border-bottom:1px solid var(--border-soft)';
+        const f = document.createElement('span');
+        f.style.cssText = 'flex:1;font-weight:500;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+        f.textContent = c.front;
+        const sep = document.createElement('span');
+        sep.style.cssText = 'color:var(--tx-3)';
+        sep.textContent = '→';
+        const b = document.createElement('span');
+        b.style.cssText = 'flex:1;color:var(--tx-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+        b.textContent = c.back;
+        row.append(f, sep, b);
+        rowsEl.appendChild(row);
+      });
+    };
+
+    const more = importedParsedCards.length - COLLAPSED_LIMIT;
     if (more > 0) {
-      const moreEl = document.createElement('div');
-      moreEl.style.cssText = 'font-size:11px;color:var(--tx-3);padding-top:4px';
-      moreEl.textContent = `+${more} more…`;
-      listEl.appendChild(moreEl);
+      const updateToggle = () => {
+        toggleEl.textContent = importPreviewExpanded
+          ? 'Show less'
+          : `+${more} more — show all`;
+      };
+      toggleEl.onclick = () => {
+        importPreviewExpanded = !importPreviewExpanded;
+        renderRows();
+        updateToggle();
+      };
+      updateToggle();
+      listEl.appendChild(toggleEl);
     }
+
+    renderRows();
 
     const addBtn = document.createElement('button');
     addBtn.className = 'btn-save';

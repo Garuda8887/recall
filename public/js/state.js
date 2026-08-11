@@ -66,6 +66,7 @@
   let editingTaskId         = null;     // null = create, string = editing existing task
   let studyState            = null;
   let importedParsedCards   = [];
+  let importPreviewExpanded = false; // whether the import preview shows all cards
   let intervals             = [...DEFAULT_INTERVALS];
   let dragReview            = null; // { sessionId, reviewIndex, fromDate } while dragging
   let linkingSessionId      = null; // session being linked in the link modal
