@@ -12,6 +12,12 @@
     }
     const menuEmail = document.getElementById('userMenuEmail');
     if (menuEmail) menuEmail.textContent = user.email || '';
+
+    const changePwdBtn = document.getElementById('changePasswordMenuBtn');
+    if (changePwdBtn) {
+      const isLocal = localStorage.getItem('recall_mode') === 'local';
+      changePwdBtn.style.display = isLocal ? 'none' : 'block';
+    }
   })();
 
   function toggleUserMenu() {

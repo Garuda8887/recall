@@ -7,7 +7,10 @@ const crypto   = require('crypto');
 const os       = require('os');
 const fs       = require('fs');
 const AdmZip   = require('adm-zip');
+
 const { computeSM2, addDays, todayUTC, nextRecurDate, toResponse, sanitizeCards } = require('./public/shared-utils');
+
+
 
 const app  = express();
 const dbPath = process.env.DB_PATH || path.join(__dirname, 'recall.db');
@@ -304,6 +307,10 @@ app.put('/api/settings', requireAuth, (req, res) => {
     .run(key, JSON.stringify(intervals));
   res.json({ ok: true });
 });
+
+// ── User ─────────────────────────────────────────────────────────────────────
+const { changePassword } = require('./src/controllers/userController');
+app.post('/api/user/change-password', requireAuth, changePassword(db));
 
 // ── Study Sessions (per-user) ─────────────────────────────────────────────────
 

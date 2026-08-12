@@ -605,3 +605,88 @@
   }
 
   function closeSettings() { document.getElementById('settingsModal').classList.remove('active'); }
+
+  async function submitChangePassword() {
+    const oldPassword = document.getElementById('oldPasswordInput').value;
+    const newPassword = document.getElementById('newPasswordInput').value;
+    const confirmPassword = document.getElementById('confirmPasswordInput').value;
+    const msgEl = document.getElementById('changePasswordMessage');
+
+    // Reset message
+    msgEl.style.display = 'none';
+    msgEl.textContent = '';
+    msgEl.style.color = '';
+
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      msgEl.textContent = 'All fields are required.';
+      msgEl.style.color = 'var(--amber-dk)';
+      msgEl.style.display = 'block';
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      msgEl.textContent = 'New password must be at least 8 characters.';
+      msgEl.style.color = 'var(--amber-dk)';
+      msgEl.style.display = 'block';
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      msgEl.textContent = 'New passwords do not match.';
+      msgEl.style.color = 'var(--amber-dk)';
+      msgEl.style.display = 'block';
+      return;
+    }
+
+    try {
+      const res = await authFetch('/api/user/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ oldPassword, newPassword })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        msgEl.textContent = data.error || 'Failed to update password.';
+        msgEl.style.color = 'var(--amber-dk)';
+        msgEl.style.display = 'block';
+      } else {
+        msgEl.textContent = 'Password updated successfully!';
+        msgEl.style.color = 'var(--accent)';
+        msgEl.style.display = 'block';
+        // Clear fields
+        document.getElementById('oldPasswordInput').value = '';
+        document.getElementById('newPasswordInput').value = '';
+        document.getElementById('confirmPasswordInput').value = '';
+      }
+    } catch (err) {
+      console.error(err);
+      msgEl.textContent = 'Network or server error.';
+      msgEl.style.color = 'var(--amber-dk)';
+      msgEl.style.display = 'block';
+    }
+  }
+
+  function openChangePasswordModal() {
+    const menu = document.getElementById('userMenu');
+    if (menu) menu.classList.remove('open');
+
+    const isLocal = localStorage.getItem('recall_mode') === 'local';
+    if (isLocal) {
+      showToast('ℹ️ Change password is not available in local mode.');
+      return;
+    }
+
+    document.getElementById('oldPasswordInput').value = '';
+    document.getElementById('newPasswordInput').value = '';
+    document.getElementById('confirmPasswordInput').value = '';
+    const msgEl = document.getElementById('changePasswordMessage');
+    msgEl.style.display = 'none';
+    msgEl.textContent = '';
+    document.getElementById('changePasswordModal').classList.add('active');
+  }
+
+  function closeChangePasswordModal() {
+    document.getElementById('changePasswordModal').classList.remove('active');
+  }
